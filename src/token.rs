@@ -59,6 +59,12 @@ pub enum Token {
     /// `let`
     Let,
 
+    /// `if`
+    If,
+
+    /// `else`
+    Else,
+
     Ident(String),
     Num(f64),
 }

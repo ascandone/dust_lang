@@ -112,6 +112,8 @@ impl<'a> Lexer<'a> {
                     return match ident {
                         "let" => Token::Let,
                         "fn" => Token::Fn,
+                        "if" => Token::If,
+                        "else" => Token::Else,
                         _ => Token::Ident(ident.to_string()),
                     };
                 }
@@ -201,22 +203,22 @@ mod tests {
     }
 
     #[test]
-    fn complex_example() {
-        let src = "
-let num = 123;
-fn (x, y) { f(x, y) }
+    fn let_expr() {
+        let src = "let num = 123;";
 
+        assert_tokens(src, {
+            use Token::*;
+            &[Let, Ident("num".to_string()), Assign, Num(123.0), Semicolon]
+        });
+    }
 
-";
+    #[test]
+    fn fn_expr() {
+        let src = "fn (x, y) { f(x, y) }";
 
         assert_tokens(src, {
             use Token::*;
             &[
-                Let,
-                Ident("num".to_string()),
-                Assign,
-                Num(123.0),
-                Semicolon,
                 Fn,
                 LParen,
                 Ident("x".to_string()),
@@ -224,14 +226,38 @@ fn (x, y) { f(x, y) }
                 Ident("y".to_string()),
                 RParen,
                 LBrace,
-                // <body>
+                // <fn.body>
                 Ident("f".to_string()),
                 LParen,
                 Ident("x".to_string()),
                 Comma,
                 Ident("y".to_string()),
                 RParen,
-                // </body>
+                // </fn.body>
+                RBrace,
+            ]
+        });
+    }
+
+    #[test]
+    fn if_expr() {
+        let src = "if (x < 10) { a } else { b }";
+
+        assert_tokens(src, {
+            use Token::*;
+            &[
+                If,
+                LParen,
+                Ident("x".to_string()),
+                Less,
+                Num(10.0),
+                RParen,
+                LBrace,
+                Ident("a".to_string()),
+                RBrace,
+                Else,
+                LBrace,
+                Ident("b".to_string()),
                 RBrace,
             ]
         });

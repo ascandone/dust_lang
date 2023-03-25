@@ -8,8 +8,32 @@ pub enum Token {
     /// `+` operator
     Plus,
 
+    /// `-` operator
+    Minus,
+
     /// `*` operator
     Mult,
+
+    /// `!` operator
+    Not,
+
+    /// `<` operator
+    Less,
+
+    /// `>` operator
+    Greater,
+
+    /// `<=` operator
+    LessEqual,
+
+    /// `>=` operator
+    GreaterEqual,
+
+    /// `==` operator
+    Eq,
+
+    /// `!=` operator
+    NotEq,
 
     /// `(`
     LParen,

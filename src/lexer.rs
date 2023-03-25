@@ -67,10 +67,38 @@ impl<'a> Lexer<'a> {
         let Some(ch) = self.next_char() else { return Token::Eof };
 
         match ch {
-            '=' => Token::Assign,
+            '=' => match self.peek_char() {
+                Some('=') => {
+                    self.next_char();
+                    Token::Eq
+                }
+                _ => Token::Assign,
+            },
             ';' => Token::Semicolon,
             '+' => Token::Plus,
             '*' => Token::Mult,
+            '<' => match self.peek_char() {
+                Some('=') => {
+                    self.next_char();
+                    Token::LessEqual
+                }
+                _ => Token::Less,
+            },
+            '>' => match self.peek_char() {
+                Some('=') => {
+                    self.next_char();
+                    Token::GreaterEqual
+                }
+                _ => Token::Greater,
+            },
+            '-' => Token::Minus,
+            '!' => match self.peek_char() {
+                Some('=') => {
+                    self.next_char();
+                    Token::NotEq
+                }
+                _ => Token::Not,
+            },
             ',' => Token::Comma,
             '(' => Token::LParen,
             ')' => Token::RParen,
@@ -152,6 +180,23 @@ mod tests {
         assert_tokens("+ *", {
             use Token::*;
             &[Plus, Mult]
+        });
+    }
+
+    #[test]
+    fn operators() {
+        assert_tokens("< > <= >= - ! != ==", {
+            use Token::*;
+            &[
+                Less,
+                Greater,
+                LessEqual,
+                GreaterEqual,
+                Minus,
+                Not,
+                NotEq,
+                Eq,
+            ]
         });
     }
 

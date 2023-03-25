@@ -114,6 +114,9 @@ impl<'a> Lexer<'a> {
                         "fn" => Token::Fn,
                         "if" => Token::If,
                         "else" => Token::Else,
+                        "true" => Token::True,
+                        "false" => Token::False,
+                        "nil" => Token::Nil,
                         _ => Token::Ident(ident.to_string()),
                     };
                 }
@@ -182,6 +185,14 @@ mod tests {
         assert_tokens("+ *", {
             use Token::*;
             &[Plus, Mult]
+        });
+    }
+
+    #[test]
+    fn literals() {
+        assert_tokens("true false nil", {
+            use Token::*;
+            &[True, False, Nil]
         });
     }
 

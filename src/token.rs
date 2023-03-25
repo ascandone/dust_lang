@@ -65,6 +65,15 @@ pub enum Token {
     /// `else`
     Else,
 
+    /// `nil`
+    Nil,
+
+    /// `true`
+    True,
+
+    /// `false`
+    False,
+
     Ident(String),
     Num(f64),
 }

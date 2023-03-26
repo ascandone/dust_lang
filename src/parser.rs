@@ -49,6 +49,7 @@ impl<'a> Parser<'a> {
             Token::True => Ok(true.into()),
             Token::False => Ok(false.into()),
             Token::Num(n) => Ok(n.into()),
+            Token::Ident(ref name) => Ok(Expr::Ident(name.clone())),
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }
     }

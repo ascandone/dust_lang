@@ -3,7 +3,7 @@ use crate::lexer::Lexer;
 use crate::token::Token;
 
 const LOWEST_PREC: u8 = 0;
-const PREFIX_PREC: u8 = 5;
+const PREFIX_PREC: u8 = 15;
 
 #[derive(Debug)]
 pub enum ParsingError {

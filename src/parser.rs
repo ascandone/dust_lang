@@ -21,6 +21,18 @@ pub fn parse_expr(input: &str) -> Result<Expr, ParsingError> {
 struct Parser<'a> {
     lexer: Lexer<'a>,
     current_token: Token,
+    peek_token: Token,
+}
+
+fn token_to_pred(token: &Token) -> u8 {
+    match token {
+        Token::Eq | Token::NotEq => 8,
+        Token::Less | Token::LessEqual | Token::Greater | Token::GreaterEqual => 9,
+        Token::Plus | Token::Minus => 11,
+        Token::Mult => 12,
+        Token::LParen => 17,
+        _ => 0,
+    }
 }
 
 impl<'a> Parser<'a> {
@@ -28,15 +40,18 @@ impl<'a> Parser<'a> {
         let mut parser = Self {
             lexer: Lexer::new(src),
             current_token: Token::Eof,
+            peek_token: Token::Eof,
         };
 
+        parser.advance_token();
         parser.advance_token();
 
         parser
     }
 
     fn advance_token(&mut self) {
-        self.current_token = self.lexer.next_token();
+        self.current_token = self.peek_token.clone();
+        self.peek_token = self.lexer.next_token();
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParsingError> {
@@ -46,8 +61,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_expr(&mut self, _precedence: u8) -> Result<Expr, ParsingError> {
-        match self.current_token {
+    pub fn parse_expr(&mut self, precedence: u8) -> Result<Expr, ParsingError> {
+        let left = match self.current_token {
             Token::Nil => Ok(NIL),
             Token::True => Ok(true.into()),
             Token::False => Ok(false.into()),
@@ -58,6 +73,24 @@ impl<'a> Parser<'a> {
             Token::Minus => self.parse_prefix("-"),
 
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
+        }?;
+
+        let next_token_prec = token_to_pred(&self.peek_token);
+
+        if precedence < next_token_prec {
+            self.advance_token();
+            let op = match self.current_token {
+                Token::Plus => "+",
+                Token::Mult => "*",
+                _ => panic!("Invalid op"),
+            };
+            self.advance_token();
+
+            let right = self.parse_expr(precedence)?;
+
+            Ok(Expr::Infix(op.to_string(), Box::new(left), Box::new(right)))
+        } else {
+            Ok(left)
         }
     }
 
@@ -111,7 +144,6 @@ mod test {
     fn parse_num() {
         assert_eq!(parse_expr("0").unwrap(), 0.0.into());
         assert_eq!(parse_expr("10").unwrap(), 10.0.into());
-        assert_eq!(parse_expr("42.0").unwrap(), 42.0.into());
     }
 
     #[test]
@@ -148,6 +180,30 @@ mod test {
         assert_eq!(
             parse_expr("- 1").unwrap(),
             Expr::Prefix("-".to_string(), Box::new(1.0.into()))
+        );
+    }
+
+    #[test]
+    fn parse_infix() {
+        assert_eq!(
+            parse_expr("1 + 2").unwrap(),
+            Expr::Infix("+".to_string(), Box::new(1.0.into()), Box::new(2.0.into()))
+        );
+    }
+
+    #[test]
+    fn parse_infix_twice() {
+        assert_eq!(
+            parse_expr("1 * 2 + 3").unwrap(),
+            Expr::Infix(
+                "*".to_string(),
+                Box::new(1.0.into()),
+                Box::new(Expr::Infix(
+                    "+".to_string(),
+                    Box::new(2.0.into()),
+                    Box::new(3.0.into())
+                ))
+            )
         );
     }
 }

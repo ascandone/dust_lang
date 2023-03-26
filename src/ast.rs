@@ -23,6 +23,8 @@ pub enum Expr {
         if_branch: Box<Expr>,
         else_branch: Box<Expr>,
     },
+    Prefix(String, Box<Expr>),
+    Infix(String, Box<Expr>, Box<Expr>),
     Call {
         f: Box<Expr>,
         args: Vec<Expr>,

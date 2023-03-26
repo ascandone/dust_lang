@@ -2,6 +2,9 @@ use crate::ast::{Declaration, Expr, Program, NIL};
 use crate::lexer::Lexer;
 use crate::token::Token;
 
+const LOWEST_PREC: u8 = 0;
+const PREFIX_PREC: u8 = 5;
+
 #[derive(Debug)]
 pub enum ParsingError {
     UnexpectedToken(Token),
@@ -12,7 +15,7 @@ pub fn parse(input: &str) -> Result<Program, ParsingError> {
 }
 
 pub fn parse_expr(input: &str) -> Result<Expr, ParsingError> {
-    Parser::new(input).parse_expr()
+    Parser::new(input).parse_expr(LOWEST_PREC)
 }
 
 struct Parser<'a> {
@@ -43,15 +46,27 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_expr(&mut self) -> Result<Expr, ParsingError> {
+    pub fn parse_expr(&mut self, _precedence: u8) -> Result<Expr, ParsingError> {
         match self.current_token {
             Token::Nil => Ok(NIL),
             Token::True => Ok(true.into()),
             Token::False => Ok(false.into()),
             Token::Num(n) => Ok(n.into()),
             Token::Ident(ref name) => Ok(Expr::Ident(name.clone())),
+
+            Token::Not => self.parse_prefix("!"),
+            Token::Minus => self.parse_prefix("-"),
+
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }
+    }
+
+    fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {
+        self.advance_token();
+
+        let expr = self.parse_expr(PREFIX_PREC)?;
+
+        Ok(Expr::Prefix(operator.to_string(), Box::new(expr)))
     }
 
     /// Pre: let token has been encountered
@@ -67,7 +82,7 @@ impl<'a> Parser<'a> {
         };
 
         self.advance_token();
-        let value = self.parse_expr()?;
+        let value = self.parse_expr(LOWEST_PREC)?;
 
         Ok(Declaration::Let {
             name: name.clone(),
@@ -108,5 +123,31 @@ mod test {
                 value: NIL
             }]
         )
+    }
+
+    #[test]
+    fn parse_prefix() {
+        assert_eq!(
+            parse_expr("! true").unwrap(),
+            Expr::Prefix("!".to_string(), Box::new(true.into()))
+        );
+
+        assert_eq!(
+            parse_expr("!true").unwrap(),
+            Expr::Prefix("!".to_string(), Box::new(true.into()))
+        );
+
+        assert_eq!(
+            parse_expr("!!true").unwrap(),
+            Expr::Prefix(
+                "!".to_string(),
+                Box::new(Expr::Prefix("!".to_string(), Box::new(true.into()))),
+            )
+        );
+
+        assert_eq!(
+            parse_expr("- 1").unwrap(),
+            Expr::Prefix("-".to_string(), Box::new(1.0.into()))
+        );
     }
 }

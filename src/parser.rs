@@ -62,7 +62,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr(&mut self, precedence: u8) -> Result<Expr, ParsingError> {
-        let left = match self.current_token {
+        let mut left = match self.current_token {
             Token::Nil => Ok(NIL),
             Token::True => Ok(true.into()),
             Token::False => Ok(false.into()),
@@ -77,21 +77,22 @@ impl<'a> Parser<'a> {
 
         let next_token_prec = token_to_pred(&self.peek_token);
 
-        if precedence < next_token_prec {
+        while precedence < next_token_prec {
             self.advance_token();
+
             let op = match self.current_token {
                 Token::Plus => "+",
                 Token::Mult => "*",
-                _ => panic!("Invalid op"),
+                _ => return Ok(left),
             };
             self.advance_token();
 
             let right = self.parse_expr(precedence)?;
 
-            Ok(Expr::Infix(op.to_string(), Box::new(left), Box::new(right)))
-        } else {
-            Ok(left)
+            left = Expr::Infix(op.to_string(), Box::new(left), Box::new(right));
         }
+
+        Ok(left)
     }
 
     fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {

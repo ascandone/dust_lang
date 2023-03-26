@@ -1,3 +1,5 @@
+use std::fmt;
+
 pub type Program = Vec<Declaration>;
 
 #[derive(PartialEq, Debug)]
@@ -6,12 +8,24 @@ pub enum Declaration {
     Expr(Expr),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq)]
 pub enum Lit {
     Nil,
     Bool(bool),
     Num(f64),
     String(String),
+}
+
+impl fmt::Debug for Lit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Lit::Nil => write!(f, "nil"),
+            Lit::Bool(true) => write!(f, "true"),
+            Lit::Bool(false) => write!(f, "false"),
+            Lit::Num(n) => write!(f, "{n}"),
+            Lit::String(str) => write!(f, "\"{str}\""),
+        }
+    }
 }
 
 #[derive(PartialEq, Debug)]

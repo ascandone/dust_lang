@@ -61,18 +61,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
-        self.advance_token();
-        let expr = self.parse_expr(LOWEST_PREC)?;
-
-        self.advance_token();
-
-        match &self.current_token {
-            Token::RParen => Ok(expr),
-            tk => Err(ParsingError::UnexpectedToken(tk.clone())),
-        }
-    }
-
     pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
         let mut left = match self.current_token {
             // Simple literals
@@ -130,6 +118,18 @@ impl<'a> Parser<'a> {
         let expr = self.parse_expr(PREFIX_PREC)?;
 
         Ok(Expr::Prefix(operator.to_string(), Box::new(expr)))
+    }
+
+    fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.advance_token();
+        let expr = self.parse_expr(LOWEST_PREC)?;
+
+        self.advance_token();
+
+        match &self.current_token {
+            Token::RParen => Ok(expr),
+            tk => Err(ParsingError::UnexpectedToken(tk.clone())),
+        }
     }
 
     /// Pre: let token has been encountered

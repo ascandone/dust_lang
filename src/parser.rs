@@ -180,9 +180,24 @@ impl<'a> Parser<'a> {
     fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
         let () = self.expect_token(Token::Fn)?;
 
-        // TODO: ARGS
+        let mut params = vec![];
 
-        let () = self.expect_token(Token::LBrace)?;
+        loop {
+            match &self.current_token {
+                Token::Ident(name) => {
+                    params.push(name.clone());
+                    self.advance_token();
+                }
+                Token::Comma => {
+                    self.advance_token();
+                }
+                Token::LBrace => {
+                    self.advance_token();
+                    break;
+                }
+                _ => return Err(ParsingError::UnexpectedToken(self.current_token.clone())),
+            }
+        }
 
         let expr = self.parse_expr(LOWEST_PREC)?;
         self.advance_token();
@@ -190,7 +205,7 @@ impl<'a> Parser<'a> {
         let () = self.expect_token(Token::RBrace)?;
 
         Ok(Expr::Fn {
-            args: vec![],
+            params,
             body: Box::new(expr),
         })
     }
@@ -359,11 +374,33 @@ mod test {
     }
 
     #[test]
-    fn parse_fn_expr() {
+    fn parse_fn_expr_no_params() {
         assert_eq!(
             parse_expr("fn { nil }").unwrap(),
             Expr::Fn {
-                args: vec![],
+                params: vec![],
+                body: Box::new(NIL)
+            }
+        );
+    }
+
+    #[test]
+    fn parse_fn_expr_one_params() {
+        assert_eq!(
+            parse_expr("fn x { nil }").unwrap(),
+            Expr::Fn {
+                params: vec!["x".to_string()],
+                body: Box::new(NIL)
+            }
+        );
+    }
+
+    #[test]
+    fn parse_fn_expr_two_params() {
+        assert_eq!(
+            parse_expr("fn x, y { nil }").unwrap(),
+            Expr::Fn {
+                params: vec!["x".to_string(), "y".to_string()],
                 body: Box::new(NIL)
             }
         );

@@ -49,7 +49,7 @@ pub enum Expr {
         body: Box<Expr>,
     },
     Fn {
-        args: Vec<String>,
+        params: Vec<String>,
         body: Box<Expr>,
     },
 }

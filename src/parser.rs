@@ -31,8 +31,7 @@ fn token_to_pred(token: &Token) -> u8 {
         Token::Plus | Token::Minus => 11,
         Token::Mult => 12,
         Token::LParen => 17,
-        Token::Eof => 0,
-        _ => panic!("Prec not handled for {:?}", token),
+        _ => 0,
     }
 }
 
@@ -62,16 +61,33 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.advance_token();
+        let expr = self.parse_expr(LOWEST_PREC)?;
+
+        self.advance_token();
+
+        match &self.current_token {
+            Token::RParen => Ok(expr),
+            tk => Err(ParsingError::UnexpectedToken(tk.clone())),
+        }
+    }
+
     pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
         let mut left = match self.current_token {
+            // Simple literals
             Token::Nil => Ok(NIL),
             Token::True => Ok(true.into()),
             Token::False => Ok(false.into()),
             Token::Num(n) => Ok(n.into()),
             Token::Ident(ref name) => Ok(Expr::Ident(name.clone())),
 
+            // Prefix
             Token::Not => self.parse_prefix("!"),
             Token::Minus => self.parse_prefix("-"),
+
+            // Subexpressions
+            Token::LParen => self.parse_parens_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }?;
@@ -238,6 +254,22 @@ mod test {
                     )),
                 )),
                 Box::new(Expr::Ident("c".to_string())),
+            )
+        );
+    }
+
+    #[test]
+    fn parse_parenthesized_expr() {
+        assert_eq!(
+            parse_expr("(1 + 2) * 3").unwrap(),
+            Expr::Infix(
+                "*".to_string(),
+                Box::new(Expr::Infix(
+                    "+".to_string(),
+                    Box::new(1.0.into()),
+                    Box::new(2.0.into()),
+                )),
+                Box::new(3.0.into()),
             )
         );
     }

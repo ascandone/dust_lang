@@ -11,11 +11,17 @@ pub enum ParsingError {
 }
 
 pub fn parse(input: &str) -> Result<Program, ParsingError> {
-    Parser::new(input).parse_program()
+    let mut parser = Parser::new(input);
+    let program = parser.parse_program();
+    assert_eq!(parser.current_token, Token::Eof);
+    program
 }
 
 pub fn parse_expr(input: &str) -> Result<Expr, ParsingError> {
-    Parser::new(input).parse_expr(LOWEST_PREC)
+    let mut parser = Parser::new(input);
+    let expr = parser.parse_expr(LOWEST_PREC);
+    assert_eq!(parser.current_token, Token::Eof);
+    expr
 }
 
 struct Parser<'a> {
@@ -82,8 +88,9 @@ impl<'a> Parser<'a> {
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }?;
 
-        while min_prec < token_to_pred(&self.peek_token) {
-            self.advance_token();
+        self.advance_token();
+
+        while min_prec < token_to_pred(&self.current_token) {
             left = match self.current_token {
                 Token::Plus => self.parse_infix(left, "+")?,
                 Token::Mult => self.parse_infix(left, "*")?,
@@ -119,7 +126,6 @@ impl<'a> Parser<'a> {
 
     fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {
         self.advance_token();
-
         let expr = self.parse_expr(PREFIX_PREC)?;
 
         Ok(Expr::Prefix(operator.to_string(), Box::new(expr)))
@@ -132,12 +138,14 @@ impl<'a> Parser<'a> {
 
         loop {
             match self.current_token {
-                Token::RParen => break,
+                Token::RParen => {
+                    self.advance_token();
+                    break;
+                }
                 Token::Comma => self.advance_token(),
                 _ => {
                     let expr = self.parse_expr(LOWEST_PREC)?;
                     args.push(expr);
-                    self.advance_token();
                 }
             }
         }
@@ -151,8 +159,6 @@ impl<'a> Parser<'a> {
     fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
         self.advance_token();
         let expr = self.parse_expr(LOWEST_PREC)?;
-
-        self.advance_token();
 
         match &self.current_token {
             Token::RParen => Ok(expr),
@@ -201,7 +207,6 @@ impl<'a> Parser<'a> {
         }
 
         let expr = self.parse_expr(LOWEST_PREC)?;
-        self.advance_token();
 
         let () = self.expect_token(Token::RBrace)?;
 
@@ -215,19 +220,16 @@ impl<'a> Parser<'a> {
         self.advance_token();
 
         let condition = self.parse_expr(LOWEST_PREC)?;
-        self.advance_token();
 
         self.expect_token(Token::LBrace)?;
 
         let if_branch = self.parse_expr(LOWEST_PREC)?;
-        self.advance_token();
 
         self.expect_token(Token::RBrace)?;
         self.expect_token(Token::Else)?;
         self.expect_token(Token::LBrace)?;
 
         let else_branch = self.parse_expr(LOWEST_PREC)?;
-        self.advance_token();
 
         self.expect_token(Token::RBrace)?;
         Ok(Expr::If {

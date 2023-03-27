@@ -91,6 +91,8 @@ impl<'a> Parser<'a> {
             Token::If => self.parse_if_expr(),
             Token::Let if inside_block => self.parse_let_expr(),
 
+            Token::LBrace => self.parse_block_expr(),
+
             _ => Err(ParsingError::UnexpectedToken(
                 self.current_token.clone(),
                 "Expected an expression".to_string(),
@@ -276,6 +278,13 @@ impl<'a> Parser<'a> {
             if_branch: Box::new(if_branch),
             else_branch: Box::new(else_branch),
         })
+    }
+
+    fn parse_block_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::LBrace)?;
+        let expr = self.parse_expr(LOWEST_PREC, true)?;
+        self.expect_token(Token::RBrace)?;
+        Ok(expr)
     }
 
     fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {
@@ -548,6 +557,23 @@ mod test {
                     value: Box::new(0.0.into()),
                     body: Box::new(1.0.into())
                 })
+            }
+        );
+    }
+
+    #[test]
+    fn parse_block_expr() {
+        assert_eq!(parse_expr("{ 42 }").unwrap(), 42.0.into());
+    }
+
+    #[test]
+    fn parse_let_inside_block_expr() {
+        assert_eq!(
+            parse_expr("{ let x = 0; 1 }").unwrap(),
+            Expr::Let {
+                name: "x".to_string(),
+                value: Box::new(0.0.into()),
+                body: Box::new(1.0.into()),
             }
         );
     }

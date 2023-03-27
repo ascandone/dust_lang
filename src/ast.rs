@@ -1,9 +1,9 @@
 use std::fmt;
 
-pub type Program = Vec<Declaration>;
+pub type Program = Vec<Statement>;
 
 #[derive(PartialEq, Debug)]
-pub enum Declaration {
+pub enum Statement {
     Let { name: String, value: Expr },
     Expr(Expr),
 }

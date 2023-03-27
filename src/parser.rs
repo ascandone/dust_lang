@@ -1,4 +1,4 @@
-use crate::ast::{Declaration, Expr, Program, NIL};
+use crate::ast::{Expr, Program, Statement, NIL};
 use crate::lexer::Lexer;
 use crate::token::Token;
 
@@ -60,9 +60,20 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParsingError> {
-        match self.current_token {
-            Token::Let => Ok(vec![self.parse_let_decl()?]),
-            _ => todo!("TODO: {:?}", self.current_token),
+        let mut statements = vec![];
+
+        loop {
+            match self.current_token {
+                Token::Let => statements.push(self.parse_let_decl()?),
+                Token::Semicolon => self.advance_token(),
+                Token::Eof => return Ok(statements),
+
+                // Assuming this is an expression otherwise
+                _ => {
+                    let expr = self.parse_expr(LOWEST_PREC, false)?;
+                    statements.push(Statement::Expr(expr));
+                }
+            }
         }
     }
 
@@ -178,7 +189,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Pre: let token has been encountered
-    fn parse_let_decl(&mut self) -> Result<Declaration, ParsingError> {
+    fn parse_let_decl(&mut self) -> Result<Statement, ParsingError> {
         self.advance_token();
         let Token::Ident(ref name) = self.current_token.clone() else {
           return Err(ParsingError::UnexpectedToken(self.current_token.clone(), "Expected a Ident token".to_string()))
@@ -189,7 +200,7 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
-        Ok(Declaration::Let {
+        Ok(Statement::Let {
             name: name.clone(),
             value,
         })
@@ -330,11 +341,16 @@ mod test {
     fn parse_let_decl() {
         assert_eq!(
             parse("let x = nil").unwrap(),
-            vec![Declaration::Let {
+            vec![Statement::Let {
                 name: "x".to_string(),
                 value: NIL
             }]
         )
+    }
+
+    #[test]
+    fn parse_expr_program() {
+        assert_eq!(parse("42").unwrap(), vec![Statement::Expr(42.0.into(),)])
     }
 
     #[test]

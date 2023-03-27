@@ -536,4 +536,19 @@ mod test {
             }
         );
     }
+
+    #[test]
+    fn parse_let_inside_fn_body() {
+        assert_eq!(
+            parse_expr("fn { let x = 0; 1 }").unwrap(),
+            Expr::Fn {
+                params: vec![],
+                body: Box::new(Expr::Let {
+                    name: "x".to_string(),
+                    value: Box::new(0.0.into()),
+                    body: Box::new(1.0.into())
+                })
+            }
+        );
+    }
 }

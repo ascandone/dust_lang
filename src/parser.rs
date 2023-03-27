@@ -81,6 +81,12 @@ impl<'a> Parser<'a> {
             left = match self.current_token {
                 Token::Plus => self.parse_infix(left, "+")?,
                 Token::Mult => self.parse_infix(left, "*")?,
+                Token::Less => self.parse_infix(left, "<")?,
+                Token::LessEqual => self.parse_infix(left, "<=")?,
+                Token::Greater => self.parse_infix(left, ">")?,
+                Token::GreaterEqual => self.parse_infix(left, ">=")?,
+                Token::Eq => self.parse_infix(left, "==")?,
+                Token::NotEq => self.parse_infix(left, "!=")?,
                 Token::Eof => break,
                 _ => panic!("Expected an infix operator (got {:?})", self.current_token),
             };

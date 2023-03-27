@@ -3,7 +3,6 @@ use crate::lexer::Lexer;
 use crate::token::Token;
 
 const LOWEST_PREC: u8 = 0;
-const PREFIX_PREC: u8 = 15;
 
 #[derive(Debug)]
 pub enum ParsingError {
@@ -136,7 +135,7 @@ impl<'a> Parser<'a> {
     fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {
         self.advance_token();
 
-        let expr = self.parse_expr(PREFIX_PREC, false)?;
+        let expr = self.parse_expr(15, false)?;
 
         Ok(Expr::Prefix(operator.to_string(), Box::new(expr)))
     }

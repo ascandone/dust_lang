@@ -48,6 +48,10 @@ pub enum Expr {
         value: Box<Expr>,
         body: Box<Expr>,
     },
+    Fn {
+        args: Vec<String>,
+        body: Box<Expr>,
+    },
 }
 
 pub const NIL: Expr = Expr::Lit(Lit::Nil);

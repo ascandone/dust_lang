@@ -74,8 +74,9 @@ impl<'a> Parser<'a> {
             Token::Not => self.parse_prefix("!"),
             Token::Minus => self.parse_prefix("-"),
 
-            // Subexpressions
+            // Complex expressions
             Token::LParen => self.parse_parens_expr(),
+            Token::Fn => self.parse_fn_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }?;
@@ -166,17 +167,41 @@ impl<'a> Parser<'a> {
         };
 
         self.advance_token();
-        let Token::Assign = self.current_token.clone() else {
-          return Err(ParsingError::UnexpectedToken(self.current_token.clone()))
-        };
+        let () = self.expect_token(Token::Assign)?;
 
-        self.advance_token();
         let value = self.parse_expr(LOWEST_PREC)?;
 
         Ok(Declaration::Let {
             name: name.clone(),
             value,
         })
+    }
+
+    fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
+        let () = self.expect_token(Token::Fn)?;
+
+        // TODO: ARGS
+
+        let () = self.expect_token(Token::LBrace)?;
+
+        let expr = self.parse_expr(LOWEST_PREC)?;
+        self.advance_token();
+
+        let () = self.expect_token(Token::RBrace)?;
+
+        Ok(Expr::Fn {
+            args: vec![],
+            body: Box::new(expr),
+        })
+    }
+
+    fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {
+        if &self.current_token == &expected_token {
+            self.advance_token();
+            Ok(())
+        } else {
+            Err(ParsingError::UnexpectedToken(self.current_token.clone()))
+        }
     }
 }
 
@@ -329,6 +354,17 @@ mod test {
             Expr::Call {
                 f: Box::new(Expr::Ident("f".to_string())),
                 args: vec![0.0.into(), 1.0.into()]
+            }
+        );
+    }
+
+    #[test]
+    fn parse_fn_expr() {
+        assert_eq!(
+            parse_expr("fn { nil }").unwrap(),
+            Expr::Fn {
+                args: vec![],
+                body: Box::new(NIL)
             }
         );
     }

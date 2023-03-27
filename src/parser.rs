@@ -77,6 +77,7 @@ impl<'a> Parser<'a> {
             // Complex expressions
             Token::LParen => self.parse_parens_expr(),
             Token::Fn => self.parse_fn_expr(),
+            Token::If => self.parse_if_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }?;
@@ -207,6 +208,32 @@ impl<'a> Parser<'a> {
         Ok(Expr::Fn {
             params,
             body: Box::new(expr),
+        })
+    }
+
+    fn parse_if_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.advance_token();
+
+        let condition = self.parse_expr(LOWEST_PREC)?;
+        self.advance_token();
+
+        self.expect_token(Token::LBrace)?;
+
+        let if_branch = self.parse_expr(LOWEST_PREC)?;
+        self.advance_token();
+
+        self.expect_token(Token::RBrace)?;
+        self.expect_token(Token::Else)?;
+        self.expect_token(Token::LBrace)?;
+
+        let else_branch = self.parse_expr(LOWEST_PREC)?;
+        self.advance_token();
+
+        self.expect_token(Token::RBrace)?;
+        Ok(Expr::If {
+            condition: Box::new(condition),
+            if_branch: Box::new(if_branch),
+            else_branch: Box::new(else_branch),
         })
     }
 
@@ -402,6 +429,18 @@ mod test {
             Expr::Fn {
                 params: vec!["x".to_string(), "y".to_string()],
                 body: Box::new(NIL)
+            }
+        );
+    }
+
+    #[test]
+    fn parse_if_expr() {
+        assert_eq!(
+            parse_expr("if true { 0 } else { 1 }").unwrap(),
+            Expr::If {
+                condition: Box::new(true.into()),
+                if_branch: Box::new(0.0.into()),
+                else_branch: Box::new(1.0.into())
             }
         );
     }

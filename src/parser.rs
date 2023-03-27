@@ -112,7 +112,12 @@ impl<'a> Parser<'a> {
                 Token::LParen => self.parse_call_expr(left)?,
 
                 Token::Eof => break,
-                _ => panic!("Expected an infix operator (got {:?})", self.current_token),
+                _ => {
+                    return Err(ParsingError::UnexpectedToken(
+                        self.current_token.clone(),
+                        "Expected an infix operator".to_string(),
+                    ))
+                }
             };
         }
 

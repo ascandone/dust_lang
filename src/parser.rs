@@ -31,7 +31,8 @@ fn token_to_pred(token: &Token) -> u8 {
         Token::Plus | Token::Minus => 11,
         Token::Mult => 12,
         Token::LParen => 17,
-        _ => 0,
+        Token::Eof => 0,
+        _ => panic!("Prec not handled for {:?}", token),
     }
 }
 
@@ -61,7 +62,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_expr(&mut self, precedence: u8) -> Result<Expr, ParsingError> {
+    pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
         let mut left = match self.current_token {
             Token::Nil => Ok(NIL),
             Token::True => Ok(true.into()),
@@ -75,24 +76,30 @@ impl<'a> Parser<'a> {
             _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
         }?;
 
-        let next_token_prec = token_to_pred(&self.peek_token);
-
-        while precedence < next_token_prec {
+        while min_prec < token_to_pred(&self.peek_token) {
             self.advance_token();
-
-            let op = match self.current_token {
-                Token::Plus => "+",
-                Token::Mult => "*",
-                _ => return Ok(left),
+            left = match self.current_token {
+                Token::Plus => self.parse_infix(left, "+")?,
+                Token::Mult => self.parse_infix(left, "*")?,
+                Token::Eof => break,
+                _ => panic!("Expected an infix operator (got {:?})", self.current_token),
             };
-            self.advance_token();
-
-            let right = self.parse_expr(precedence)?;
-
-            left = Expr::Infix(op.to_string(), Box::new(left), Box::new(right));
         }
 
         Ok(left)
+    }
+
+    fn parse_infix(&mut self, left: Expr, operator: &str) -> Result<Expr, ParsingError> {
+        let precedence = token_to_pred(&self.current_token);
+        self.advance_token();
+
+        let right = self.parse_expr(precedence)?;
+
+        Ok(Expr::Infix(
+            operator.to_string(),
+            Box::new(left),
+            Box::new(right),
+        ))
     }
 
     fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {
@@ -194,16 +201,37 @@ mod test {
 
     #[test]
     fn parse_infix_twice() {
+        // (+ (* 1 2) 3)
         assert_eq!(
             parse_expr("1 * 2 + 3").unwrap(),
             Expr::Infix(
-                "*".to_string(),
-                Box::new(1.0.into()),
+                "+".to_string(),
+                Box::new(Expr::Infix(
+                    "*".to_string(),
+                    Box::new(1.0.into()),
+                    Box::new(2.0.into())
+                )),
+                Box::new(3.0.into()),
+            )
+        );
+    }
+
+    #[test]
+    fn parse_infix_mixed() {
+        assert_eq!(
+            parse_expr("a + b * Z + c").unwrap(),
+            Expr::Infix(
+                "+".to_string(),
                 Box::new(Expr::Infix(
                     "+".to_string(),
-                    Box::new(2.0.into()),
-                    Box::new(3.0.into())
-                ))
+                    Box::new(Expr::Ident("a".to_string())),
+                    Box::new(Expr::Infix(
+                        "*".to_string(),
+                        Box::new(Expr::Ident("b".to_string())),
+                        Box::new(Expr::Ident("Z".to_string())),
+                    )),
+                )),
+                Box::new(Expr::Ident("c".to_string())),
             )
         );
     }

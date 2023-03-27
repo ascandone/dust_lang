@@ -7,7 +7,7 @@ const PREFIX_PREC: u8 = 15;
 
 #[derive(Debug)]
 pub enum ParsingError {
-    UnexpectedToken(Token),
+    UnexpectedToken(Token, String),
 }
 
 pub fn parse(input: &str) -> Result<Program, ParsingError> {
@@ -67,14 +67,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn consume_expr(&mut self, expr: Expr) -> Result<Expr, ParsingError> {
+        self.advance_token();
+        Ok(expr)
+    }
+
     pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
         let mut left = match self.current_token {
             // Simple literals
-            Token::Nil => Ok(NIL),
-            Token::True => Ok(true.into()),
-            Token::False => Ok(false.into()),
-            Token::Num(n) => Ok(n.into()),
-            Token::Ident(ref name) => Ok(Expr::Ident(name.clone())),
+            Token::Nil => self.consume_expr(NIL),
+            Token::True => self.consume_expr(true.into()),
+            Token::False => self.consume_expr(false.into()),
+            Token::Num(n) => self.consume_expr(n.into()),
+            Token::Ident(ref name) => self.consume_expr(Expr::Ident(name.clone())),
 
             // Prefix
             Token::Not => self.parse_prefix("!"),
@@ -85,10 +90,11 @@ impl<'a> Parser<'a> {
             Token::Fn => self.parse_fn_expr(),
             Token::If => self.parse_if_expr(),
 
-            _ => Err(ParsingError::UnexpectedToken(self.current_token.clone())),
+            _ => Err(ParsingError::UnexpectedToken(
+                self.current_token.clone(),
+                "Expected an expression".to_string(),
+            )),
         }?;
-
-        self.advance_token();
 
         while min_prec < token_to_pred(&self.current_token) {
             left = match self.current_token {
@@ -157,20 +163,17 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.expect_token(Token::LParen)?;
         let expr = self.parse_expr(LOWEST_PREC)?;
-
-        match &self.current_token {
-            Token::RParen => Ok(expr),
-            tk => Err(ParsingError::UnexpectedToken(tk.clone())),
-        }
+        self.expect_token(Token::RParen)?;
+        Ok(expr)
     }
 
     /// Pre: let token has been encountered
     fn parse_let_decl(&mut self) -> Result<Declaration, ParsingError> {
         self.advance_token();
         let Token::Ident(ref name) = self.current_token.clone() else {
-          return Err(ParsingError::UnexpectedToken(self.current_token.clone()))
+          return Err(ParsingError::UnexpectedToken(self.current_token.clone(), "Expected a Ident token".to_string()))
         };
 
         self.advance_token();
@@ -202,7 +205,12 @@ impl<'a> Parser<'a> {
                     self.advance_token();
                     break;
                 }
-                _ => return Err(ParsingError::UnexpectedToken(self.current_token.clone())),
+                _ => {
+                    return Err(ParsingError::UnexpectedToken(
+                        self.current_token.clone(),
+                        "Expected either a Comma, LBrace or Ident tokens".to_string(),
+                    ))
+                }
             }
         }
 
@@ -244,7 +252,10 @@ impl<'a> Parser<'a> {
             self.advance_token();
             Ok(())
         } else {
-            Err(ParsingError::UnexpectedToken(self.current_token.clone()))
+            Err(ParsingError::UnexpectedToken(
+                self.current_token.clone(),
+                format!("Expected a {:?} token", expected_token),
+            ))
         }
     }
 }
@@ -439,6 +450,18 @@ mod test {
     fn parse_if_expr() {
         assert_eq!(
             parse_expr("if true { 0 } else { 1 }").unwrap(),
+            Expr::If {
+                condition: Box::new(true.into()),
+                if_branch: Box::new(0.0.into()),
+                else_branch: Box::new(1.0.into())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_perenthesized_if_expr() {
+        assert_eq!(
+            parse_expr("(if true { 0 } else { 1 })").unwrap(),
             Expr::If {
                 condition: Box::new(true.into()),
                 if_branch: Box::new(0.0.into()),

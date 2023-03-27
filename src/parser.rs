@@ -19,7 +19,7 @@ pub fn parse(input: &str) -> Result<Program, ParsingError> {
 
 pub fn parse_expr(input: &str) -> Result<Expr, ParsingError> {
     let mut parser = Parser::new(input);
-    let expr = parser.parse_expr(LOWEST_PREC);
+    let expr = parser.parse_expr(LOWEST_PREC, false);
     assert_eq!(parser.current_token, Token::Eof);
     expr
 }
@@ -72,7 +72,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    pub fn parse_expr(&mut self, min_prec: u8) -> Result<Expr, ParsingError> {
+    pub fn parse_expr(&mut self, min_prec: u8, inside_block: bool) -> Result<Expr, ParsingError> {
         let mut left = match self.current_token {
             // Simple literals
             Token::Nil => self.consume_expr(NIL),
@@ -89,6 +89,7 @@ impl<'a> Parser<'a> {
             Token::LParen => self.parse_parens_expr(),
             Token::Fn => self.parse_fn_expr(),
             Token::If => self.parse_if_expr(),
+            Token::Let if inside_block => self.parse_let_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(
                 self.current_token.clone(),
@@ -121,7 +122,7 @@ impl<'a> Parser<'a> {
         let precedence = token_to_pred(&self.current_token);
         self.advance_token();
 
-        let right = self.parse_expr(precedence)?;
+        let right = self.parse_expr(precedence, false)?;
 
         Ok(Expr::Infix(
             operator.to_string(),
@@ -132,7 +133,8 @@ impl<'a> Parser<'a> {
 
     fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {
         self.advance_token();
-        let expr = self.parse_expr(PREFIX_PREC)?;
+
+        let expr = self.parse_expr(PREFIX_PREC, false)?;
 
         Ok(Expr::Prefix(operator.to_string(), Box::new(expr)))
     }
@@ -150,7 +152,7 @@ impl<'a> Parser<'a> {
                 }
                 Token::Comma => self.advance_token(),
                 _ => {
-                    let expr = self.parse_expr(LOWEST_PREC)?;
+                    let expr = self.parse_expr(LOWEST_PREC, false)?;
                     args.push(expr);
                 }
             }
@@ -164,7 +166,7 @@ impl<'a> Parser<'a> {
 
     fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::LParen)?;
-        let expr = self.parse_expr(LOWEST_PREC)?;
+        let expr = self.parse_expr(LOWEST_PREC, false)?;
         self.expect_token(Token::RParen)?;
         Ok(expr)
     }
@@ -179,7 +181,7 @@ impl<'a> Parser<'a> {
         self.advance_token();
         let () = self.expect_token(Token::Assign)?;
 
-        let value = self.parse_expr(LOWEST_PREC)?;
+        let value = self.parse_expr(LOWEST_PREC, false)?;
 
         Ok(Declaration::Let {
             name: name.clone(),
@@ -214,30 +216,59 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let expr = self.parse_expr(LOWEST_PREC)?;
+        let body = self.parse_expr(LOWEST_PREC, true)?;
 
         let () = self.expect_token(Token::RBrace)?;
 
         Ok(Expr::Fn {
             params,
-            body: Box::new(expr),
+            body: Box::new(body),
+        })
+    }
+
+    fn expect_ident(&mut self) -> Result<String, ParsingError> {
+        match &self.current_token {
+            Token::Ident(name) => {
+                let name = name.clone();
+                self.advance_token();
+                Ok(name)
+            }
+            _ => Err(ParsingError::UnexpectedToken(
+                self.current_token.clone(),
+                "Expected an Ident token".to_string(),
+            )),
+        }
+    }
+
+    fn parse_let_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::Let)?;
+        let name = self.expect_ident()?;
+        self.expect_token(Token::Assign)?;
+        let value = self.parse_expr(LOWEST_PREC, false)?;
+        self.expect_token(Token::Semicolon)?;
+        let body = self.parse_expr(LOWEST_PREC, true)?;
+
+        Ok(Expr::Let {
+            name: name.clone(),
+            value: Box::new(value),
+            body: Box::new(body),
         })
     }
 
     fn parse_if_expr(&mut self) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.expect_token(Token::If)?;
 
-        let condition = self.parse_expr(LOWEST_PREC)?;
+        let condition = self.parse_expr(LOWEST_PREC, false)?;
 
         self.expect_token(Token::LBrace)?;
 
-        let if_branch = self.parse_expr(LOWEST_PREC)?;
+        let if_branch = self.parse_expr(LOWEST_PREC, true)?;
 
         self.expect_token(Token::RBrace)?;
         self.expect_token(Token::Else)?;
         self.expect_token(Token::LBrace)?;
 
-        let else_branch = self.parse_expr(LOWEST_PREC)?;
+        let else_branch = self.parse_expr(LOWEST_PREC, true)?;
 
         self.expect_token(Token::RBrace)?;
         Ok(Expr::If {
@@ -459,12 +490,48 @@ mod test {
     }
 
     #[test]
-    fn parse_perenthesized_if_expr() {
+    fn parse_parenthesized_if_expr() {
         assert_eq!(
             parse_expr("(if true { 0 } else { 1 })").unwrap(),
             Expr::If {
                 condition: Box::new(true.into()),
                 if_branch: Box::new(0.0.into()),
+                else_branch: Box::new(1.0.into())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_let_inside_if() {
+        assert_eq!(
+            parse_expr("if true { let x = 0; 100 } else { 1 }").unwrap(),
+            Expr::If {
+                condition: Box::new(true.into()),
+                if_branch: Box::new(Expr::Let {
+                    name: "x".to_string(),
+                    value: Box::new(0.0.into()),
+                    body: Box::new(100.0.into())
+                }),
+                else_branch: Box::new(1.0.into())
+            }
+        );
+    }
+
+    #[test]
+    fn parse_nested_let_inside_if() {
+        assert_eq!(
+            parse_expr("if true { let x = 0; let y = 1; 100 } else { 1 }").unwrap(),
+            Expr::If {
+                condition: Box::new(true.into()),
+                if_branch: Box::new(Expr::Let {
+                    name: "x".to_string(),
+                    value: Box::new(0.0.into()),
+                    body: Box::new(Expr::Let {
+                        name: "y".to_string(),
+                        value: Box::new(1.0.into()),
+                        body: Box::new(100.0.into())
+                    })
+                }),
                 else_branch: Box::new(1.0.into())
             }
         );

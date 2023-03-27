@@ -91,6 +91,9 @@ impl<'a> Parser<'a> {
                 Token::GreaterEqual => self.parse_infix(left, ">=")?,
                 Token::Eq => self.parse_infix(left, "==")?,
                 Token::NotEq => self.parse_infix(left, "!=")?,
+
+                Token::LParen => self.parse_call_expr(left)?,
+
                 Token::Eof => break,
                 _ => panic!("Expected an infix operator (got {:?})", self.current_token),
             };
@@ -118,6 +121,29 @@ impl<'a> Parser<'a> {
         let expr = self.parse_expr(PREFIX_PREC)?;
 
         Ok(Expr::Prefix(operator.to_string(), Box::new(expr)))
+    }
+
+    fn parse_call_expr(&mut self, left: Expr) -> Result<Expr, ParsingError> {
+        self.advance_token();
+
+        let mut args = vec![];
+
+        loop {
+            match self.current_token {
+                Token::RParen => break,
+                Token::Comma => self.advance_token(),
+                _ => {
+                    let expr = self.parse_expr(LOWEST_PREC)?;
+                    args.push(expr);
+                    self.advance_token();
+                }
+            }
+        }
+
+        Ok(Expr::Call {
+            f: Box::new(left),
+            args,
+        })
     }
 
     fn parse_parens_expr(&mut self) -> Result<Expr, ParsingError> {
@@ -271,6 +297,39 @@ mod test {
                 )),
                 Box::new(3.0.into()),
             )
+        );
+    }
+
+    #[test]
+    fn parse_call_expr_no_args() {
+        assert_eq!(
+            parse_expr("f()").unwrap(),
+            Expr::Call {
+                f: Box::new(Expr::Ident("f".to_string())),
+                args: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn parse_call_expr_one_arg() {
+        assert_eq!(
+            parse_expr("f(42)").unwrap(),
+            Expr::Call {
+                f: Box::new(Expr::Ident("f".to_string())),
+                args: vec![42.0.into()]
+            }
+        );
+    }
+
+    #[test]
+    fn parse_call_expr_two_args() {
+        assert_eq!(
+            parse_expr("f(0, 1)").unwrap(),
+            Expr::Call {
+                f: Box::new(Expr::Ident("f".to_string())),
+                args: vec![0.0.into(), 1.0.into()]
+            }
         );
     }
 }

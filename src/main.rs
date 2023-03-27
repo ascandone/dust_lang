@@ -2,9 +2,7 @@ use crate::parser::parse;
 use std::{env, fs};
 
 pub mod ast;
-mod lexer;
-pub mod parser;
-mod token;
+mod parser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

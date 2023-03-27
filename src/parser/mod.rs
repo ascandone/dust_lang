@@ -12,6 +12,7 @@ pub fn parse(input: &str) -> Result<Program, ParsingError> {
     Parser::new(input).parse_program()
 }
 
+#[allow(dead_code)]
 pub fn parse_expr(input: &str) -> Result<Expr, ParsingError> {
     Parser::new(input).parse_toplevel_expr()
 }

@@ -17,6 +17,7 @@ fn test_lit() {
 fn test_expr() {
     assert_result("1 + 2", Value::Int(1 + 2));
     assert_result("1 + 2 * 4", Value::Int(1 + 2 * 4));
+    assert_result("!(100 + 1 > 3)", Value::Bool(!(100 + 1 > 3)));
 }
 
 fn assert_result(src: &str, value: Value) {

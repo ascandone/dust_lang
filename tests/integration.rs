@@ -109,7 +109,9 @@ fn test_call_with_let() {
 #[test]
 fn test_closure() {
     assert_result("(fn x { fn y { x } })(1)(2)", 1);
-    assert_result("(fn x { fn y { y } })(1)(2)", 1);
+    assert_result("{ let x = 1; fn { x }}()", 1);
+    assert_result("(fn x { fn y { y } })(1)(2)", 2);
+    assert_result("{ let x = 1; fn y { y } }(2)", 2);
     assert_result("(fn x { fn y { x + y } })(1)(2)", 3);
 }
 

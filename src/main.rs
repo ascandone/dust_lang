@@ -1,8 +1,11 @@
+use vm::vm::Vm;
+
+use crate::compiler::compiler::Compiler;
 use crate::parser::parse;
-use std::{env, fs};
+use std::{env, fs, rc::Rc};
 
 pub mod ast;
-mod compiler;
+pub mod compiler;
 mod parser;
 mod vm;
 
@@ -19,7 +22,7 @@ fn main() {
         return;
     };
 
-    let declarations = match parse(&content) {
+    let program = match parse(&content) {
         Ok(parsed) => parsed,
         Err(err) => {
             println!("Parsing error: {:?}", err);
@@ -27,5 +30,18 @@ fn main() {
         }
     };
 
-    println!("{:?}", declarations);
+    let mut compiler = Compiler::new();
+
+    let Ok(compiled_fn) = compiler.compile_program(program) else {
+        println!("Cannot read file");
+        return;
+    };
+
+    let mut vm = Vm::default();
+
+    let value = vm
+        .run_main(Rc::new(compiled_fn))
+        .expect("Error during execution");
+
+    println!("{value}");
 }

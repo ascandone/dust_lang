@@ -151,7 +151,7 @@ impl Compiler {
     }
 
     /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
-    fn compile_program(&mut self, program: Program) -> Result<Function, String> {
+    pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
         let mut f = Function::default();
         for (i, statement) in program.into_iter().enumerate() {
             if i != 0 {

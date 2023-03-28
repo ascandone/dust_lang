@@ -282,4 +282,38 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn parse_comma_statements() {
+        assert_eq!(
+            parse_expr("{ 0; 1 }").unwrap(),
+            Expr::Do(Box::new(0.0.into()), Box::new(1.0.into()),)
+        );
+    }
+
+    #[test]
+    fn parse_comma_statements_with_infix() {
+        assert_eq!(
+            parse_expr("{ 2 + 3; 1 }").unwrap(),
+            Expr::Do(
+                Box::new(Expr::Infix(
+                    "+".to_string(),
+                    Box::new(2.0.into()),
+                    Box::new(3.0.into()),
+                )),
+                Box::new(1.0.into()),
+            )
+        );
+    }
+
+    #[test]
+    fn parse_comma_statements_twice() {
+        assert_eq!(
+            parse_expr("{ 0;1;2 }").unwrap(),
+            Expr::Do(
+                Box::new(0.0.into()),
+                Box::new(Expr::Do(Box::new(1.0.into()), Box::new(2.0.into()))),
+            )
+        );
+    }
 }

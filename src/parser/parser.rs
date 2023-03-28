@@ -2,6 +2,7 @@ use super::{lexer::Lexer, token::Token};
 use crate::ast::{Expr, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
+const HIGHEST_PREC: u8 = 17;
 
 #[derive(Debug)]
 pub enum ParsingError {
@@ -20,7 +21,9 @@ fn token_to_pred(token: &Token) -> u8 {
         Token::Less | Token::LessEqual | Token::Greater | Token::GreaterEqual => 9,
         Token::Plus | Token::Minus => 11,
         Token::Mult => 12,
-        Token::LParen => 17,
+        Token::LParen => HIGHEST_PREC,
+
+        Token::Semicolon => 1,
         _ => 0,
     }
 }
@@ -111,6 +114,8 @@ impl<'a> Parser<'a> {
                 Token::NotEq => self.parse_infix(left, "!=")?,
 
                 Token::LParen => self.parse_call_expr(left)?,
+
+                Token::Semicolon if inside_block => self.parse_do_expr(left)?,
 
                 Token::Eof => break,
                 _ => {
@@ -251,7 +256,7 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::Let)?;
         let name = self.expect_ident()?;
         self.expect_token(Token::Assign)?;
-        let value = self.parse_expr(LOWEST_PREC, false)?;
+        let value = self.parse_expr(HIGHEST_PREC, false)?;
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
@@ -290,6 +295,12 @@ impl<'a> Parser<'a> {
         let expr = self.parse_expr(LOWEST_PREC, true)?;
         self.expect_token(Token::RBrace)?;
         Ok(expr)
+    }
+
+    fn parse_do_expr(&mut self, left: Expr) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::Semicolon)?;
+        let right = self.parse_expr(LOWEST_PREC, true)?;
+        Ok(Expr::Do(Box::new(left), Box::new(right)))
     }
 
     fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {

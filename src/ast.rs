@@ -32,6 +32,7 @@ impl fmt::Debug for Lit {
 pub enum Expr {
     Ident(String),
     Lit(Lit),
+    Do(Box<Expr>, Box<Expr>),
     If {
         condition: Box<Expr>,
         if_branch: Box<Expr>,

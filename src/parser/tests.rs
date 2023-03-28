@@ -353,7 +353,7 @@ mod tests {
     #[test]
     fn parse_let_statement_and_semicolon_with_infix() {
         assert_eq!(
-            parse("let x = 0; 1 + 2; 2").unwrap(),
+            parse("let x = 0; 1 + 2; 3").unwrap(),
             vec![
                 Statement::Let {
                     name: "x".to_string(),

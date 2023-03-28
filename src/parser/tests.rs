@@ -322,4 +322,50 @@ mod tests {
             )
         );
     }
+
+    #[test]
+    fn parse_let_and_semicolon() {
+        assert_eq!(
+            parse_expr("{ let x = 0; 1; 2 }").unwrap(),
+            Expr::Let {
+                name: "x".to_string(),
+                value: Box::new(0.0.into()),
+                body: Box::new(Expr::Do(Box::new(1.0.into()), Box::new(2.0.into()),))
+            },
+        );
+    }
+
+    #[test]
+    fn parse_let_statement_and_semicolon() {
+        assert_eq!(
+            parse("let x = 0; 1; 2").unwrap(),
+            vec![
+                Statement::Let {
+                    name: "x".to_string(),
+                    value: 0.0.into(),
+                },
+                Statement::Expr(1.0.into()),
+                Statement::Expr(2.0.into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_let_statement_and_semicolon_with_infix() {
+        assert_eq!(
+            parse("let x = 0; 1 + 2; 2").unwrap(),
+            vec![
+                Statement::Let {
+                    name: "x".to_string(),
+                    value: 0.0.into(),
+                },
+                Statement::Expr(Expr::Infix(
+                    "+".to_string(),
+                    Box::new(1.0.into()),
+                    Box::new(2.0.into()),
+                )),
+                Statement::Expr(3.0.into()),
+            ]
+        );
+    }
 }

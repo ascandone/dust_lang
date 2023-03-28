@@ -1,7 +1,7 @@
 ## Todos/ideas
 
 ### Core semantics
-* [ ] logic and/or
+* [x] logic and/or
 * [ ] recursion
 * [ ] native functions
 

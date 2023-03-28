@@ -70,7 +70,7 @@ impl Compiler {
                 else_branch,
             } => {
                 self.compile_expr_chunk(f, *condition)?;
-                let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfNot);
+                let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfFalse);
                 self.compile_expr_chunk(f, *if_branch)?;
                 let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
 
@@ -453,7 +453,7 @@ mod tests {
             f.bytecode,
             vec![
                 /*  0 */ OpCode::ConstTrue as u8,
-                /*  1 */ OpCode::JumpIfNot as u8,
+                /*  1 */ OpCode::JumpIfFalse as u8,
                 /*  2 */ 0,
                 /*  3 */ 9,
                 /*  4 */ OpCode::Const as u8,

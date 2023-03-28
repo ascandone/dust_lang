@@ -192,7 +192,7 @@ mod tests {
         let main = Function {
             bytecode: vec![
                 /* 0 */ OpCode::ConstTrue as u8,
-                /* 1 */ OpCode::JumpIfNot as u8,
+                /* 1 */ OpCode::JumpIfFalse as u8,
                 /* 2 */ 0,
                 /* 3 */ 6,
                 /* 4 */ OpCode::ConstNil as u8,
@@ -211,7 +211,7 @@ mod tests {
         let main = Function {
             bytecode: vec![
                 /* 0 */ OpCode::ConstFalse as u8,
-                /* 1 */ OpCode::JumpIfNot as u8,
+                /* 1 */ OpCode::JumpIfFalse as u8,
                 /* 2 */ 0,
                 /* 3 */ 6,
                 /* 4 */ OpCode::ConstNil as u8,

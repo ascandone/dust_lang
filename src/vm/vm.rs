@@ -89,7 +89,7 @@ impl Vm {
                     frame.ip = index;
                 }
 
-                OpCode::JumpIfNot => {
+                OpCode::JumpIfFalse => {
                     let cond = stack.pop().as_bool();
                     let index = frame.next_opcode_u16() as usize;
 

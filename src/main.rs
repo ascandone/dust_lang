@@ -16,10 +16,7 @@ fn main() {
         return;
     };
 
-    let Ok(content) = fs::read_to_string(file_path) else {
-        println!("Cannot read file");
-        return;
-    };
+    let content = fs::read_to_string(file_path).expect("Cannot read file");
 
     let program = match parse(&content) {
         Ok(parsed) => parsed,

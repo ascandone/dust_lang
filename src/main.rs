@@ -2,6 +2,7 @@ use crate::parser::parse;
 use std::{env, fs};
 
 pub mod ast;
+mod compiler;
 mod parser;
 mod vm;
 

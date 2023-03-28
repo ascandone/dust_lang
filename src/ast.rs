@@ -57,12 +57,6 @@ pub enum Expr {
 
 pub const NIL: Expr = Expr::Lit(Lit::Nil);
 
-pub fn do_vec(slice: &[Expr]) -> Expr {
-    match slice {
-        _ => todo!(),
-    }
-}
-
 impl From<bool> for Expr {
     fn from(b: bool) -> Self {
         Expr::Lit(Lit::Bool(b))
@@ -78,21 +72,5 @@ impl From<f64> for Expr {
 impl From<&str> for Expr {
     fn from(s: &str) -> Self {
         Expr::Lit(Lit::String(s.to_string()))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn do_vec_test() {
-        assert_eq!(
-            do_vec(&[0.0.into(), 1.0.into(), 2.0.into()]),
-            Expr::Do(
-                Box::new(0.0.into()),
-                Box::new(Expr::Do(Box::new(1.0.into()), Box::new(2.0.into())))
-            )
-        )
     }
 }

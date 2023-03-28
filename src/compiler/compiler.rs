@@ -1,9 +1,13 @@
+#![allow(dead_code)]
+
+use std::rc::Rc;
+
 use super::symbol_table::{Scope, SymbolTable};
 use crate::{
-    ast::{Expr, Program, Statement},
+    ast::{Expr, Lit, Program, Statement},
     vm::{
         bytecode::OpCode,
-        value::{Function, Value},
+        value::{Function, FunctionArity, Value},
     },
 };
 
@@ -22,124 +26,104 @@ impl Compiler {
 
     fn compile_expr_chunk(&mut self, f: &mut Function, ast: Expr) -> Result<(), String> {
         match ast {
-            NIL => f.bytecode.push(OpCode::ConstNil as u8),
-            _ => todo!("EXPR CHUNK"),
-            // true.into() => f.bytecode.push(OpCode::ConstTrue as u8),
-            // false.into() => f.bytecode.push(OpCode::ConstFalse as u8),
-            // Expr::Lit(value) => {
-            //     alloc_const(f, value);
-            // }
+            Expr::Lit(Lit::Nil) => f.bytecode.push(OpCode::ConstNil as u8),
+            Expr::Lit(Lit::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
+            Expr::Lit(Lit::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
+            Expr::Lit(Lit::String(s)) => alloc_const(f, Value::String(Rc::new(s))),
+            // TODO repo int as f64
+            Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Int(n as i64)),
 
-            // Expr::Ident(name) => {
-            //     let lookup = self.symbol_table.resolve(&name);
-            //     match lookup {
-            //         Some(scope) => compile_symbol_lookup(f, scope),
-            //         None => return Err(format!("Lookup not found for {name}")),
-            //     }
-            // }
+            Expr::Ident(name) => {
+                let lookup = self.symbol_table.resolve(&name);
+                match lookup {
+                    Some(scope) => compile_symbol_lookup(f, scope),
+                    None => return Err(format!("Lookup not found for {name}")),
+                }
+            }
 
-            // Expr::Call(caller, args) => {
-            //     // TODO return err when args > 256
-            //     let args_len = args.len();
+            Expr::If {
+                condition,
+                if_branch,
+                else_branch,
+            } => {
+                self.compile_expr_chunk(f, *condition)?;
+                let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfNot);
+                self.compile_expr_chunk(f, *if_branch)?;
+                let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
 
-            //     for arg in args {
-            //         self.compile_expr_chunk(f, arg)?;
-            //     }
-            //     self.compile_expr_chunk(f, *caller)?;
-            //     f.bytecode.push(OpCode::Call as u8);
-            //     f.bytecode.push(args_len as u8);
-            // }
+                // TODO throw on overflow
+                set_big_endian_u16(f, first_jump_index, f.bytecode.len() as u16);
 
-            // Expr::Do(asts) => match asts.len() {
-            //     0 => f.bytecode.push(OpCode::ConstNil as u8),
+                self.compile_expr_chunk(f, *else_branch)?;
 
-            //     _ => {
-            //         let mut is_first = true;
+                // TODO throw on overflow
+                set_big_endian_u16(f, second_jump_index, f.bytecode.len() as u16);
+            }
 
-            //         for ast in asts {
-            //             if !is_first {
-            //                 f.bytecode.push(OpCode::Pop as u8);
-            //             }
+            Expr::Fn { params, body } => {
+                self.symbol_table.enter_scope();
+                let mut inner_f = Function {
+                    // TODO remove fn_arity
+                    arity: FunctionArity {
+                        required: params.len() as u8,
+                        ..Default::default()
+                    },
+                    ..Function::default()
+                };
 
-            //             self.compile_expr_chunk(f, ast)?;
-            //             is_first = false;
-            //         }
-            //     }
-            // },
+                for required in params {
+                    self.symbol_table.define_local(&required);
+                }
 
-            // Expr::Def(binding, body) => {
-            //     self.compile_expr_chunk(f, *body)?;
-            //     f.bytecode.push(OpCode::SetGlobal as u8);
+                self.compile_expr_chunk(&mut inner_f, *body)?;
+                inner_f.bytecode.push(OpCode::Return as u8);
+                inner_f.locals = self.symbol_table.count_locals() - count_arity_bindings(&inner_f);
+                let free_vars = &self.symbol_table.free();
+                self.symbol_table.exit_scope();
 
-            //     let index = self.symbol_table.define_global(&binding);
+                if free_vars.is_empty() {
+                    alloc_const(f, Value::Function(Rc::new(inner_f)));
+                } else {
+                    for scope in free_vars {
+                        compile_symbol_lookup(f, *scope);
+                    }
 
-            //     let (msb, lsb) = to_big_endian_u16(index);
-            //     f.bytecode.push(msb);
-            //     f.bytecode.push(lsb);
-            // }
+                    alloc_const(f, Value::Function(Rc::new(inner_f)));
+                    f.bytecode.push(OpCode::MakeClosure as u8);
+                    f.bytecode.push(free_vars.len() as u8);
+                }
+            }
 
-            // Expr::If(cond, x, y) => {
-            //     self.compile_expr_chunk(f, *cond)?;
-            //     let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfNot);
-            //     self.compile_expr_chunk(f, *x)?;
-            //     let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
+            Expr::Call { f: caller, args } => {
+                // TODO return err when args > 256
+                let args_len = args.len();
 
-            //     // TODO throw on overflow
-            //     set_big_endian_u16(f, first_jump_index, f.bytecode.len() as u16);
+                for arg in args {
+                    self.compile_expr_chunk(f, arg)?;
+                }
+                self.compile_expr_chunk(f, *caller)?;
+                f.bytecode.push(OpCode::Call as u8);
+                f.bytecode.push(args_len as u8);
+            }
 
-            //     self.compile_expr_chunk(f, *y)?;
+            Expr::Let { name, value, body } => {
+                let binding_index = self.symbol_table.define_local(&name);
 
-            //     // TODO throw on overflow
-            //     set_big_endian_u16(f, second_jump_index, f.bytecode.len() as u16);
-            // }
+                self.compile_expr_chunk(f, *value)?;
+                f.bytecode.push(OpCode::SetLocal as u8);
+                f.bytecode.push(binding_index);
+                self.compile_expr_chunk(f, *body)?;
+                self.symbol_table.remove_local(&name);
+            }
 
-            // Expr::Let1(name, value, body) => {
-            //     let binding_index = self.symbol_table.define_local(&name);
+            Expr::Do(left, right) => {
+                self.compile_expr_chunk(f, *left)?;
+                f.bytecode.push(OpCode::Pop as u8);
+                self.compile_expr_chunk(f, *right)?;
+            }
 
-            //     self.compile_expr_chunk(f, *value)?;
-            //     f.bytecode.push(OpCode::SetLocal as u8);
-            //     f.bytecode.push(binding_index);
-            //     self.compile_expr_chunk(f, *body)?;
-            //     self.symbol_table.remove_local(&name);
-            // }
-
-            // Expr::Lambda(params, body) => {
-            //     self.symbol_table.enter_scope();
-            //     let mut inner_f = Function {
-            //         arity: (&params).into(),
-            //         ..Function::default()
-            //     };
-
-            //     for required in params.required {
-            //         self.symbol_table.define_local(&required);
-            //     }
-
-            //     for optional in params.optional {
-            //         self.symbol_table.define_local(&optional);
-            //     }
-
-            //     if let Some(rest_param) = params.rest {
-            //         self.symbol_table.define_local(&rest_param);
-            //     }
-
-            //     self.compile_expr_chunk(&mut inner_f, *body)?;
-            //     inner_f.bytecode.push(OpCode::Return as u8);
-            //     inner_f.locals = self.symbol_table.count_locals() - count_arity_bindings(&inner_f);
-            //     let free_vars = &self.symbol_table.free();
-            //     self.symbol_table.exit_scope();
-
-            //     if free_vars.is_empty() {
-            //         alloc_const(f, Value::Function(Rc::new(inner_f)));
-            //     } else {
-            //         for scope in free_vars {
-            //             compile_symbol_lookup(f, *scope);
-            //         }
-
-            //         alloc_const(f, Value::Function(Rc::new(inner_f)));
-            //         f.bytecode.push(OpCode::MakeClosure as u8);
-            //         f.bytecode.push(free_vars.len() as u8);
-            //     }
-            // }
+            Expr::Prefix(_, _) => todo!("PREFIX op"),
+            Expr::Infix(_, _, _) => todo!("INFIX op"),
         };
 
         Ok(())
@@ -150,13 +134,30 @@ impl Compiler {
         f: &mut Function,
         statement: Statement,
     ) -> Result<(), String> {
-        todo!()
+        match statement {
+            Statement::Let { name, value } => {
+                self.compile_expr_chunk(f, value)?;
+                f.bytecode.push(OpCode::SetGlobal as u8);
+
+                let index = self.symbol_table.define_global(&name);
+
+                let (msb, lsb) = to_big_endian_u16(index);
+                f.bytecode.push(msb);
+                f.bytecode.push(lsb);
+                Ok(())
+            }
+            Statement::Expr(expr) => self.compile_expr_chunk(f, expr),
+        }
     }
 
     /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
     fn compile_program(&mut self, program: Program) -> Result<Function, String> {
         let mut f = Function::default();
-        for statement in program {
+        for (i, statement) in program.into_iter().enumerate() {
+            if i != 0 {
+                f.bytecode.push(OpCode::Pop as u8)
+            }
+
             self.compile_statement_chunk(&mut f, statement)?;
         }
         f.bytecode.push(OpCode::Return as u8);
@@ -231,7 +232,7 @@ mod tests {
     use std::rc::Rc;
 
     use crate::{
-        ast::{do_vec, Expr, Statement, NIL},
+        ast::{Expr, Statement, NIL},
         compiler::compiler::{to_big_endian_u16, Compiler},
         vm::{
             bytecode::OpCode,
@@ -303,24 +304,8 @@ mod tests {
     }
 
     #[test]
-    fn symbol_const_test() {
-        let ast = "abc".into();
-        let f = Compiler::new().compile_expr(ast).unwrap();
-
-        assert_eq!(
-            f.constant_pool[0],
-            Value::Symbol(Rc::new("abc".to_string()))
-        );
-
-        assert_eq!(
-            f.bytecode,
-            vec![OpCode::Const as u8, 0, OpCode::Return as u8]
-        );
-    }
-
-    #[test]
     fn multiple_exprs_do_test() {
-        let ast = do_vec(&[NIL, true.into()]);
+        let ast = Expr::Do(Box::new(NIL), Box::new(true.into()));
         let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
@@ -419,19 +404,13 @@ mod tests {
     fn if_expr_test() {
         let ast = Expr::If {
             condition: Box::new(true.into()),
-            if_branch: Box::new(Expr::Ident("b1".to_string())),
-            else_branch: Box::new(Expr::Ident("b2".to_string())),
+            if_branch: Box::new(0.0.into()),
+            else_branch: Box::new(1.0.into()),
         };
 
         let f = Compiler::new().compile_expr(ast).unwrap();
 
-        assert_eq!(
-            f.constant_pool,
-            vec![
-                Value::Symbol(Rc::new("b1".to_string())),
-                Value::Symbol(Rc::new("b2".to_string())),
-            ]
-        );
+        assert_eq!(f.constant_pool, vec![Value::Int(0), Value::Int(1),]);
 
         assert_eq!(
             f.bytecode,
@@ -719,14 +698,14 @@ mod tests {
     #[test]
     fn let1_does_not_leak_test() {
         // (do (let1 (x #true) #true) x)
-        let ast = do_vec(&[
-            Expr::Let {
+        let ast = Expr::Do(
+            Box::new(Expr::Let {
                 name: "x".to_string(),
                 value: Box::new(true.into()),
                 body: Box::new(true.into()),
-            },
-            Expr::Ident("x".to_string()),
-        ]);
+            }),
+            Box::new(Expr::Ident("x".to_string())),
+        );
 
         let result = Compiler::new().compile_expr(ast);
         assert!(result.is_err(), "{:?} should be Err(_)", result)

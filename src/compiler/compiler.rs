@@ -1,13 +1,10 @@
-use std::rc::Rc;
-
-use super::{
-    ast::Ast,
-    sexpr::SExpr,
-    symbol_table::{Scope, SymbolTable},
-};
-use crate::vm::{
-    bytecode::OpCode,
-    value::{Function, Value},
+use super::symbol_table::{Scope, SymbolTable};
+use crate::{
+    ast::{Expr, Program, Statement},
+    vm::{
+        bytecode::OpCode,
+        value::{Function, Value},
+    },
 };
 
 #[derive(Default)]
@@ -23,143 +20,152 @@ impl Compiler {
         }
     }
 
-    /// Compile an s-expression into a zero-arity function containing it's chunk of bytecode.
-    pub fn compile_sexpr(&mut self, sexpr: &SExpr) -> Result<Function, String> {
-        let ast = sexpr.try_into()?;
-        self.compile_ast(ast)
-    }
-
-    fn compile_ast_chunk(&mut self, f: &mut Function, ast: Ast) -> Result<(), String> {
+    fn compile_expr_chunk(&mut self, f: &mut Function, ast: Expr) -> Result<(), String> {
         match ast {
-            Ast::Const(Value::Nil) => f.bytecode.push(OpCode::ConstNil as u8),
-            Ast::Const(Value::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
-            Ast::Const(Value::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
-            Ast::Const(value) => {
-                alloc_const(f, value);
-            }
+            NIL => f.bytecode.push(OpCode::ConstNil as u8),
+            _ => todo!("EXPR CHUNK"),
+            // true.into() => f.bytecode.push(OpCode::ConstTrue as u8),
+            // false.into() => f.bytecode.push(OpCode::ConstFalse as u8),
+            // Expr::Lit(value) => {
+            //     alloc_const(f, value);
+            // }
 
-            Ast::Symbol(name) => {
-                let lookup = self.symbol_table.resolve(&name);
-                match lookup {
-                    Some(scope) => compile_symbol_lookup(f, scope),
-                    None => return Err(format!("Lookup not found for {name}")),
-                }
-            }
+            // Expr::Ident(name) => {
+            //     let lookup = self.symbol_table.resolve(&name);
+            //     match lookup {
+            //         Some(scope) => compile_symbol_lookup(f, scope),
+            //         None => return Err(format!("Lookup not found for {name}")),
+            //     }
+            // }
 
-            Ast::Call(caller, args) => {
-                // TODO return err when args > 256
-                let args_len = args.len();
+            // Expr::Call(caller, args) => {
+            //     // TODO return err when args > 256
+            //     let args_len = args.len();
 
-                for arg in args {
-                    self.compile_ast_chunk(f, arg)?;
-                }
-                self.compile_ast_chunk(f, *caller)?;
-                f.bytecode.push(OpCode::Call as u8);
-                f.bytecode.push(args_len as u8);
-            }
+            //     for arg in args {
+            //         self.compile_expr_chunk(f, arg)?;
+            //     }
+            //     self.compile_expr_chunk(f, *caller)?;
+            //     f.bytecode.push(OpCode::Call as u8);
+            //     f.bytecode.push(args_len as u8);
+            // }
 
-            Ast::Do(asts) => match asts.len() {
-                0 => f.bytecode.push(OpCode::ConstNil as u8),
+            // Expr::Do(asts) => match asts.len() {
+            //     0 => f.bytecode.push(OpCode::ConstNil as u8),
 
-                _ => {
-                    let mut is_first = true;
+            //     _ => {
+            //         let mut is_first = true;
 
-                    for ast in asts {
-                        if !is_first {
-                            f.bytecode.push(OpCode::Pop as u8);
-                        }
+            //         for ast in asts {
+            //             if !is_first {
+            //                 f.bytecode.push(OpCode::Pop as u8);
+            //             }
 
-                        self.compile_ast_chunk(f, ast)?;
-                        is_first = false;
-                    }
-                }
-            },
+            //             self.compile_expr_chunk(f, ast)?;
+            //             is_first = false;
+            //         }
+            //     }
+            // },
 
-            Ast::Def(binding, body) => {
-                self.compile_ast_chunk(f, *body)?;
-                f.bytecode.push(OpCode::SetGlobal as u8);
+            // Expr::Def(binding, body) => {
+            //     self.compile_expr_chunk(f, *body)?;
+            //     f.bytecode.push(OpCode::SetGlobal as u8);
 
-                let index = self.symbol_table.define_global(&binding);
+            //     let index = self.symbol_table.define_global(&binding);
 
-                let (msb, lsb) = to_big_endian_u16(index);
-                f.bytecode.push(msb);
-                f.bytecode.push(lsb);
-            }
+            //     let (msb, lsb) = to_big_endian_u16(index);
+            //     f.bytecode.push(msb);
+            //     f.bytecode.push(lsb);
+            // }
 
-            Ast::If(cond, x, y) => {
-                self.compile_ast_chunk(f, *cond)?;
-                let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfNot);
-                self.compile_ast_chunk(f, *x)?;
-                let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
+            // Expr::If(cond, x, y) => {
+            //     self.compile_expr_chunk(f, *cond)?;
+            //     let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfNot);
+            //     self.compile_expr_chunk(f, *x)?;
+            //     let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
 
-                // TODO throw on overflow
-                set_big_endian_u16(f, first_jump_index, f.bytecode.len() as u16);
+            //     // TODO throw on overflow
+            //     set_big_endian_u16(f, first_jump_index, f.bytecode.len() as u16);
 
-                self.compile_ast_chunk(f, *y)?;
+            //     self.compile_expr_chunk(f, *y)?;
 
-                // TODO throw on overflow
-                set_big_endian_u16(f, second_jump_index, f.bytecode.len() as u16);
-            }
+            //     // TODO throw on overflow
+            //     set_big_endian_u16(f, second_jump_index, f.bytecode.len() as u16);
+            // }
 
-            Ast::Let1(name, value, body) => {
-                let binding_index = self.symbol_table.define_local(&name);
+            // Expr::Let1(name, value, body) => {
+            //     let binding_index = self.symbol_table.define_local(&name);
 
-                self.compile_ast_chunk(f, *value)?;
-                f.bytecode.push(OpCode::SetLocal as u8);
-                f.bytecode.push(binding_index);
-                self.compile_ast_chunk(f, *body)?;
-                self.symbol_table.remove_local(&name);
-            }
+            //     self.compile_expr_chunk(f, *value)?;
+            //     f.bytecode.push(OpCode::SetLocal as u8);
+            //     f.bytecode.push(binding_index);
+            //     self.compile_expr_chunk(f, *body)?;
+            //     self.symbol_table.remove_local(&name);
+            // }
 
-            Ast::Lambda(params, body) => {
-                self.symbol_table.enter_scope();
-                let mut inner_f = Function {
-                    arity: (&params).into(),
-                    ..Function::default()
-                };
+            // Expr::Lambda(params, body) => {
+            //     self.symbol_table.enter_scope();
+            //     let mut inner_f = Function {
+            //         arity: (&params).into(),
+            //         ..Function::default()
+            //     };
 
-                for required in params.required {
-                    self.symbol_table.define_local(&required);
-                }
+            //     for required in params.required {
+            //         self.symbol_table.define_local(&required);
+            //     }
 
-                for optional in params.optional {
-                    self.symbol_table.define_local(&optional);
-                }
+            //     for optional in params.optional {
+            //         self.symbol_table.define_local(&optional);
+            //     }
 
-                if let Some(rest_param) = params.rest {
-                    self.symbol_table.define_local(&rest_param);
-                }
+            //     if let Some(rest_param) = params.rest {
+            //         self.symbol_table.define_local(&rest_param);
+            //     }
 
-                self.compile_ast_chunk(&mut inner_f, *body)?;
-                inner_f.bytecode.push(OpCode::Return as u8);
-                inner_f.locals = self.symbol_table.count_locals() - count_arity_bindings(&inner_f);
-                let free_vars = &self.symbol_table.free();
-                self.symbol_table.exit_scope();
+            //     self.compile_expr_chunk(&mut inner_f, *body)?;
+            //     inner_f.bytecode.push(OpCode::Return as u8);
+            //     inner_f.locals = self.symbol_table.count_locals() - count_arity_bindings(&inner_f);
+            //     let free_vars = &self.symbol_table.free();
+            //     self.symbol_table.exit_scope();
 
-                if free_vars.is_empty() {
-                    alloc_const(f, Value::Function(Rc::new(inner_f)));
-                } else {
-                    for scope in free_vars {
-                        compile_symbol_lookup(f, *scope);
-                    }
+            //     if free_vars.is_empty() {
+            //         alloc_const(f, Value::Function(Rc::new(inner_f)));
+            //     } else {
+            //         for scope in free_vars {
+            //             compile_symbol_lookup(f, *scope);
+            //         }
 
-                    alloc_const(f, Value::Function(Rc::new(inner_f)));
-                    f.bytecode.push(OpCode::MakeClosure as u8);
-                    f.bytecode.push(free_vars.len() as u8);
-                }
-            }
+            //         alloc_const(f, Value::Function(Rc::new(inner_f)));
+            //         f.bytecode.push(OpCode::MakeClosure as u8);
+            //         f.bytecode.push(free_vars.len() as u8);
+            //     }
+            // }
         };
 
         Ok(())
     }
 
+    fn compile_statement_chunk(
+        &mut self,
+        f: &mut Function,
+        statement: Statement,
+    ) -> Result<(), String> {
+        todo!()
+    }
+
     /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
-    fn compile_ast(&mut self, ast: Ast) -> Result<Function, String> {
+    fn compile_program(&mut self, program: Program) -> Result<Function, String> {
         let mut f = Function::default();
-        self.compile_ast_chunk(&mut f, ast)?;
+        for statement in program {
+            self.compile_statement_chunk(&mut f, statement)?;
+        }
         f.bytecode.push(OpCode::Return as u8);
         f.locals = self.symbol_table.count_locals();
         Ok(f)
+    }
+
+    fn compile_expr(&mut self, expr: Expr) -> Result<Function, String> {
+        self.compile_program(vec![Statement::Expr(expr)])
     }
 }
 
@@ -225,10 +231,8 @@ mod tests {
     use std::rc::Rc;
 
     use crate::{
-        compiler::{
-            ast::{Ast, Params},
-            compiler::{to_big_endian_u16, Compiler},
-        },
+        ast::{do_vec, Expr, Statement, NIL},
+        compiler::compiler::{to_big_endian_u16, Compiler},
         vm::{
             bytecode::OpCode,
             value::{Function, FunctionArity, Value},
@@ -237,8 +241,8 @@ mod tests {
 
     #[test]
     fn const_true_test() {
-        let ast = Ast::Const(Value::Bool(true));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = true.into();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(f.arity.required, 0);
         assert_eq!(
@@ -249,8 +253,8 @@ mod tests {
 
     #[test]
     fn const_false_test() {
-        let ast = Ast::Const(Value::Bool(false));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = false.into();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -260,8 +264,8 @@ mod tests {
 
     #[test]
     fn nil_const_test() {
-        let ast = Ast::Const(Value::Nil);
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = NIL;
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -271,8 +275,8 @@ mod tests {
 
     #[test]
     fn int_const_test() {
-        let ast = Ast::Const(Value::Int(42));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = 42.0.into();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(f.constant_pool[0], Value::Int(42));
 
@@ -284,8 +288,8 @@ mod tests {
 
     #[test]
     fn string_const_test() {
-        let ast = Ast::Const(Value::String(Rc::new("abc".to_string())));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = "abc".into();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.constant_pool[0],
@@ -300,8 +304,8 @@ mod tests {
 
     #[test]
     fn symbol_const_test() {
-        let ast = Ast::Const(Value::Symbol(Rc::new("abc".to_string())));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = "abc".into();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.constant_pool[0],
@@ -315,20 +319,9 @@ mod tests {
     }
 
     #[test]
-    fn empty_do_test() {
-        let ast = Ast::Do(vec![]);
-        let f = Compiler::new().compile_ast(ast).unwrap();
-
-        assert_eq!(
-            f.bytecode,
-            vec![OpCode::ConstNil as u8, OpCode::Return as u8,]
-        );
-    }
-
-    #[test]
     fn multiple_exprs_do_test() {
-        let ast = Ast::Do(vec![Ast::Const(Value::Nil), Ast::Const(Value::Bool(true))]);
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = do_vec(&[NIL, true.into()]);
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -342,21 +335,13 @@ mod tests {
     }
 
     #[test]
-    fn single_expr_do_test() {
-        let ast = Ast::Do(vec![Ast::Const(Value::Nil)]);
-        let f = Compiler::new().compile_ast(ast).unwrap();
-
-        assert_eq!(
-            f.bytecode,
-            vec![OpCode::ConstNil as u8, OpCode::Return as u8]
-        );
-    }
-
-    #[test]
     fn def_test() {
-        let ast = Ast::Def("x".to_string(), Box::new(Ast::Const(Value::Bool(true))));
+        let ast = vec![Statement::Let {
+            name: "x".to_string(),
+            value: true.into(),
+        }];
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_program(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -372,12 +357,18 @@ mod tests {
 
     #[test]
     fn def_twice_test() {
-        let ast = Ast::Do(vec![
-            Ast::Def("x".to_string(), Box::new(Ast::Const(Value::Bool(true)))),
-            Ast::Def("y".to_string(), Box::new(Ast::Const(Value::Bool(false)))),
-        ]);
+        let ast = vec![
+            Statement::Let {
+                name: "x".to_string(),
+                value: true.into(),
+            },
+            Statement::Let {
+                name: "y".to_string(),
+                value: false.into(),
+            },
+        ];
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_program(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -398,12 +389,15 @@ mod tests {
 
     #[test]
     fn global_scope_test() {
-        let ast = Ast::Do(vec![
-            Ast::Def("x".to_string(), Box::new(Ast::Const(Value::Bool(true)))),
-            Ast::Symbol("x".to_string()),
-        ]);
+        let ast = vec![
+            Statement::Let {
+                name: "x".to_string(),
+                value: true.into(),
+            },
+            Statement::Expr(Expr::Ident("x".to_string())),
+        ];
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_program(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -423,13 +417,13 @@ mod tests {
 
     #[test]
     fn if_expr_test() {
-        let ast = Ast::If(
-            Box::new(Ast::Const(Value::Bool(true))),
-            Box::new(Ast::Const(Value::Symbol(Rc::new("b1".to_string())))),
-            Box::new(Ast::Const(Value::Symbol(Rc::new("b2".to_string())))),
-        );
+        let ast = Expr::If {
+            condition: Box::new(true.into()),
+            if_branch: Box::new(Expr::Ident("b1".to_string())),
+            else_branch: Box::new(Expr::Ident("b2".to_string())),
+        };
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.constant_pool,
@@ -461,8 +455,12 @@ mod tests {
     #[test]
     fn lambda_expr_no_args_test() {
         // (lambda* () 42)
-        let ast = Ast::Lambda(Params::default(), Box::new(Ast::Const(Value::Int(42))));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let ast = Expr::Fn {
+            params: vec![],
+            body: Box::new(42.0.into()),
+        };
+
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         let compiled_lambda = Function {
             bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
@@ -484,49 +482,17 @@ mod tests {
     #[test]
     fn lambda_expr_required_args_test() {
         // (lambda* (x y) 42)
-        let params = Params {
-            required: vec!["x".to_string(), "y".to_string()],
-            ..Params::default()
+        let ast = Expr::Fn {
+            params: vec!["x".to_string(), "y".to_string()],
+            body: Box::new(NIL),
         };
 
-        let ast = Ast::Lambda(params, Box::new(Ast::Const(Value::Nil)));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         let compiled_lambda = Function {
             bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
             arity: FunctionArity {
                 required: 2,
-                ..FunctionArity::default()
-            },
-            ..Function::default()
-        };
-
-        assert_eq!(
-            f.constant_pool,
-            vec![Value::Function(Rc::new(compiled_lambda))]
-        );
-
-        assert_eq!(
-            f.bytecode,
-            vec![OpCode::Const as u8, 0, OpCode::Return as u8,]
-        );
-    }
-
-    #[test]
-    fn lambda_expr_optional_args_test() {
-        // (lambda* (&opt x) ())
-        let params = Params {
-            optional: vec!["x".to_string()],
-            ..Params::default()
-        };
-
-        let ast = Ast::Lambda(params, Box::new(Ast::Const(Value::Nil)));
-        let f = Compiler::new().compile_ast(ast).unwrap();
-
-        let compiled_lambda = Function {
-            bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
-            arity: FunctionArity {
-                optional: 1,
                 ..FunctionArity::default()
             },
             ..Function::default()
@@ -546,13 +512,12 @@ mod tests {
     #[test]
     fn lambda_args_lookup_test() {
         // (lambda* (x y) y)
-        let params = Params {
-            required: vec!["x".to_string(), "y".to_string()],
-            ..Params::default()
+        let ast = Expr::Fn {
+            params: vec!["x".to_string(), "y".to_string()],
+            body: Box::new(Expr::Ident("y".to_string())),
         };
 
-        let ast = Ast::Lambda(params, Box::new(Ast::Symbol("y".to_string())));
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         let compiled_lambda = Function {
             bytecode: vec![OpCode::GetLocal as u8, 1, OpCode::Return as u8],
@@ -570,72 +535,19 @@ mod tests {
     }
 
     #[test]
-    fn lambda_args_optional_lookup_test() {
-        // (lambda* (&opt x) x)
-        let params = Params {
-            optional: vec!["x".to_string()],
-            ..Params::default()
-        };
-
-        let ast = Ast::Lambda(params, Box::new(Ast::Symbol("x".to_string())));
-        let f = Compiler::new().compile_ast(ast).unwrap();
-
-        let compiled_lambda = Function {
-            bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
-            arity: FunctionArity {
-                optional: 1,
-                ..FunctionArity::default()
-            },
-            ..Function::default()
-        };
-
-        assert_eq!(
-            f.constant_pool,
-            vec![Value::Function(Rc::new(compiled_lambda))]
-        );
-    }
-
-    #[test]
-    fn lambda_expr_rest_args_test() {
-        // (lambda* (&rest x) nil)
-        let params = Params {
-            rest: Some("x".to_string()),
-            ..Params::default()
-        };
-
-        let ast = Ast::Lambda(params, Box::new(Ast::Const(Value::Nil)));
-        let f = Compiler::new().compile_ast(ast).unwrap();
-
-        let compiled_lambda = Function {
-            bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
-            arity: FunctionArity {
-                rest: true,
-                ..FunctionArity::default()
-            },
-            ..Function::default()
-        };
-
-        assert_eq!(
-            f.constant_pool,
-            vec![Value::Function(Rc::new(compiled_lambda))]
-        );
-    }
-
-    #[test]
     fn f_call_no_args_test() {
         // (lambda* () 42)
-        let compiled_lambda = Function {
-            bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
-            constant_pool: vec![Value::Int(42)],
-            ..Function::default()
+        let f = Expr::Fn {
+            params: vec![],
+            body: Box::new(42.0.into()),
         };
 
-        let ast = Ast::Call(
-            Box::new(Ast::Const(Value::Function(Rc::new(compiled_lambda)))),
-            vec![],
-        );
+        let ast = Expr::Call {
+            f: Box::new(f),
+            args: vec![],
+        };
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -652,17 +564,17 @@ mod tests {
     #[test]
     fn f_call_test() {
         // let f _ = nil; (f #true)
-        let compiled_lambda = Function {
-            bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
-            ..Function::default()
+        let f = Expr::Fn {
+            params: vec![],
+            body: Box::new(NIL),
         };
 
-        let ast = Ast::Call(
-            Box::new(Ast::Const(Value::Function(Rc::new(compiled_lambda)))),
-            vec![Ast::Const(Value::Bool(true))],
-        );
+        let ast = Expr::Call {
+            f: Box::new(f),
+            args: vec![true.into()],
+        };
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -681,13 +593,13 @@ mod tests {
     fn let_test() {
         // (let1 (x #true) nil)
 
-        let ast = Ast::Let1(
-            "x".to_string(),
-            Box::new(Ast::Const(Value::Bool(true))),
-            Box::new(Ast::Const(Value::Nil)),
-        );
+        let ast = Expr::Let {
+            name: "x".to_string(),
+            value: Box::new(true.into()),
+            body: Box::new(NIL),
+        };
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(f.locals, 1);
 
@@ -709,17 +621,17 @@ mod tests {
         //   (let (y #false)
         //      nil))
 
-        let ast = Ast::Let1(
-            "x".to_string(),
-            Box::new(Ast::Const(Value::Bool(true))),
-            Box::new(Ast::Let1(
-                "y".to_string(),
-                Box::new(Ast::Const(Value::Bool(false))),
-                Box::new(Ast::Const(Value::Nil)),
-            )),
-        );
+        let ast = Expr::Let {
+            name: "x".to_string(),
+            value: Box::new(true.into()),
+            body: Box::new(Expr::Let {
+                name: "y".to_string(),
+                value: Box::new(false.into()),
+                body: Box::new(NIL),
+            }),
+        };
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(f.locals, 2);
 
@@ -742,13 +654,13 @@ mod tests {
     fn local_binding_test() {
         // (let1 (x #true) x)
 
-        let ast = Ast::Let1(
-            "x".to_string(),
-            Box::new(Ast::Const(Value::Bool(true))),
-            Box::new(Ast::Symbol("x".to_string())),
-        );
+        let ast = Expr::Let {
+            name: "x".to_string(),
+            value: Box::new(true.into()),
+            body: Box::new(Expr::Ident("x".to_string())),
+        };
 
-        let f = Compiler::new().compile_ast(ast).unwrap();
+        let f = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             f.bytecode,
@@ -767,16 +679,16 @@ mod tests {
     fn make_closure_test() {
         // (let1 (x #true) (lambda* () x))
 
-        let ast = Ast::Let1(
-            "x".to_string(),
-            Box::new(Ast::Const(Value::Bool(true))),
-            Box::new(Ast::Lambda(
-                Params::default(),
-                Box::new(Ast::Symbol("x".to_string())),
-            )),
-        );
+        let ast = Expr::Let {
+            name: "x".to_string(),
+            value: Box::new(true.into()),
+            body: Box::new(Expr::Fn {
+                params: vec![],
+                body: Box::new(Expr::Ident("x".to_string())),
+            }),
+        };
 
-        let main = Compiler::new().compile_ast(ast).unwrap();
+        let main = Compiler::new().compile_expr(ast).unwrap();
 
         assert_eq!(
             main.bytecode,
@@ -807,16 +719,16 @@ mod tests {
     #[test]
     fn let1_does_not_leak_test() {
         // (do (let1 (x #true) #true) x)
-        let ast = Ast::Do(vec![
-            Ast::Let1(
-                "x".to_string(),
-                Box::new(Ast::Const(Value::Bool(true))),
-                Box::new(Ast::Const(Value::Bool(true))),
-            ),
-            Ast::Symbol("x".to_string()),
+        let ast = do_vec(&[
+            Expr::Let {
+                name: "x".to_string(),
+                value: Box::new(true.into()),
+                body: Box::new(true.into()),
+            },
+            Expr::Ident("x".to_string()),
         ]);
 
-        let result = Compiler::new().compile_ast(ast);
+        let result = Compiler::new().compile_expr(ast);
         assert!(result.is_err(), "{:?} should be Err(_)", result)
     }
 

@@ -477,6 +477,69 @@ mod tests {
 
     #[test]
     fn make_closure_test() {
+        // \x y. x + y
+
+        let ast = Expr::Fn {
+            params: vec!["x".to_string()],
+            body: Box::new(Expr::Fn {
+                params: vec!["y".to_string()],
+                body: Box::new(Expr::Infix(
+                    "+".to_string(),
+                    Box::new(Expr::Ident("x".to_string())),
+                    Box::new(Expr::Ident("y".to_string())),
+                )),
+            }),
+        };
+
+        let main = Compiler::new().compile_expr(ast).unwrap();
+
+        assert_eq!(
+            main.bytecode,
+            vec![OpCode::Const as u8, 0, OpCode::Return as u8],
+            "main bytecode"
+        );
+
+        let Value::Function(outer_function) =  &main.constant_pool[0] else {
+            panic!("expected a fn");
+        };
+
+        assert_eq!(
+            outer_function.bytecode,
+            vec![
+                OpCode::GetLocal as u8,
+                0,
+                OpCode::Const as u8,
+                0,
+                OpCode::MakeClosure as u8,
+                1,
+                OpCode::Return as u8
+            ],
+            "function opcodes"
+        );
+
+        assert_eq!(
+            outer_function.constant_pool[0],
+            Value::Function(Rc::new(Function {
+                arity: FunctionArity {
+                    required: 1,
+                    ..Default::default()
+                },
+                bytecode: vec![
+                    OpCode::GetFree as u8,
+                    0,
+                    OpCode::GetLocal as u8,
+                    0,
+                    OpCode::Add as u8,
+                    OpCode::Return as u8
+                ],
+                ..Default::default()
+            })),
+            "closure opcodes"
+        );
+    }
+
+    #[test]
+    fn make_let_closure_test() {
         // (let1 (x #true) (lambda* () x))
 
         let ast = Expr::Let {

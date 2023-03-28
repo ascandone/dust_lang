@@ -6,21 +6,57 @@ use std::rc::Rc;
 
 #[test]
 fn test_lit() {
-    assert_result("42", Value::Int(42));
+    assert_result("42", 42);
     assert_result("nil", Value::Nil);
-    assert_result("true", Value::Bool(true));
-    assert_result("false", Value::Bool(false));
-    assert_result("\"abc\"", Value::String(Rc::new("abc".to_string())));
+    assert_result("true", true);
+    assert_result("false", false);
+    assert_result("\"abc\"", "abc");
 }
 
 #[test]
 fn test_expr() {
-    assert_result("1 + 2", Value::Int(1 + 2));
-    assert_result("1 + 2 * 4", Value::Int(1 + 2 * 4));
-    assert_result("!(100 + 1 > 3)", Value::Bool(!(100 + 1 > 3)));
+    assert_result("1 + 2", 1 + 2);
+    assert_result("10 - 1", 10 - 1);
+    assert_result("10 * 2", 10 * 2);
+    assert_result("10 / 2", 10 / 2);
+    assert_result("10 % 3", 10 % 3);
+
+    assert_result("10 < 10", 10 < 10);
+    assert_result("10 < 3", 10 < 3);
+    assert_result("10 < 30", 10 < 30);
+
+    assert_result("10 <= 10", 10 <= 10);
+    assert_result("10 <= 3", 10 <= 3);
+    assert_result("10 <= 30", 10 <= 30);
+
+    assert_result("10 > 10", 10 > 10);
+    assert_result("10 > 3", 10 > 3);
+    assert_result("10 > 30", 10 > 30);
+
+    assert_result("10 >= 10", 10 >= 10);
+    assert_result("10 >= 3", 10 >= 3);
+    assert_result("10 >= 30", 10 >= 30);
+
+    assert_result("10 == 10", 10 == 10);
+    assert_result("10 == 3", 10 == 3);
+    assert_result("10 == 30", 10 == 30);
+
+    assert_result("!true", !true);
+    assert_result("!false", !false);
+
+    assert_result("-42", -42);
 }
 
-fn assert_result(src: &str, value: Value) {
+#[test]
+fn test_expr_prec() {
+    assert_result("1 + 2 * 4", 1 + 2 * 4);
+    assert_result("!(100 + 1 > 3)", !(100 + 1 > 3));
+}
+
+fn assert_result<A>(src: &str, expected_value: A)
+where
+    A: Into<Value>,
+{
     let program = parse(src).unwrap();
     let mut compiler = Compiler::default();
     let mut vm = Vm::default();
@@ -31,5 +67,5 @@ fn assert_result(src: &str, value: Value) {
         .run_main(Rc::new(compiled_fn))
         .expect("Error during execution");
 
-    assert_eq!(value, value_result);
+    assert_eq!(expected_value.into(), value_result, "{:?}", src);
 }

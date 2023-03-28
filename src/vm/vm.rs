@@ -252,6 +252,16 @@ impl Vm {
                     _ => None,
                 })?,
 
+                OpCode::Div => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a / b),
+                    _ => None,
+                })?,
+
+                OpCode::Modulo => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a % b),
+                    _ => None,
+                })?,
+
                 OpCode::Sub => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Int(a), Value::Int(b)) => Some(a - b),
                     _ => None,
@@ -286,6 +296,11 @@ impl Vm {
 
                 OpCode::Not => op_1_partial(&mut stack, opcode, |a| match a {
                     Value::Bool(a) => Some(!a),
+                    _ => None,
+                })?,
+
+                OpCode::Negate => op_1_partial(&mut stack, opcode, |a| match a {
+                    Value::Int(a) => Some(-a),
                     _ => None,
                 })?,
             }

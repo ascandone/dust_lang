@@ -21,13 +21,15 @@ pub enum OpCode {
     // Algebraic ops
     Add,
     Sub,
+    Negate,
     Mult,
+    Div,
+    Modulo,
     Gt,
     GtEq,
     Lt,
     LtEq,
-
-    Not,
     Eq,
     NotEq,
+    Not,
 }

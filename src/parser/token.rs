@@ -2,9 +2,6 @@
 pub enum Token {
     Eof,
 
-    /// `=` operator
-    Assign,
-
     /// `+` operator
     Plus,
 
@@ -46,6 +43,9 @@ pub enum Token {
 
     /// `!=` operator
     NotEq,
+
+    /// `=` operator
+    Assign,
 
     /// `(`
     LParen,

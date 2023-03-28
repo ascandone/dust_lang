@@ -11,6 +11,7 @@ use std::rc::Rc;
 fn prefix_to_opcode(op: &str) -> Option<OpCode> {
     match op {
         "!" => Some(OpCode::Not),
+        "-" => Some(OpCode::Negate),
         _ => None,
     }
 }
@@ -21,6 +22,8 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
         "!=" => Some(OpCode::NotEq),
         "+" => Some(OpCode::Add),
         "*" => Some(OpCode::Mult),
+        "/" => Some(OpCode::Div),
+        "%" => Some(OpCode::Modulo),
         "-" => Some(OpCode::Sub),
         ">" => Some(OpCode::Gt),
         ">=" => Some(OpCode::GtEq),

@@ -32,7 +32,6 @@ pub enum Value {
     Int(i64),
     Cons(Rc<Value>, Rc<Value>),
     String(Rc<String>),
-    Symbol(Rc<String>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
 }
@@ -129,7 +128,6 @@ impl Display for Value {
 
             Value::Int(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
-            Value::Symbol(s) => write!(f, "{s}"),
             Value::Function(r) => {
                 let name = match r.name.clone() {
                     Some(n) => n,
@@ -160,10 +158,6 @@ mod test {
         assert_eq!(
             format!("{}", Value::String(Rc::new("abc".to_string()))),
             "\"abc\"".to_string()
-        );
-        assert_eq!(
-            format!("{}", Value::Symbol(Rc::new("abc".to_string()))),
-            "abc".to_string()
         );
 
         assert_eq!(

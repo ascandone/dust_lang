@@ -14,6 +14,7 @@
 * [ ] functions inlining
 
 ### Extra
+* [ ] comments
 * [ ] function name inference
 * [ ] arbitrary infix operators
 * [ ] modules

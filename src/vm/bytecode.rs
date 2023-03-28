@@ -9,6 +9,7 @@ pub enum OpCode {
     Jump,
     JumpIfFalse,
     JumpIfFalseElsePop,
+    JumpIfTrueElsePop,
     SetLocal,
     GetLocal,
     SetGlobal,

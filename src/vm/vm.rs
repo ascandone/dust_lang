@@ -108,6 +108,17 @@ impl Vm {
                     }
                 }
 
+                OpCode::JumpIfTrueElsePop => {
+                    let cond = stack.peek().as_bool();
+                    let index = frame.next_opcode_u16() as usize;
+
+                    if cond {
+                        frame.ip = index;
+                    } else {
+                        stack.pop();
+                    }
+                }
+
                 OpCode::SetGlobal => {
                     let value = stack.pop();
                     let ident = frame.next_opcode_u16() as usize;

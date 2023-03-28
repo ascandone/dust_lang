@@ -160,6 +160,13 @@ impl Compiler {
                 set_big_endian_u16(f, jump_index);
             }
 
+            Expr::Infix(op, left, right) if op == "||" => {
+                self.compile_expr_chunk(f, *left)?;
+                let jump_index = set_jump_placeholder(f, OpCode::JumpIfTrueElsePop);
+                self.compile_expr_chunk(f, *right)?;
+                set_big_endian_u16(f, jump_index);
+            }
+
             Expr::Infix(op, left, right) => match infix_to_opcode(&op) {
                 Some(opcode) => {
                     self.compile_expr_chunk(f, *left)?;

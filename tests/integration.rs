@@ -61,6 +61,14 @@ fn test_and() {
     assert_result("false && false", false);
 }
 
+#[test]
+fn test_or() {
+    assert_result("true || true", true);
+    assert_result("true || false", true);
+    assert_result("false || true", true);
+    assert_result("false || false", false);
+}
+
 fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

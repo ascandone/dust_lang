@@ -131,8 +131,8 @@ mod test {
     fn format_test() {
         assert_eq!(format!("{}", Value::Nil), "nil".to_string());
         assert_eq!(format!("{}", Value::Int(42)), "42".to_string());
-        assert_eq!(format!("{}", Value::Bool(true)), "#true".to_string());
-        assert_eq!(format!("{}", Value::Bool(false)), "#false".to_string());
+        assert_eq!(format!("{}", Value::Bool(true)), "true".to_string());
+        assert_eq!(format!("{}", Value::Bool(false)), "false".to_string());
         assert_eq!(
             format!("{}", Value::String(Rc::new("abc".to_string()))),
             "\"abc\"".to_string()

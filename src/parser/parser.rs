@@ -15,7 +15,7 @@ pub struct Parser<'a> {
     peek_token: Token,
 }
 
-fn token_to_pred(token: &Token) -> u8 {
+fn token_to_pred(token: &Token, inside_block: bool) -> u8 {
     match token {
         Token::Eq | Token::NotEq => 8,
         Token::Less | Token::LessEqual | Token::Greater | Token::GreaterEqual => 9,
@@ -23,7 +23,7 @@ fn token_to_pred(token: &Token) -> u8 {
         Token::Mult => 12,
         Token::LParen => HIGHEST_PREC,
 
-        Token::Semicolon => 1,
+        Token::Semicolon if inside_block => 1,
         _ => 0,
     }
 }
@@ -102,16 +102,21 @@ impl<'a> Parser<'a> {
             )),
         }?;
 
-        while min_prec < token_to_pred(&self.current_token) {
+        loop {
+            let pred = token_to_pred(&self.current_token, inside_block);
+            if min_prec >= pred {
+                break;
+            }
+
             left = match self.current_token {
-                Token::Plus => self.parse_infix(left, "+")?,
-                Token::Mult => self.parse_infix(left, "*")?,
-                Token::Less => self.parse_infix(left, "<")?,
-                Token::LessEqual => self.parse_infix(left, "<=")?,
-                Token::Greater => self.parse_infix(left, ">")?,
-                Token::GreaterEqual => self.parse_infix(left, ">=")?,
-                Token::Eq => self.parse_infix(left, "==")?,
-                Token::NotEq => self.parse_infix(left, "!=")?,
+                Token::Plus => self.parse_infix(left, pred, "+")?,
+                Token::Mult => self.parse_infix(left, pred, "*")?,
+                Token::Less => self.parse_infix(left, pred, "<")?,
+                Token::LessEqual => self.parse_infix(left, pred, "<=")?,
+                Token::Greater => self.parse_infix(left, pred, ">")?,
+                Token::GreaterEqual => self.parse_infix(left, pred, ">=")?,
+                Token::Eq => self.parse_infix(left, pred, "==")?,
+                Token::NotEq => self.parse_infix(left, pred, "!=")?,
 
                 Token::LParen => self.parse_call_expr(left)?,
 
@@ -130,8 +135,12 @@ impl<'a> Parser<'a> {
         Ok(left)
     }
 
-    fn parse_infix(&mut self, left: Expr, operator: &str) -> Result<Expr, ParsingError> {
-        let precedence = token_to_pred(&self.current_token);
+    fn parse_infix(
+        &mut self,
+        left: Expr,
+        precedence: u8,
+        operator: &str,
+    ) -> Result<Expr, ParsingError> {
         self.advance_token();
 
         let right = self.parse_expr(precedence, false)?;

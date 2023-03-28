@@ -1,8 +1,7 @@
-use vm::vm::Vm;
-
 use crate::compiler::compiler::Compiler;
 use crate::parser::parse;
 use std::{env, fs, rc::Rc};
+use vm::vm::Vm;
 
 pub mod ast;
 pub mod compiler;

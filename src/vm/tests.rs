@@ -11,14 +11,14 @@ mod tests {
     #[test]
     fn test_const() {
         let main = Function {
-            constant_pool: vec![Value::Int(42)],
+            constant_pool: vec![Value::Num(42.0)],
             bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
             ..Default::default()
         };
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(42)
+            Value::Num(42.0)
         )
     }
 
@@ -61,7 +61,7 @@ mod tests {
     #[test]
     fn test_pop() {
         let main = Function {
-            constant_pool: vec![Value::Int(10), Value::Int(20)],
+            constant_pool: vec![Value::Num(10.0), Value::Num(20.0)],
             bytecode: vec![
                 OpCode::Const as u8,
                 0,
@@ -75,14 +75,14 @@ mod tests {
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(10)
+            Value::Num(10.0)
         )
     }
 
     #[test]
     fn test_add_nums() {
         let main = Function {
-            constant_pool: vec![Value::Int(10), Value::Int(20)],
+            constant_pool: vec![Value::Num(10.0), Value::Num(20.0)],
             bytecode: vec![
                 OpCode::Const as u8,
                 0,
@@ -96,7 +96,7 @@ mod tests {
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(30)
+            Value::Num(30.0)
         )
     }
 
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn gt_10_20() {
         let main = Function {
-            constant_pool: vec![Value::Int(10), Value::Int(20)],
+            constant_pool: vec![Value::Num(10.0), Value::Num(20.0)],
             bytecode: vec![
                 OpCode::Const as u8,
                 0,
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn gt_20_10() {
         let main = Function {
-            constant_pool: vec![Value::Int(10), Value::Int(20)],
+            constant_pool: vec![Value::Num(10.0), Value::Num(20.0)],
             bytecode: vec![
                 OpCode::Const as u8,
                 1,
@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn test_call_0_args() {
         let always_42_fn = Function {
-            constant_pool: vec![Value::Int(42)],
+            constant_pool: vec![Value::Num(42.0)],
             bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
             ..Default::default()
         };
@@ -295,7 +295,7 @@ mod tests {
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(42)
+            Value::Num(42.0)
         )
     }
 
@@ -306,7 +306,7 @@ mod tests {
                 required: 1,
                 ..FunctionArity::default()
             },
-            constant_pool: vec![Value::Int(1)],
+            constant_pool: vec![Value::Num(1.0)],
             bytecode: vec![
                 OpCode::GetLocal as u8,
                 0,
@@ -319,7 +319,7 @@ mod tests {
         };
 
         let main = Function {
-            constant_pool: vec![Value::Int(42), Value::Function(Rc::new(f))],
+            constant_pool: vec![Value::Num(42.0), Value::Function(Rc::new(f))],
             bytecode: vec![
                 OpCode::Const as u8,
                 0,
@@ -334,7 +334,7 @@ mod tests {
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(43)
+            Value::Num(43.0)
         )
     }
 
@@ -357,7 +357,11 @@ mod tests {
         };
 
         let main = Function {
-            constant_pool: vec![Value::Int(10), Value::Int(20), Value::Function(Rc::new(f))],
+            constant_pool: vec![
+                Value::Num(10.0),
+                Value::Num(20.0),
+                Value::Function(Rc::new(f)),
+            ],
             bytecode: vec![
                 OpCode::Const as u8,
                 0,
@@ -374,7 +378,7 @@ mod tests {
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(30)
+            Value::Num(30.0)
         )
     }
 
@@ -669,7 +673,7 @@ mod tests {
         });
 
         let clo = Rc::new(Closure {
-            free: vec![Value::Int(42), Value::Bool(false)],
+            free: vec![Value::Num(42.0), Value::Bool(false)],
             function: f,
         });
 
@@ -687,7 +691,7 @@ mod tests {
 
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
-            Value::Int(42)
+            Value::Num(42.0)
         );
     }
 }

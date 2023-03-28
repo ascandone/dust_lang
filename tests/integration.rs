@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 #[test]
 fn test_lit() {
-    assert_result("42", 42);
+    assert_result("42", 42.0);
     assert_result("nil", Value::Nil);
     assert_result("true", true);
     assert_result("false", false);

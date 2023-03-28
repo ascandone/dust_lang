@@ -233,7 +233,7 @@ impl Vm {
 
                 // Algebraic/native ops
                 OpCode::Add => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(Value::Int(a + b)),
+                    (Value::Num(a), Value::Num(b)) => Some(Value::Num(a + b)),
                     (Value::String(a), Value::String(b)) => {
                         let mut s = a.to_string();
                         s.push_str(b);
@@ -243,22 +243,22 @@ impl Vm {
                 })?,
 
                 OpCode::Mult => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a * b),
+                    (Value::Num(a), Value::Num(b)) => Some(a * b),
                     _ => None,
                 })?,
 
                 OpCode::Div => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a / b),
+                    (Value::Num(a), Value::Num(b)) => Some(a / b),
                     _ => None,
                 })?,
 
                 OpCode::Modulo => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a % b),
+                    (Value::Num(a), Value::Num(b)) => Some(a % b),
                     _ => None,
                 })?,
 
                 OpCode::Sub => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a - b),
+                    (Value::Num(a), Value::Num(b)) => Some(a - b),
                     _ => None,
                 })?,
 
@@ -266,25 +266,25 @@ impl Vm {
                 OpCode::NotEq => op_2(&mut stack, |a, b| a != b),
 
                 OpCode::Gt => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a > b),
+                    (Value::Num(a), Value::Num(b)) => Some(a > b),
                     (Value::String(a), Value::String(b)) => Some(a > b),
                     _ => None,
                 })?,
 
                 OpCode::GtEq => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a >= b),
+                    (Value::Num(a), Value::Num(b)) => Some(a >= b),
                     (Value::String(a), Value::String(b)) => Some(a >= b),
                     _ => None,
                 })?,
 
                 OpCode::Lt => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a < b),
+                    (Value::Num(a), Value::Num(b)) => Some(a < b),
                     (Value::String(a), Value::String(b)) => Some(a < b),
                     _ => None,
                 })?,
 
                 OpCode::LtEq => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
-                    (Value::Int(a), Value::Int(b)) => Some(a <= b),
+                    (Value::Num(a), Value::Num(b)) => Some(a <= b),
                     (Value::String(a), Value::String(b)) => Some(a <= b),
                     _ => None,
                 })?,
@@ -295,7 +295,7 @@ impl Vm {
                 })?,
 
                 OpCode::Negate => op_1_partial(&mut stack, opcode, |a| match a {
-                    Value::Int(a) => Some(-a),
+                    Value::Num(a) => Some(-a),
                     _ => None,
                 })?,
             }

@@ -8,7 +8,7 @@ pub struct FunctionArity {
 }
 
 /// A compiled function
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct Function {
     pub arity: FunctionArity,
     pub name: Option<String>,
@@ -17,19 +17,19 @@ pub struct Function {
     pub constant_pool: Vec<Value>,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct Closure {
     pub function: Rc<Function>,
     pub free: Vec<Value>,
 }
 
 /// Runtime value representation
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Value {
     #[default]
     Nil,
     Bool(bool),
-    Int(i64),
+    Num(f64),
     Cons(Rc<Value>, Rc<Value>),
     String(Rc<String>),
     Function(Rc<Function>),
@@ -66,9 +66,15 @@ impl From<Vec<Value>> for Value {
     }
 }
 
+impl From<f64> for Value {
+    fn from(value: f64) -> Self {
+        Value::Num(value)
+    }
+}
+
 impl From<i64> for Value {
     fn from(value: i64) -> Self {
-        Value::Int(value)
+        Value::Num(value as f64)
     }
 }
 
@@ -126,7 +132,7 @@ impl Display for Value {
                 }
             }
 
-            Value::Int(n) => write!(f, "{n}"),
+            Value::Num(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
             Value::Function(r) => {
                 let name = match r.name.clone() {
@@ -152,7 +158,7 @@ mod test {
     #[test]
     fn format_test() {
         assert_eq!(format!("{}", Value::Nil), "nil".to_string());
-        assert_eq!(format!("{}", Value::Int(42)), "42".to_string());
+        assert_eq!(format!("{}", Value::Num(42.0)), "42".to_string());
         assert_eq!(format!("{}", Value::Bool(true)), "true".to_string());
         assert_eq!(format!("{}", Value::Bool(false)), "false".to_string());
         assert_eq!(
@@ -163,7 +169,7 @@ mod test {
         assert_eq!(
             format!(
                 "{}",
-                Value::Cons(Rc::new(Value::Int(42)), Rc::new(Value::Nil),)
+                Value::Cons(Rc::new(Value::Num(42.0)), Rc::new(Value::Nil),)
             ),
             "(42)".to_string()
         );
@@ -172,10 +178,10 @@ mod test {
             format!(
                 "{}",
                 Value::Cons(
-                    Rc::new(Value::Int(1)),
+                    Rc::new(Value::Num(1.0)),
                     Rc::new(Value::Cons(
-                        Rc::new(Value::Int(2)),
-                        Rc::new(Value::Cons(Rc::new(Value::Int(3)), Rc::new(Value::Nil)))
+                        Rc::new(Value::Num(2.0)),
+                        Rc::new(Value::Cons(Rc::new(Value::Num(3.0)), Rc::new(Value::Nil)))
                     )),
                 )
             ),

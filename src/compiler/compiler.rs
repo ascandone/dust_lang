@@ -54,7 +54,7 @@ impl Compiler {
             Expr::Lit(Lit::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
             Expr::Lit(Lit::String(s)) => alloc_const(f, Value::String(Rc::new(s))),
             // TODO repo int as f64
-            Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Int(n as i64)),
+            Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
             Expr::Ident(name) => {
                 let lookup = self.symbol_table.resolve(&name);
@@ -316,7 +316,7 @@ mod tests {
         let ast = 42.0.into();
         let f = Compiler::new().compile_expr(ast).unwrap();
 
-        assert_eq!(f.constant_pool[0], Value::Int(42));
+        assert_eq!(f.constant_pool[0], Value::Num(42.0));
 
         assert_eq!(
             f.bytecode,
@@ -447,7 +447,7 @@ mod tests {
 
         let f = Compiler::new().compile_expr(ast).unwrap();
 
-        assert_eq!(f.constant_pool, vec![Value::Int(0), Value::Int(1),]);
+        assert_eq!(f.constant_pool, vec![Value::Num(0.0), Value::Num(1.0),]);
 
         assert_eq!(
             f.bytecode,
@@ -480,7 +480,7 @@ mod tests {
 
         let compiled_lambda = Function {
             bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
-            constant_pool: vec![Value::Int(42)],
+            constant_pool: vec![Value::Num(42.0)],
             ..Function::default()
         };
 

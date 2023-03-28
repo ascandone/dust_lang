@@ -61,6 +61,21 @@ impl<'a> Lexer<'a> {
         Some(&self.input[read_position..self.read_position])
     }
 
+    fn read_string_lit(&mut self) -> String {
+        let read_position = self.read_position;
+
+        loop {
+            let ch = self.next_char().expect("Expected a closing str literal");
+
+            if ch == '"' {
+                break;
+            }
+        }
+
+        let str = &self.input[read_position..self.read_position - 1];
+        str.to_string()
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
@@ -104,6 +119,8 @@ impl<'a> Lexer<'a> {
             ')' => Token::RParen,
             '{' => Token::LBrace,
             '}' => Token::RBrace,
+
+            '"' => Token::String(self.read_string_lit()),
 
             _ => {
                 self.read_position -= 1;
@@ -211,6 +228,12 @@ mod tests {
                 Eq,
             ]
         });
+    }
+
+    #[test]
+    fn str_literal() {
+        assert_tokens("\"\"", &[Token::String("".to_string())]);
+        assert_tokens("\"abc\"", &[Token::String("abc".to_string())]);
     }
 
     #[test]

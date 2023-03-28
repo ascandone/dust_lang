@@ -23,6 +23,12 @@ mod tests {
     }
 
     #[test]
+    fn parse_str() {
+        assert_eq!(parse_expr("\"\"").unwrap(), "".into());
+        assert_eq!(parse_expr("\"abc\"").unwrap(), "abc".into());
+    }
+
+    #[test]
     fn parse_let_decl() {
         assert_eq!(
             parse("let x = nil").unwrap(),

@@ -68,3 +68,9 @@ impl From<f64> for Expr {
         Expr::Lit(Lit::Num(n))
     }
 }
+
+impl From<&str> for Expr {
+    fn from(s: &str) -> Self {
+        Expr::Lit(Lit::String(s.to_string()))
+    }
+}

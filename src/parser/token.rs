@@ -76,4 +76,5 @@ pub enum Token {
 
     Ident(String),
     Num(f64),
+    String(String),
 }

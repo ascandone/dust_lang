@@ -89,6 +89,11 @@ impl Vm {
                     stack.pop();
                 }
 
+                OpCode::Mult => op_2(&mut stack, |a, b| match (a.clone(), b.clone()) {
+                    (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
+                    _ => panic!("Type error in Mult: {a} * {b}"),
+                }),
+
                 OpCode::Add => op_2(&mut stack, |a, b| match (a.clone(), b.clone()) {
                     (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
                     (Value::String(a), Value::String(b)) => {

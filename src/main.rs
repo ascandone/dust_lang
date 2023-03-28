@@ -1,12 +1,7 @@
-use crate::compiler::compiler::Compiler;
-use crate::parser::parse;
+use monkey_lang_rust_interpreter::compiler::compiler::Compiler;
+use monkey_lang_rust_interpreter::parser::parse;
+use monkey_lang_rust_interpreter::vm::vm::Vm;
 use std::{env, fs, rc::Rc};
-use vm::vm::Vm;
-
-pub mod ast;
-pub mod compiler;
-mod parser;
-mod vm;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

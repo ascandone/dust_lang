@@ -19,6 +19,7 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
     match op {
         "==" => Some(OpCode::Eq),
         "+" => Some(OpCode::Add),
+        "*" => Some(OpCode::Mult),
         ">" => Some(OpCode::GreaterThan),
         _ => None,
     }

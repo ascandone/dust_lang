@@ -21,14 +21,7 @@ fn test_expr() {
 }
 
 fn assert_result(src: &str, value: Value) {
-    let program = match parse(src) {
-        Ok(parsed) => parsed,
-        Err(err) => {
-            println!("Parsing error: {:?}", err);
-            return;
-        }
-    };
-
+    let program = parse(src).unwrap();
     let mut compiler = Compiler::default();
     let mut vm = Vm::default();
 

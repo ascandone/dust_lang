@@ -76,6 +76,10 @@ impl<'a> Lexer<'a> {
         str.to_string()
     }
 
+    fn panic_invalid_token(&self) -> ! {
+        panic!("Invalid token: `{:?}`", self.peek_char())
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
@@ -112,13 +116,29 @@ impl<'a> Lexer<'a> {
                     self.next_char();
                     Token::NotEq
                 }
-                _ => Token::Not,
+                _ => Token::Bang,
             },
             ',' => Token::Comma,
             '(' => Token::LParen,
             ')' => Token::RParen,
             '{' => Token::LBrace,
             '}' => Token::RBrace,
+            '/' => Token::Slash,
+            '%' => Token::Percentage,
+            '&' => match self.peek_char() {
+                Some('&') => {
+                    self.next_char();
+                    Token::DoubleAnd
+                }
+                _ => self.panic_invalid_token(),
+            },
+            '|' => match self.peek_char() {
+                Some('|') => {
+                    self.next_char();
+                    Token::DoublePipe
+                }
+                _ => self.panic_invalid_token(),
+            },
 
             '"' => Token::String(self.read_string_lit()),
 
@@ -142,7 +162,7 @@ impl<'a> Lexer<'a> {
                     return Token::Num(n.parse().expect(format!("Invalid parse: `{n}`").as_str()));
                 }
 
-                panic!("Invalid token: `{ch}`")
+                self.panic_invalid_token()
             }
         }
     }
@@ -183,6 +203,7 @@ impl<'a> Iterator for Lexer<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::vm::bytecode::OpCode::Add;
 
     #[test]
     fn single_ch() {
@@ -215,7 +236,7 @@ mod tests {
 
     #[test]
     fn operators() {
-        assert_tokens("< > <= >= - ! != ==", {
+        assert_tokens("< > <= >= - ! != == + * / % && ||", {
             use Token::*;
             &[
                 Less,
@@ -223,9 +244,15 @@ mod tests {
                 LessEqual,
                 GreaterEqual,
                 Minus,
-                Not,
+                Bang,
                 NotEq,
                 Eq,
+                Plus,
+                Mult,
+                Slash,
+                Percentage,
+                DoubleAnd,
+                DoublePipe,
             ]
         });
     }

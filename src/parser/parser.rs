@@ -86,7 +86,7 @@ impl<'a> Parser<'a> {
             Token::String(ref str) => self.consume_expr(Expr::Lit(Lit::String(str.clone()))),
 
             // Prefix
-            Token::Not => self.parse_prefix("!"),
+            Token::Bang => self.parse_prefix("!"),
             Token::Minus => self.parse_prefix("-"),
 
             // Complex expressions

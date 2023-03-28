@@ -14,8 +14,20 @@ pub enum Token {
     /// `*` operator
     Mult,
 
+    /// `/` operator
+    Slash,
+
+    /// `%` operator
+    Percentage,
+
+    /// `&&` operator
+    DoubleAnd,
+
+    /// `||` operator
+    DoublePipe,
+
     /// `!` operator
-    Not,
+    Bang,
 
     /// `<` operator
     Less,

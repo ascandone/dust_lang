@@ -3,6 +3,7 @@ use std::{env, fs};
 
 pub mod ast;
 mod parser;
+mod vm;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

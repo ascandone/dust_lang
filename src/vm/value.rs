@@ -71,8 +71,8 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Nil => write!(f, "nil"),
-            Value::Bool(true) => write!(f, "#true"),
-            Value::Bool(false) => write!(f, "#false"),
+            Value::Bool(true) => write!(f, "true"),
+            Value::Bool(false) => write!(f, "false"),
 
             Value::Cons(hd, tl) => {
                 write!(f, "(")?;

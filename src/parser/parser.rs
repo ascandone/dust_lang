@@ -20,7 +20,9 @@ fn token_to_pred(token: &Token, inside_block: bool) -> u8 {
         Token::Eq | Token::NotEq => 8,
         Token::Less | Token::LessEqual | Token::Greater | Token::GreaterEqual => 9,
         Token::Plus | Token::Minus => 11,
-        Token::Mult => 12,
+        Token::Mult | Token::Slash | Token::Percentage => 12,
+        Token::DoubleAnd => 4,
+        Token::DoublePipe => 3,
         Token::LParen => HIGHEST_PREC,
 
         Token::Semicolon if inside_block => 1,
@@ -111,6 +113,8 @@ impl<'a> Parser<'a> {
 
             left = match self.current_token {
                 Token::Plus => self.parse_infix(left, pred, "+")?,
+                Token::Minus => self.parse_infix(left, pred, "-")?,
+                Token::Slash => self.parse_infix(left, pred, "/")?,
                 Token::Mult => self.parse_infix(left, pred, "*")?,
                 Token::Less => self.parse_infix(left, pred, "<")?,
                 Token::LessEqual => self.parse_infix(left, pred, "<=")?,
@@ -118,6 +122,9 @@ impl<'a> Parser<'a> {
                 Token::GreaterEqual => self.parse_infix(left, pred, ">=")?,
                 Token::Eq => self.parse_infix(left, pred, "==")?,
                 Token::NotEq => self.parse_infix(left, pred, "!=")?,
+                Token::DoubleAnd => self.parse_infix(left, pred, "&&")?,
+                Token::DoublePipe => self.parse_infix(left, pred, "||")?,
+                Token::Percentage => self.parse_infix(left, pred, "%")?,
 
                 Token::LParen => self.parse_call_expr(left)?,
 

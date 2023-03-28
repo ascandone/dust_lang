@@ -89,33 +89,6 @@ impl Vm {
                     stack.pop();
                 }
 
-                OpCode::Mult => op_2(&mut stack, |a, b| match (a.clone(), b.clone()) {
-                    (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
-                    _ => panic!("Type error in Mult: {a} * {b}"),
-                }),
-
-                OpCode::Add => op_2(&mut stack, |a, b| match (a.clone(), b.clone()) {
-                    (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-                    (Value::String(a), Value::String(b)) => {
-                        // TODO optimize
-                        let s: String = a.to_string() + b.to_string().as_str();
-                        Value::String(Rc::new(s))
-                    }
-                    _ => panic!("Type error in Add: {a} + {b}"),
-                }),
-
-                OpCode::Eq => op_2(&mut stack, |a, b| Value::Bool(a == b)),
-
-                OpCode::GreaterThan => op_2(&mut stack, |a, b| match (a.clone(), b.clone()) {
-                    (Value::Int(a), Value::Int(b)) => Value::Bool(a > b),
-                    _ => panic!("Type error in GreatherThan: {a} > {b} @ {:?}", frame.ip - 1),
-                }),
-
-                OpCode::Not => op_1(&mut stack, |a| match a {
-                    Value::Bool(a) => Value::Bool(!a),
-                    _ => panic!("Type error"),
-                }),
-
                 OpCode::Jump => {
                     let index = frame.next_opcode_u16() as usize;
                     frame.ip = index;
@@ -262,26 +235,103 @@ impl Vm {
                         base_pointer,
                     };
                 }
+
+                // Algebraic/native ops
+                OpCode::Add => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(Value::Int(a + b)),
+                    (Value::String(a), Value::String(b)) => {
+                        let mut s = a.to_string();
+                        s.push_str(b);
+                        Some(Value::String(Rc::new(s)))
+                    }
+                    _ => None,
+                })?,
+
+                OpCode::Mult => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a * b),
+                    _ => None,
+                })?,
+
+                OpCode::Sub => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a - b),
+                    _ => None,
+                })?,
+
+                OpCode::Eq => op_2(&mut stack, |a, b| a == b),
+                OpCode::NotEq => op_2(&mut stack, |a, b| a != b),
+
+                OpCode::Gt => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a > b),
+                    (Value::String(a), Value::String(b)) => Some(a > b),
+                    _ => None,
+                })?,
+
+                OpCode::GtEq => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a >= b),
+                    (Value::String(a), Value::String(b)) => Some(a >= b),
+                    _ => None,
+                })?,
+
+                OpCode::Lt => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a < b),
+                    (Value::String(a), Value::String(b)) => Some(a < b),
+                    _ => None,
+                })?,
+
+                OpCode::LtEq => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
+                    (Value::Int(a), Value::Int(b)) => Some(a <= b),
+                    (Value::String(a), Value::String(b)) => Some(a <= b),
+                    _ => None,
+                })?,
+
+                OpCode::Not => op_1_partial(&mut stack, opcode, |a| match a {
+                    Value::Bool(a) => Some(!a),
+                    _ => None,
+                })?,
             }
         }
     }
 }
 
-fn op_1<F>(stack: &mut Stack<Value>, f: F)
+fn op_1_partial<F, R>(stack: &mut Stack<Value>, opcode: OpCode, f: F) -> Result<(), String>
 where
-    F: Fn(Value) -> Value,
+    F: Fn(&Value) -> Option<R>,
+    R: Into<Value>,
 {
     let a = stack.pop();
-    let result = f(a);
-    stack.push(result);
+
+    match f(&a) {
+        Some(result) => {
+            stack.push(result.into());
+            Ok(())
+        }
+        None => Err(format!("Type error for {:?} {:?}", opcode, a)),
+    }
 }
 
-fn op_2<F>(stack: &mut Stack<Value>, f: F)
+fn op_2<F, R>(stack: &mut Stack<Value>, f: F)
 where
-    F: Fn(Value, Value) -> Value,
+    F: Fn(&Value, &Value) -> R,
+    R: Into<Value>,
 {
     let b = stack.pop();
     let a = stack.pop();
-    let result = f(a, b);
-    stack.push(result);
+    let result = f(&a, &b);
+    stack.push(result.into());
+}
+
+fn op_2_partial<F, R>(stack: &mut Stack<Value>, opcode: OpCode, f: F) -> Result<(), String>
+where
+    F: Fn(&Value, &Value) -> Option<R>,
+    R: Into<Value>,
+{
+    let b = stack.pop();
+    let a = stack.pop();
+    match f(&a, &b) {
+        Some(result) => {
+            stack.push(result.into());
+            Ok(())
+        }
+        None => Err(format!("Type error for {:?} {:?} {:?}", opcode, a, b)),
+    }
 }

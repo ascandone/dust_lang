@@ -203,7 +203,6 @@ impl<'a> Iterator for Lexer<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vm::bytecode::OpCode::Add;
 
     #[test]
     fn single_ch() {

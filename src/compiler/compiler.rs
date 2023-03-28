@@ -18,9 +18,15 @@ fn prefix_to_opcode(op: &str) -> Option<OpCode> {
 fn infix_to_opcode(op: &str) -> Option<OpCode> {
     match op {
         "==" => Some(OpCode::Eq),
+        "!=" => Some(OpCode::NotEq),
         "+" => Some(OpCode::Add),
         "*" => Some(OpCode::Mult),
-        ">" => Some(OpCode::GreaterThan),
+        "-" => Some(OpCode::Sub),
+        ">" => Some(OpCode::Gt),
+        ">=" => Some(OpCode::GtEq),
+        "<" => Some(OpCode::Lt),
+        "<=" => Some(OpCode::LtEq),
+
         _ => None,
     }
 }

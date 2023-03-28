@@ -20,8 +20,14 @@ pub enum OpCode {
 
     // Algebraic ops
     Add,
+    Sub,
     Mult,
-    GreaterThan,
+    Gt,
+    GtEq,
+    Lt,
+    LtEq,
+
     Not,
     Eq,
+    NotEq,
 }

@@ -133,7 +133,7 @@ mod tests {
                 0,
                 OpCode::Const as u8,
                 1,
-                OpCode::GreaterThan as u8,
+                OpCode::Gt as u8,
                 OpCode::Return as u8,
             ],
             ..Default::default()
@@ -154,7 +154,7 @@ mod tests {
                 1,
                 OpCode::Const as u8,
                 0,
-                OpCode::GreaterThan as u8,
+                OpCode::Gt as u8,
                 OpCode::Return as u8,
             ],
             ..Default::default()

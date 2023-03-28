@@ -71,13 +71,8 @@ impl Vm {
             match opcode {
                 OpCode::Const => {
                     let index = frame.next_opcode();
-                    let value = frame
-                        .closure
-                        .function
-                        .constant_pool
-                        .get(index as usize)
-                        .unwrap()
-                        .clone();
+                    let constant_pool = &frame.closure.function.constant_pool;
+                    let value = constant_pool.get(index as usize).unwrap().clone();
                     stack.push(value)
                 }
 

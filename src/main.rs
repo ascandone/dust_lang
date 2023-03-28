@@ -31,10 +31,7 @@ fn main() {
 
     let mut compiler = Compiler::new();
 
-    let Ok(compiled_fn) = compiler.compile_program(program) else {
-        println!("Cannot read file");
-        return;
-    };
+    let compiled_fn = compiler.compile_program(program).unwrap();
 
     let mut vm = Vm::default();
 

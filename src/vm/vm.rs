@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::mem::transmute;
 use std::rc::Rc;
 

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{borrow::Borrow, fmt::Display, rc::Rc};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]

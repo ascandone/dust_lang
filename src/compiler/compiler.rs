@@ -1,7 +1,3 @@
-#![allow(dead_code)]
-
-use std::rc::Rc;
-
 use super::symbol_table::{Scope, SymbolTable};
 use crate::{
     ast::{Expr, Lit, Program, Statement},
@@ -10,6 +6,23 @@ use crate::{
         value::{Function, FunctionArity, Value},
     },
 };
+use std::rc::Rc;
+
+fn prefix_to_opcode(op: &str) -> Option<OpCode> {
+    match op {
+        "!" => Some(OpCode::Not),
+        _ => None,
+    }
+}
+
+fn infix_to_opcode(op: &str) -> Option<OpCode> {
+    match op {
+        "==" => Some(OpCode::Eq),
+        "+" => Some(OpCode::Add),
+        ">" => Some(OpCode::GreaterThan),
+        _ => None,
+    }
+}
 
 #[derive(Default)]
 pub struct Compiler {
@@ -122,8 +135,22 @@ impl Compiler {
                 self.compile_expr_chunk(f, *right)?;
             }
 
-            Expr::Prefix(_, _) => todo!("PREFIX op"),
-            Expr::Infix(_, _, _) => todo!("INFIX op"),
+            Expr::Prefix(op, value) => match prefix_to_opcode(&op) {
+                Some(opcode) => {
+                    self.compile_expr_chunk(f, *value)?;
+                    f.bytecode.push(opcode as u8);
+                }
+                None => return Err(format!("Invalid prefix op: {op}")),
+            },
+
+            Expr::Infix(op, left, right) => match infix_to_opcode(&op) {
+                Some(opcode) => {
+                    self.compile_expr_chunk(f, *right)?;
+                    self.compile_expr_chunk(f, *left)?;
+                    f.bytecode.push(opcode as u8);
+                }
+                None => return Err(format!("Invalid infix op: {op}")),
+            },
         };
 
         Ok(())
@@ -165,7 +192,7 @@ impl Compiler {
         Ok(f)
     }
 
-    fn compile_expr(&mut self, expr: Expr) -> Result<Function, String> {
+    pub fn compile_expr(&mut self, expr: Expr) -> Result<Function, String> {
         self.compile_program(vec![Statement::Expr(expr)])
     }
 }

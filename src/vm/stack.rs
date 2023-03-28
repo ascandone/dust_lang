@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::fmt::{Debug, Formatter};
 
 pub struct Stack<T> {

@@ -53,6 +53,14 @@ fn test_expr_prec() {
     assert_result("!(100 + 1 > 3)", !(100 + 1 > 3));
 }
 
+#[test]
+fn test_and() {
+    assert_result("true && true", true);
+    assert_result("true && false", false);
+    assert_result("false && true", false);
+    assert_result("false && false", false);
+}
+
 fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,
@@ -67,5 +75,5 @@ where
         .run_main(Rc::new(compiled_fn))
         .expect("Error during execution");
 
-    assert_eq!(expected_value.into(), value_result, "{:?}", src);
+    assert_eq!(value_result, expected_value.into(), "{:?}", src);
 }

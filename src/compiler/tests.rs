@@ -172,6 +172,31 @@ mod tests {
     }
 
     #[test]
+    fn and_test() {
+        let ast = Expr::Infix(
+            "&&".to_string(),
+            Box::new(true.into()),
+            Box::new(false.into()),
+        );
+
+        let f = Compiler::new().compile_expr(ast).unwrap();
+
+        assert_eq!(
+            f.bytecode,
+            vec![
+                // left
+                /*  0 */ OpCode::ConstTrue as u8,
+                /*  1 */ OpCode::JumpIfFalseElsePop as u8,
+                /*  2 */ 0,
+                /*  3 */ 5,
+                // right
+                /*  4 */ OpCode::ConstFalse as u8,
+                /* 11 */ OpCode::Return as u8, // <-
+            ]
+        );
+    }
+
+    #[test]
     fn if_expr_test() {
         let ast = Expr::If {
             condition: Box::new(true.into()),

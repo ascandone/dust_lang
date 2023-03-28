@@ -229,6 +229,45 @@ mod tests {
     }
 
     #[test]
+    fn test_jump_if_false_else_pop_when_false() {
+        let main = Function {
+            bytecode: vec![
+                /* 0 */ OpCode::ConstFalse as u8,
+                /* 1 */ OpCode::JumpIfFalseElsePop as u8,
+                /* 2 */ 0,
+                /* 3 */ 6,
+                /* 4 */ OpCode::ConstNil as u8,
+                /* 5 */ OpCode::Return as u8,
+                /* 6 */ OpCode::Return as u8, // <-
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Vm::default().run_main(Rc::new(main)).unwrap(),
+            Value::Bool(false)
+        )
+    }
+
+    #[test]
+    fn test_jump_if_false_else_pop_when_true() {
+        let main = Function {
+            bytecode: vec![
+                /* 0 */ OpCode::ConstTrue as u8,
+                /* 1 */ OpCode::JumpIfFalseElsePop as u8,
+                /* 2 */ 0,
+                /* 3 */ 6,
+                /* 4 */ OpCode::ConstNil as u8,
+                /* 5 */ OpCode::Return as u8,
+                /* 6 */ OpCode::Return as u8, // <-
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil)
+    }
+
+    #[test]
     fn test_write_read_globals() {
         let main = Function {
             bytecode: vec![

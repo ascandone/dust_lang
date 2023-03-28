@@ -75,12 +75,12 @@ impl Compiler {
                 let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
 
                 // TODO throw on overflow
-                set_big_endian_u16(f, first_jump_index, f.bytecode.len() as u16);
+                set_big_endian_u16(f, first_jump_index);
 
                 self.compile_expr_chunk(f, *else_branch)?;
 
                 // TODO throw on overflow
-                set_big_endian_u16(f, second_jump_index, f.bytecode.len() as u16);
+                set_big_endian_u16(f, second_jump_index);
             }
 
             Expr::Fn { params, body } => {
@@ -152,6 +152,13 @@ impl Compiler {
                 }
                 None => return Err(format!("Invalid prefix op: {op}")),
             },
+
+            Expr::Infix(op, left, right) if op == "&&" => {
+                self.compile_expr_chunk(f, *left)?;
+                let jump_index = set_jump_placeholder(f, OpCode::JumpIfFalseElsePop);
+                self.compile_expr_chunk(f, *right)?;
+                set_big_endian_u16(f, jump_index);
+            }
 
             Expr::Infix(op, left, right) => match infix_to_opcode(&op) {
                 Some(opcode) => {
@@ -257,7 +264,8 @@ pub fn push_big_endian_u16(f: &mut Function, value: u16) {
     f.bytecode.push(lsb);
 }
 
-pub fn set_big_endian_u16(f: &mut Function, index: usize, value: u16) {
+pub fn set_big_endian_u16(f: &mut Function, index: usize) {
+    let value = f.bytecode.len() as u16;
     let (msb, lsb) = to_big_endian_u16(value);
 
     f.bytecode[index] = msb;

@@ -28,6 +28,10 @@ impl<T> Stack<T> {
         self.items.pop().unwrap()
     }
 
+    pub fn peek(&self) -> &T {
+        self.items.last().unwrap()
+    }
+
     pub fn get(&self, index: usize) -> &T {
         self.items.get(index).unwrap()
     }
@@ -53,6 +57,7 @@ mod tests {
         stack.push('b');
         stack.push('c');
 
+        assert_eq!(stack.peek(), &'c');
         assert_eq!(stack.pop(), 'c');
         assert_eq!(stack.pop(), 'b');
         assert_eq!(stack.pop(), 'a');

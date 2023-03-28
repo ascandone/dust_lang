@@ -1,11 +1,10 @@
-use std::mem::transmute;
-use std::rc::Rc;
-
 use super::{
     bytecode::OpCode,
     stack::Stack,
     value::{Closure, Function, Value},
 };
+use std::mem::transmute;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 struct Frame {
@@ -95,6 +94,17 @@ impl Vm {
 
                     if !cond {
                         frame.ip = index;
+                    }
+                }
+
+                OpCode::JumpIfFalseElsePop => {
+                    let cond = stack.peek().as_bool();
+                    let index = frame.next_opcode_u16() as usize;
+
+                    if !cond {
+                        frame.ip = index;
+                    } else {
+                        stack.pop();
                     }
                 }
 

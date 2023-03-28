@@ -69,6 +69,42 @@ fn test_or() {
     assert_result("false || false", false);
 }
 
+#[test]
+fn test_let_statement() {
+    assert_result("let x = 42; x", 42);
+    assert_result("let z = 0; let x = 42; x", 42);
+    assert_result("let z = 0; let x = 42; z", 0);
+    assert_result("let x = 0; let x = 42; x", 42);
+}
+
+#[test]
+fn test_let_expr() {
+    assert_result("{let x = 42; x}", 42);
+    assert_result("{let z = 0; let x = 42; x}", 42);
+    assert_result("{let z = 0; let x = 42; z}", 0);
+    assert_result("{let x = 0; let x = 42; x}", 42);
+    assert_result("{let x = 1; let y = 2; x + y}", 3);
+}
+
+#[test]
+fn test_call_no_args() {
+    assert_result("(fn { 42 })()", 42);
+}
+
+#[test]
+fn test_call_close() {
+    assert_result("(fn x { x })(42)", 42);
+    assert_result("(fn x, y { x })(0, 1)", 0);
+    assert_result("(fn x, y { y })(0, 1)", 1);
+    assert_result("(fn x, x { x })(0, 1)", 1);
+}
+
+#[test]
+fn test_call_with_let() {
+    assert_result("(fn arg { let x = 0; x })(1)", 0);
+    assert_result("(fn arg { let x = arg; x })(1)", 1);
+}
+
 fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

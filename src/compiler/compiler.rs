@@ -145,8 +145,8 @@ impl Compiler {
 
             Expr::Infix(op, left, right) => match infix_to_opcode(&op) {
                 Some(opcode) => {
-                    self.compile_expr_chunk(f, *right)?;
                     self.compile_expr_chunk(f, *left)?;
+                    self.compile_expr_chunk(f, *right)?;
                     f.bytecode.push(opcode as u8);
                 }
                 None => return Err(format!("Invalid infix op: {op}")),

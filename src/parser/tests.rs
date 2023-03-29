@@ -222,6 +222,22 @@ mod tests {
     }
 
     #[test]
+    fn parse_nested_if_sugar() {
+        assert_eq!(
+            parse_expr("if true { 0 } else if false { 1 } else { 2 }").unwrap(),
+            Expr::If {
+                condition: Box::new(true.into()),
+                if_branch: Box::new(0.0.into()),
+                else_branch: Box::new(Expr::If {
+                    condition: Box::new(false.into()),
+                    if_branch: Box::new(1.0.into()),
+                    else_branch: Box::new(2.0.into())
+                })
+            }
+        );
+    }
+
+    #[test]
     fn parse_let_inside_if() {
         assert_eq!(
             parse_expr("if true { let x = 0; 100 } else { 1 }").unwrap(),

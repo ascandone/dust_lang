@@ -7,7 +7,7 @@
 
 ### Syntax sugar
 * [ ] `a |> f(x, y)` as sugar for `f(a, x, y)`
-* [ ] `if b {x} else if b1 {y} else {z}` as sugar for `if b {x} else {if b1 {y} else {z}}`
+* [X] `if b {x} else if b1 {y} else {z}` as sugar for `if b {x} else {if b1 {y} else {z}}`
 * [ ] `if b {x}` as sugar for `if b {x} else {nil}`
 * [ ] `let x = value \n 0` as sugar for `let x = value; 0`
 * [ ] `a + b` as sugar for `intrinsic.add(1, 2)`

@@ -295,16 +295,25 @@ impl<'a> Parser<'a> {
 
         self.expect_token(Token::RBrace)?;
         self.expect_token(Token::Else)?;
-        self.expect_token(Token::LBrace)?;
 
-        let else_branch = self.parse_expr(LOWEST_PREC, true)?;
+        if self.maybe_token(Token::LBrace) {
+            let else_branch = self.parse_expr(LOWEST_PREC, true)?;
 
-        self.expect_token(Token::RBrace)?;
-        Ok(Expr::If {
-            condition: Box::new(condition),
-            if_branch: Box::new(if_branch),
-            else_branch: Box::new(else_branch),
-        })
+            self.expect_token(Token::RBrace)?;
+            Ok(Expr::If {
+                condition: Box::new(condition),
+                if_branch: Box::new(if_branch),
+                else_branch: Box::new(else_branch),
+            })
+        } else {
+            let nested_expr = self.parse_if_expr()?;
+
+            Ok(Expr::If {
+                condition: Box::new(condition),
+                if_branch: Box::new(if_branch),
+                else_branch: Box::new(nested_expr),
+            })
+        }
     }
 
     fn parse_block_expr(&mut self) -> Result<Expr, ParsingError> {
@@ -329,6 +338,15 @@ impl<'a> Parser<'a> {
                 self.current_token.clone(),
                 format!("Expected a {:?} token", expected_token),
             ))
+        }
+    }
+
+    fn maybe_token(&mut self, expected_token: Token) -> bool {
+        if &self.current_token == &expected_token {
+            self.advance_token();
+            true
+        } else {
+            false
         }
     }
 }

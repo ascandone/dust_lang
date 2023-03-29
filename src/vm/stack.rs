@@ -33,7 +33,7 @@ impl<T> Stack<T> {
     }
 
     pub fn get(&self, index: usize) -> &T {
-        self.items.get(index).unwrap()
+        &self.items[index]
     }
 
     pub fn set(&mut self, x: T, index: usize) {

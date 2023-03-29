@@ -48,7 +48,7 @@ impl Vm {
         function: Rc<Function>,
         _args: &[Value],
     ) -> Result<Value, String> {
-        let mut frames = vec![];
+        let mut frames: Vec<Frame> = vec![];
 
         let mut frame = Frame {
             closure: Rc::new(Closure {
@@ -71,8 +71,8 @@ impl Vm {
                 OpCode::Const => {
                     let index = frame.next_opcode();
                     let constant_pool = &frame.closure.function.constant_pool;
-                    let value = constant_pool.get(index as usize).unwrap().clone();
-                    stack.push(value)
+                    let value = &constant_pool[index as usize];
+                    stack.push(value.clone())
                 }
 
                 OpCode::ConstNil => stack.push(Value::Nil),
@@ -140,20 +140,26 @@ impl Vm {
 
                 OpCode::GetLocal => {
                     let ident = frame.next_opcode() as usize;
-                    let value = stack.get(frame.base_pointer + ident).clone();
-                    stack.push(value);
+                    let value = stack.get(frame.base_pointer + ident);
+                    stack.push(value.clone());
                 }
 
                 OpCode::Return => match frames.pop() {
                     None => return Ok(stack.pop()),
                     Some(parent_frame) => {
+                        let ret_value = stack.pop();
+                        let num_locals = stack.len() - parent_frame.base_pointer;
+                        for _ in 1..num_locals {
+                            stack.pop();
+                        }
+                        stack.push(ret_value);
                         frame = parent_frame;
                     }
                 },
 
                 OpCode::GetFree => {
                     let index = frame.next_opcode() as usize;
-                    let value = frame.closure.free.get(index).unwrap();
+                    let value = &frame.closure.free[index];
                     stack.push(value.clone());
                 }
 
@@ -187,62 +193,21 @@ impl Vm {
                             free: vec![],
                         }),
                         Value::Closure(clo) => clo,
-                        _ => return Err("Expected a callable object.".to_string()),
+                        x => return Err(format!("Expected a callable object (got {x} instead)")),
                     };
+                    let function = &closure.function;
+                    if passed_args_number != function.arity.required {
+                        return Err(format!(
+                            "Invalid args number passed: expected at {:?}, got {:?} instead",
+                            function.arity.required, passed_args_number
+                        ));
+                    }
+
                     let base_pointer = stack.len() - passed_args_number as usize;
 
-                    let function = &closure.function;
-
-                    // ---- starting args validation+allocation
-
-                    // TODO refactor 'sto schifo
-                    let min_args = function.arity.required;
-                    if passed_args_number < min_args {
-                        let err_msg = format!(
-                            "Too few args passed: expected at least {min_args}, passed {passed_args_number}",
-                        );
-                        return Err(err_msg);
-                    }
-
-                    if !function.arity.rest {
-                        let max_args = function.arity.required + function.arity.optional;
-                        if passed_args_number > max_args {
-                            let err_msg = format!(
-                                "Too many args passed: expected at most {max_args}, passed {passed_args_number}"
-                            );
-                            return Err(err_msg);
-                        }
-                    }
-
-                    let missing_optional_args = function.arity.required as i16
-                        + function.arity.optional as i16
-                        - passed_args_number as i16;
-
-                    for _ in 0..missing_optional_args {
-                        stack.push(Value::default())
-                    }
-
-                    if function.arity.rest {
-                        let rest_args_given = passed_args_number as i16
-                            - (function.arity.required as i16)
-                            - (function.arity.optional as i16);
-
-                        let mut v = vec![];
-                        for _ in 0..rest_args_given {
-                            let value = stack.pop();
-                            v.push(value);
-                        }
-                        v.reverse();
-
-                        stack.push(v.into());
-                    }
-                    // ---- finished args validation+allocation
-
-                    // ---- starting locals allocation
                     for _ in 0..function.locals {
                         stack.push(Default::default())
                     }
-                    // ---- finished locals allocation
 
                     frames.push(frame);
                     frame = Frame {

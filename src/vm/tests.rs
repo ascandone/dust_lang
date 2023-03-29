@@ -461,6 +461,52 @@ mod tests {
     }
 
     #[test]
+    fn test_call_nested() {
+        // ((\x y.y) true) false
+        // ?=> false
+
+        let nested = Value::Function(Rc::new(Function {
+            arity: FunctionArity {
+                required: 1,
+                ..FunctionArity::default()
+            },
+            bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
+            ..Default::default()
+        }));
+
+        let f = Function {
+            arity: FunctionArity {
+                required: 1,
+                ..FunctionArity::default()
+            },
+            constant_pool: vec![nested],
+            bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
+            ..Default::default()
+        };
+
+        let main = Function {
+            constant_pool: vec![Value::Function(Rc::new(f))],
+            bytecode: vec![
+                OpCode::ConstFalse as u8,
+                OpCode::ConstTrue as u8,
+                OpCode::Const as u8,
+                0,
+                OpCode::Call as u8,
+                1,
+                OpCode::Call as u8,
+                1,
+                OpCode::Return as u8,
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Vm::default().run_main(Rc::new(main)).unwrap(),
+            Value::Bool(false)
+        )
+    }
+
+    #[test]
     fn call_1_arg_and_return_local_test() {
         // fn(x) { let y = true; y }
         let f = Function {
@@ -592,95 +638,6 @@ mod tests {
         };
 
         assert!(Vm::default().run_main(Rc::new(main)).is_err(),);
-    }
-
-    #[test]
-    fn call_optional_arg_not_given_test() {
-        let f = Function {
-            arity: FunctionArity {
-                optional: 1,
-                ..FunctionArity::default()
-            },
-            bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
-            ..Default::default()
-        };
-
-        let main = Function {
-            constant_pool: vec![Value::Function(Rc::new(f))],
-            bytecode: vec![
-                OpCode::Const as u8,
-                0,
-                OpCode::Call as u8,
-                0,
-                OpCode::Return as u8,
-            ],
-            ..Default::default()
-        };
-
-        assert_eq!(Vm::default().run_main(Rc::new(main)), Ok(Value::Nil));
-    }
-
-    #[test]
-    fn call_optional_arg_test() {
-        let f = Function {
-            arity: FunctionArity {
-                optional: 1,
-                ..FunctionArity::default()
-            },
-            bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
-            ..Default::default()
-        };
-
-        let main = Function {
-            constant_pool: vec![Value::Function(Rc::new(f))],
-            bytecode: vec![
-                OpCode::ConstTrue as u8,
-                OpCode::Const as u8,
-                0,
-                OpCode::Call as u8,
-                1,
-                OpCode::Return as u8,
-            ],
-            ..Default::default()
-        };
-
-        assert_eq!(Vm::default().run_main(Rc::new(main)), Ok(Value::Bool(true)));
-    }
-
-    #[test]
-    fn call_rest_args_test() {
-        let f = Function {
-            arity: FunctionArity {
-                rest: true,
-                ..FunctionArity::default()
-            },
-            bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
-            ..Default::default()
-        };
-
-        let main = Function {
-            constant_pool: vec![Value::Function(Rc::new(f))],
-            bytecode: vec![
-                OpCode::ConstTrue as u8,
-                OpCode::ConstFalse as u8,
-                OpCode::Const as u8,
-                0,
-                OpCode::Call as u8,
-                2,
-                OpCode::Return as u8,
-            ],
-            ..Default::default()
-        };
-
-        let out = Value::Cons(
-            Rc::new(Value::Bool(true)),
-            Rc::new(Value::Cons(
-                Rc::new(Value::Bool(false)),
-                Rc::new(Value::Nil),
-            )),
-        );
-
-        assert_eq!(Vm::default().run_main(Rc::new(main)), Ok(out));
     }
 
     #[test]

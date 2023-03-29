@@ -105,7 +105,6 @@ fn test_call_with_let() {
     assert_result("(fn arg { let x = arg; x })(1)", 1);
 }
 
-#[ignore]
 #[test]
 fn test_closure() {
     assert_result("(fn x { fn y { x } })(1)(2)", 1);

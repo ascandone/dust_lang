@@ -126,7 +126,6 @@ let double = fn x { x * 2 };
     );
 }
 
-#[ignore]
 #[test]
 fn toplevel_recursion() {
     assert_result(

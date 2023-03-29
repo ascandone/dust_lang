@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use crate::ast::Expr::Ident;
     use crate::{
         ast::{Expr, Statement, NIL},
         compiler::compiler::{to_big_endian_u16, Compiler},
@@ -657,6 +658,27 @@ mod tests {
                 ..Default::default()
             }))
         )
+    }
+
+    #[test]
+    fn get_current_closure_test() {
+        // let f = fn { f }
+
+        let ast = Statement::Let {
+            name: "f".to_string(),
+            value: Expr::Fn {
+                params: vec![],
+                body: Box::new(Ident("f".to_string())),
+            },
+        };
+
+        let main = Compiler::new().compile_program(vec![ast]).unwrap();
+        let f = &main.constant_pool[0].as_fn();
+
+        assert_eq!(
+            f.bytecode,
+            vec![OpCode::GetCurrentClosure as u8, OpCode::Return as u8]
+        );
     }
 
     #[test]

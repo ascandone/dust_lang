@@ -123,7 +123,14 @@ impl<'a> Lexer<'a> {
             ')' => Token::RParen,
             '{' => Token::LBrace,
             '}' => Token::RBrace,
-            '/' => Token::Slash,
+            '/' => match self.peek_char() {
+                Some('/') => {
+                    self.next_char();
+                    self.consume_while(|c| c != '\n');
+                    self.next_token()
+                }
+                _ => Token::Slash,
+            },
             '%' => Token::Percentage,
             '&' => match self.peek_char() {
                 Some('&') => {
@@ -320,6 +327,16 @@ mod tests {
                 Ident("b".to_string()),
                 RBrace,
             ]
+        });
+    }
+
+    #[test]
+    fn comment() {
+        let src = "if // comment until end of line \n else";
+
+        assert_tokens(src, {
+            use Token::*;
+            &[If, Else]
         });
     }
 

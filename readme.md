@@ -18,7 +18,7 @@
 * [ ] functions inlining
 
 ### Extra
-* [ ] comments
+* [x] comments
 * [ ] better str parsing
 * [ ] function name inference
 * [ ] arbitrary infix operators

@@ -2,7 +2,7 @@
 
 ### Core semantics
 * [x] MEDIUM logic and/or
-* [ ] MEDIUM recursion
+* [x] MEDIUM recursion
 * [ ] MEDIUM native functions
 
 ### Syntax sugar
@@ -13,7 +13,7 @@
 * [ ] EASY `if b {x}` as sugar for `if b {x} else {nil}`
 
 ### Perf opt
-* [ ] MEDIUM TCO (depends on recursive bindings)
+* [ ] MEDIUM TCO
 * [ ] EASY constant folding (depends on AST-CST splitting)
 * [ ] MEDIUM functions inlining
 * [ ] HARD better GC

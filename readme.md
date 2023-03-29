@@ -9,7 +9,7 @@
 * [X] EASY `a |> f(x, y)` as sugar for `f(a, x, y)`
 * [X] EASY `if b {x} else if b1 {y} else {z}` as sugar for `if b {x} else {if b1 {y} else {z}}`
 * [ ] ?MEDIUM `let x = value \n 0` as sugar for `let x = value; 0`
-* [ ] EASY `a + b` as sugar for `intrinsic.add(1, 2)` (depends on AST-CST splitting)
+* [ ] EASY `a + b` as sugar for `intrinsic.add(1, 2)` (depends on AST-CST splitting + native functions + fn inlining)
 * [ ] EASY `if b {x}` as sugar for `if b {x} else {nil}`
 
 ### Perf opt

@@ -1,7 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-
     use crate::{
         ast::{Expr, Statement, NIL},
         compiler::compiler::{to_big_endian_u16, Compiler},
@@ -10,6 +8,7 @@ mod tests {
             value::{Function, FunctionArity, Value},
         },
     };
+    use std::rc::Rc;
 
     #[test]
     fn const_true_test() {
@@ -277,6 +276,43 @@ mod tests {
             f.bytecode,
             vec![OpCode::Const as u8, 0, OpCode::Return as u8,]
         );
+    }
+
+    #[test]
+    fn infer_lambda_name_from_let_expr() {
+        // { let f = fn {nil}; nil }
+        let ast = Expr::Let {
+            name: "f".to_string(),
+            value: Box::new(Expr::Fn {
+                params: vec![],
+                body: Box::new(NIL),
+            }),
+            body: Box::new(NIL),
+        };
+
+        let main = Compiler::new().compile_expr(ast).unwrap();
+
+        let f = &main.constant_pool[0].as_fn();
+
+        assert_eq!(f.name, Some("f".to_string()));
+    }
+
+    #[test]
+    fn infer_lambda_name_from_let_statement() {
+        // let f = fn {nil}
+        let ast = Statement::Let {
+            name: "f".to_string(),
+            value: Expr::Fn {
+                params: vec![],
+                body: Box::new(NIL),
+            },
+        };
+
+        let main = Compiler::new().compile_program(vec![ast]).unwrap();
+
+        let f = &main.constant_pool[0].as_fn();
+
+        assert_eq!(f.name, Some("f".to_string()));
     }
 
     #[test]

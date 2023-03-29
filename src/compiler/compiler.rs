@@ -37,13 +37,14 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
 #[derive(Default)]
 pub struct Compiler {
     symbol_table: SymbolTable,
-    // TODO keep track of macros
+    binding_name: Option<String>,
 }
 
 impl Compiler {
     pub fn new() -> Self {
         Self {
             symbol_table: SymbolTable::new(),
+            binding_name: None,
         }
     }
 
@@ -85,6 +86,7 @@ impl Compiler {
             Expr::Fn { params, body } => {
                 self.symbol_table.enter_scope(None);
                 let mut inner_f = Function {
+                    name: self.binding_name.clone(),
                     // TODO remove fn_arity
                     arity: FunctionArity {
                         required: params.len() as u8,
@@ -131,7 +133,10 @@ impl Compiler {
             Expr::Let { name, value, body } => {
                 let binding_index = self.symbol_table.define_local(&name);
 
+                self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, *value)?;
+                self.binding_name = None;
+
                 f.bytecode.push(OpCode::SetLocal as u8);
                 f.bytecode.push(binding_index);
                 self.compile_expr_chunk(f, *body)?;
@@ -189,7 +194,10 @@ impl Compiler {
     ) -> Result<(), String> {
         match statement {
             Statement::Let { name, value } => {
+                self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, value)?;
+                self.binding_name = None;
+
                 f.bytecode.push(OpCode::SetGlobal as u8);
 
                 let index = self.symbol_table.define_global(&name);

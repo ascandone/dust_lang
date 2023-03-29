@@ -20,7 +20,7 @@
 
 ### Extra
 * [x] EASY comments
-* [ ] EASY function name inference
+* [x] EASY function name inference
 * [ ] EASY arbitrary infix operators (depends on AST-CST splitting)
 * [ ] MEDIUM static analysis (depends on AST-CST splitting)
   * [ ] unused code

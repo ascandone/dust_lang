@@ -83,7 +83,7 @@ impl Compiler {
             }
 
             Expr::Fn { params, body } => {
-                self.symbol_table.enter_scope();
+                self.symbol_table.enter_scope(None);
                 let mut inner_f = Function {
                     // TODO remove fn_arity
                     arity: FunctionArity {
@@ -243,6 +243,7 @@ fn desugar_pipe_right_macro(left: Box<Expr>, right: Box<Expr>) -> Result<Expr, S
 
 fn compile_symbol_lookup(f: &mut Function, scope: Scope) {
     match scope {
+        Scope::Function => todo!("recur scope"),
         Scope::Global(index) => {
             f.bytecode.push(OpCode::GetGlobal as u8);
             push_big_endian_u16(f, index);

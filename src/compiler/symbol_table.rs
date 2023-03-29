@@ -5,6 +5,7 @@ pub enum Scope {
     Global(u16),
     Local(u8),
     Free(u8),
+    Function,
 }
 
 #[derive(Debug)]
@@ -12,6 +13,7 @@ struct LocalScope {
     pub idents: HashMap<String, Vec<u8>>,
     pub next_local: u8,
     pub free: Vec<Scope>,
+    pub name: Option<String>,
 }
 
 impl LocalScope {
@@ -22,11 +24,12 @@ impl LocalScope {
 }
 
 impl LocalScope {
-    fn new() -> Self {
+    fn new(name: Option<String>) -> Self {
         Self {
             idents: HashMap::new(),
             next_local: 0,
             free: vec![],
+            name,
         }
     }
 }
@@ -49,7 +52,7 @@ impl SymbolTable {
             globals: HashMap::new(),
             next_global: 0,
 
-            locals: vec![LocalScope::new()],
+            locals: vec![LocalScope::new(None)],
         }
     }
 
@@ -61,8 +64,8 @@ impl SymbolTable {
         self.current_local().next_local
     }
 
-    pub fn enter_scope(&mut self) {
-        self.locals.push(LocalScope::new());
+    pub fn enter_scope(&mut self, name: Option<String>) {
+        self.locals.push(LocalScope::new(name));
     }
 
     pub fn exit_scope(&mut self) {
@@ -158,8 +161,14 @@ impl SymbolTable {
     }
 
     pub fn resolve(&mut self, name: &str) -> Option<Scope> {
-        if let Some(ident) = self.current_local().get(name) {
-            return Some(Scope::Local(*ident));
+        if let Some(ident) = &self.current_local().get(name) {
+            return Some(Scope::Local(**ident));
+        }
+
+        if let Some(local_name) = &self.current_local().name {
+            if name == local_name {
+                return Some(Scope::Function);
+            }
         }
 
         if let Some(ident) = self.resolve_free(name, self.locals.len()) {
@@ -222,7 +231,7 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.define_global(&"x".to_string());
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
 
         assert_eq!(
             symbol_table.resolve(&"x".to_string()),
@@ -234,7 +243,7 @@ mod tests {
     fn test_define_global_in_nested() {
         let mut symbol_table = SymbolTable::new();
 
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
         symbol_table.define_global(&"x".to_string());
 
         assert_eq!(
@@ -311,7 +320,7 @@ mod tests {
     fn test_define_local_nested() {
         let mut symbol_table = SymbolTable::new();
 
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
         symbol_table.define_local(&"x".to_string());
 
         assert_eq!(
@@ -326,7 +335,7 @@ mod tests {
 
         symbol_table.define_global(&"x".to_string());
 
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
 
         symbol_table.define_local(&"x".to_string());
 
@@ -341,7 +350,7 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.define_local(&"x".to_string());
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
 
         let lookup = symbol_table.resolve(&"x".to_string());
         assert_eq!(lookup, Some(Scope::Free(0)));
@@ -353,7 +362,7 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.define_local(&"x".to_string());
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
 
         let _ = symbol_table.resolve(&"x".to_string());
         let lookup = symbol_table.resolve(&"x".to_string());
@@ -367,7 +376,7 @@ mod tests {
 
         symbol_table.define_local(&"y".to_string());
         symbol_table.define_local(&"x".to_string());
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
 
         let lookup_x = symbol_table.resolve(&"x".to_string());
         let lookup_y = symbol_table.resolve(&"y".to_string());
@@ -386,8 +395,8 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.define_local(&"x".to_string());
-        symbol_table.enter_scope();
-        symbol_table.enter_scope();
+        symbol_table.enter_scope(None);
+        symbol_table.enter_scope(None);
 
         let lookup = symbol_table.resolve(&"x".to_string());
         assert_eq!(lookup, Some(Scope::Free(0)));
@@ -396,5 +405,48 @@ mod tests {
         symbol_table.exit_scope();
         assert_eq!(lookup, Some(Scope::Free(0)));
         assert_eq!(&symbol_table.current_local().free, &vec![Scope::Local(0)]);
+    }
+
+    #[test]
+    fn test_fn_scope() {
+        let mut symbol_table = SymbolTable::new();
+
+        symbol_table.enter_scope(Some("x".to_string()));
+
+        assert_eq!(
+            symbol_table.resolve(&"x".to_string()),
+            Some(Scope::Function)
+        );
+
+        assert_eq!(symbol_table.resolve(&"not-found".to_string()), None);
+
+        symbol_table.exit_scope();
+        assert_eq!(symbol_table.resolve(&"x".to_string()), None);
+    }
+
+    #[test]
+    fn test_fn_scope_local_shadowing() {
+        let mut symbol_table = SymbolTable::new();
+
+        symbol_table.enter_scope(Some("x".to_string()));
+        symbol_table.define_local("x");
+
+        assert_eq!(
+            symbol_table.resolve(&"x".to_string()),
+            Some(Scope::Local(0))
+        );
+    }
+
+    #[test]
+    fn test_fn_scope_global_now_shadowing() {
+        let mut symbol_table = SymbolTable::new();
+
+        symbol_table.enter_scope(Some("x".to_string()));
+        symbol_table.define_global("x");
+
+        assert_eq!(
+            symbol_table.resolve(&"x".to_string()),
+            Some(Scope::Function)
+        );
     }
 }

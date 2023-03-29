@@ -185,6 +185,11 @@ impl Vm {
                     stack.push(Value::Closure(Rc::new(clo)));
                 }
 
+                OpCode::GetCurrentClosure => {
+                    let clo = Rc::clone(&frame.closure);
+                    stack.push(Value::Closure(clo))
+                }
+
                 OpCode::Call => {
                     let passed_args_number = frame.next_opcode();
                     let closure = match stack.pop() {

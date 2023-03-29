@@ -671,6 +671,23 @@ mod tests {
     }
 
     #[test]
+    fn get_current_closure_test() {
+        let main = Function {
+            constant_pool: vec![],
+            bytecode: vec![OpCode::GetCurrentClosure as u8, OpCode::Return as u8],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Vm::default().run_main(Rc::new(main.clone())).unwrap(),
+            Value::Closure(Rc::new(Closure {
+                free: vec![],
+                function: Rc::new(main),
+            }))
+        );
+    }
+
+    #[test]
     fn call_closure_test() {
         let f = Rc::new(Function {
             bytecode: vec![OpCode::ConstTrue as u8, OpCode::Return as u8],

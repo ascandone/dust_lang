@@ -19,6 +19,7 @@ pub enum OpCode {
     Call,
     Return,
     MakeClosure,
+    GetCurrentClosure,
 
     // Algebraic ops
     Add,

@@ -114,6 +114,18 @@ fn test_closure() {
     assert_result("(fn x { fn y { x + y } })(1)(2)", 3);
 }
 
+#[test]
+fn pipe_macro() {
+    assert_result(
+        "
+let incr = fn x { x + 1 };
+let double = fn x { x * 2 };
+42 |> incr() |> double()
+    ",
+        (42 + 1) * 2,
+    );
+}
+
 fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

@@ -167,6 +167,11 @@ impl Compiler {
                 set_big_endian_u16(f, jump_index);
             }
 
+            Expr::Infix(op, left, right) if op == "|>" => {
+                let desugared = desugar_pipe_right_macro(left, right)?;
+                self.compile_expr_chunk(f, desugared)?;
+            }
+
             Expr::Infix(op, left, right) => match infix_to_opcode(&op) {
                 Some(opcode) => {
                     self.compile_expr_chunk(f, *left)?;
@@ -218,6 +223,24 @@ impl Compiler {
 
     pub fn compile_expr(&mut self, expr: Expr) -> Result<Function, String> {
         self.compile_program(vec![Statement::Expr(expr)])
+    }
+}
+
+fn desugar_pipe_right_macro(left: Box<Expr>, right: Box<Expr>) -> Result<Expr, String> {
+    // TODO move this outside the compiler. It's just syntax sugar
+
+    match *right {
+        Expr::Call { f, args } => {
+            let mut new_args = vec![*left];
+
+            for arg in args {
+                new_args.push(arg)
+            }
+            Ok(Expr::Call { f, args: new_args })
+        }
+        _ => Err(format!(
+            "Invalid usage of `|>` macro: right element should be a function call"
+        )),
     }
 }
 

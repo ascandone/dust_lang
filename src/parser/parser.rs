@@ -17,15 +17,15 @@ pub struct Parser<'a> {
 
 fn token_to_pred(token: &Token, inside_block: bool) -> u8 {
     match token {
+        Token::Semicolon if inside_block => 1,
+        Token::DoublePipe => 3,
+        Token::DoubleAnd => 4,
+        Token::PipeRight => 8,
         Token::Eq | Token::NotEq => 8,
         Token::Less | Token::LessEqual | Token::Greater | Token::GreaterEqual => 9,
         Token::Plus | Token::Minus => 11,
         Token::Mult | Token::Slash | Token::Percentage => 12,
-        Token::DoubleAnd => 4,
-        Token::DoublePipe => 3,
         Token::LParen => HIGHEST_PREC,
-
-        Token::Semicolon if inside_block => 1,
         _ => 0,
     }
 }
@@ -112,6 +112,7 @@ impl<'a> Parser<'a> {
             }
 
             left = match self.current_token {
+                Token::PipeRight => self.parse_infix(left, pred, "|>")?,
                 Token::Plus => self.parse_infix(left, pred, "+")?,
                 Token::Minus => self.parse_infix(left, pred, "-")?,
                 Token::Slash => self.parse_infix(left, pred, "/")?,

@@ -144,6 +144,11 @@ impl<'a> Lexer<'a> {
                     self.next_char();
                     Token::DoublePipe
                 }
+
+                Some('>') => {
+                    self.next_char();
+                    Token::PipeRight
+                }
                 _ => self.panic_invalid_token(),
             },
 

@@ -23,6 +23,9 @@ pub enum Token {
     /// `||` operator
     DoublePipe,
 
+    /// `|>` operator
+    PipeRight,
+
     /// `!` operator
     Bang,
 

@@ -126,19 +126,46 @@ let double = fn x { x * 2 };
     );
 }
 
-fn assert_result<A>(src: &str, expected_value: A)
-where
-    A: Into<Value>,
-{
+#[ignore]
+#[test]
+fn toplevel_recursion() {
+    assert_result(
+        "
+let to_zero = fn n {
+    if n == 0 {
+        0
+    } else {
+        to_zero(n - 1)
+    }
+};
+
+to_zero(3)
+    ",
+        0,
+    );
+}
+
+#[test]
+fn let_binding_err() {
+    let res = compile_src("let x = { x }; x");
+    assert!(res.is_err());
+}
+
+fn compile_src(src: &str) -> Result<Value, String> {
     let program = parse(src).unwrap();
     let mut compiler = Compiler::default();
     let mut vm = Vm::default();
 
-    let compiled_fn = compiler.compile_program(program).unwrap();
+    let compiled_fn = compiler.compile_program(program)?;
+    let value_result = vm.run_main(Rc::new(compiled_fn))?;
 
-    let value_result = vm
-        .run_main(Rc::new(compiled_fn))
-        .expect("Error during execution");
+    Ok(value_result)
+}
 
+fn assert_result<A>(src: &str, expected_value: A)
+where
+    A: Into<Value>,
+{
+    let value_result = compile_src(src).unwrap();
     assert_eq!(value_result, expected_value.into(), "{:?}", src);
 }

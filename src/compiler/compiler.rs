@@ -53,7 +53,6 @@ impl Compiler {
             Expr::Lit(Lit::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
             Expr::Lit(Lit::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
             Expr::Lit(Lit::String(s)) => alloc_const(f, Value::String(Rc::new(s))),
-            // TODO repo int as f64
             Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
             Expr::Ident(name) => {

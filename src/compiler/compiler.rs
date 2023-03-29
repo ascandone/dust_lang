@@ -172,14 +172,12 @@ impl Compiler {
                 self.compile_expr_chunk(f, desugared)?;
             }
 
-            Expr::Infix(op, left, right) => match infix_to_opcode(&op) {
-                Some(opcode) => {
-                    self.compile_expr_chunk(f, *left)?;
-                    self.compile_expr_chunk(f, *right)?;
-                    f.bytecode.push(opcode as u8);
-                }
-                None => return Err(format!("Invalid infix op: {op}")),
-            },
+            Expr::Infix(op, left, right) => {
+                let opcode = infix_to_opcode(&op).ok_or(format!("Invalid infix op: {op}"))?;
+                self.compile_expr_chunk(f, *left)?;
+                self.compile_expr_chunk(f, *right)?;
+                f.bytecode.push(opcode as u8);
+            }
         };
 
         Ok(())

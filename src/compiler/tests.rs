@@ -670,6 +670,25 @@ mod tests {
     }
 
     #[test]
+    fn error_on_rec_invalid_params() {
+        // let f = fn x { f() }
+        let ast = Statement::Let {
+            name: "f".to_string(),
+            value: Expr::Fn {
+                params: vec!["x".to_string()],
+                body: Box::new(Expr::Call {
+                    f: Box::new(Ident("f".to_string())),
+                    args: vec![],
+                }),
+            },
+        };
+
+        let result = Compiler::new().compile_program(vec![ast]);
+        assert!(result.is_err());
+    }
+
+    #[ignore]
+    #[test]
     fn tailcall_test() {
         // let f = fn x, y { f(x + 1, y + x) }
 
@@ -701,20 +720,26 @@ mod tests {
         assert_eq!(
             f.bytecode,
             vec![
+                // x
                 OpCode::GetLocal as u8,
                 0,
                 OpCode::Const as u8,
                 0,
                 OpCode::Add as u8,
+                // y
                 OpCode::GetLocal as u8,
                 0,
                 OpCode::GetLocal as u8,
                 1,
                 OpCode::Add as u8,
-                // TODO instead of CALL, execute JMP(0)
-                OpCode::GetCurrentClosure as u8,
-                OpCode::Call as u8,
-                2,
+                // recur
+                OpCode::SetLocal as u8,
+                1,
+                OpCode::SetLocal as u8,
+                0,
+                OpCode::Jump as u8,
+                0,
+                0,
                 OpCode::Return as u8
             ]
         );

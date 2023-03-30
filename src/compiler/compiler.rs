@@ -6,6 +6,7 @@ use crate::{
         value::{Function, Value},
     },
 };
+use std::ops::Deref;
 use std::rc::Rc;
 
 fn prefix_to_opcode(op: &str) -> Option<OpCode> {
@@ -38,6 +39,7 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
 pub struct Compiler {
     symbol_table: SymbolTable,
     binding_name: Option<String>,
+    current_function_arity: Option<usize>,
 }
 
 impl Compiler {
@@ -45,6 +47,7 @@ impl Compiler {
         Self {
             symbol_table: SymbolTable::new(),
             binding_name: None,
+            current_function_arity: None,
         }
     }
 
@@ -84,6 +87,7 @@ impl Compiler {
             }
 
             Expr::Fn { params, body } => {
+                self.current_function_arity = Some(params.len());
                 self.symbol_table.enter_scope(self.binding_name.clone());
                 let mut inner_f = Function {
                     name: self.binding_name.clone(),
@@ -112,12 +116,13 @@ impl Compiler {
                     f.bytecode.push(OpCode::MakeClosure as u8);
                     f.bytecode.push(free_vars.len() as u8);
                 }
+                self.current_function_arity = None
             }
 
             Expr::Call { f: caller, args } => {
                 // TODO return err when args > 256
                 let args_len = args.len();
-
+                self.check_recur_args(caller.deref(), args_len)?;
                 for arg in args {
                     self.compile_expr_chunk(f, arg)?;
                 }
@@ -224,6 +229,28 @@ impl Compiler {
 
     pub fn compile_expr(&mut self, expr: Expr) -> Result<Function, String> {
         self.compile_program(vec![Statement::Expr(expr)])
+    }
+
+    fn check_is_recursive_call(&mut self, caller: &Expr) -> bool {
+        match caller {
+            Expr::Ident(caller_name) => {
+                self.symbol_table.resolve(&caller_name) == Some(Scope::Function)
+            }
+            _ => false,
+        }
+    }
+
+    fn check_recur_args(&mut self, caller: &Expr, args_len: usize) -> Result<(), String> {
+        if self.check_is_recursive_call(caller) {
+            let required_arity = self
+                .current_function_arity
+                .expect("Expected function context to have an arity");
+            if args_len != required_arity {
+                return  Err(format!("Invalid number of arguments: Required: {required_arity}, got {args_len} instead"));
+            }
+        }
+
+        Ok(())
     }
 }
 

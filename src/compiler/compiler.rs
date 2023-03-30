@@ -3,7 +3,7 @@ use crate::{
     ast::{Expr, Lit, Program, Statement},
     vm::{
         bytecode::OpCode,
-        value::{Function, FunctionArity, Value},
+        value::{Function, Value},
     },
 };
 use std::rc::Rc;
@@ -87,11 +87,7 @@ impl Compiler {
                 self.symbol_table.enter_scope(self.binding_name.clone());
                 let mut inner_f = Function {
                     name: self.binding_name.clone(),
-                    // TODO remove fn_arity
-                    arity: FunctionArity {
-                        required: params.len() as u8,
-                        ..Default::default()
-                    },
+                    arity: params.len() as u8,
                     ..Function::default()
                 };
 
@@ -101,7 +97,7 @@ impl Compiler {
 
                 self.compile_expr_chunk(&mut inner_f, *body)?;
                 inner_f.bytecode.push(OpCode::Return as u8);
-                inner_f.locals = self.symbol_table.count_locals() - count_arity_bindings(&inner_f);
+                inner_f.locals = self.symbol_table.count_locals() - &inner_f.arity;
                 let free_vars = &self.symbol_table.free();
                 self.symbol_table.exit_scope();
 
@@ -267,10 +263,6 @@ fn compile_symbol_lookup(f: &mut Function, scope: Scope) {
             f.bytecode.push(index);
         }
     }
-}
-
-fn count_arity_bindings(f: &Function) -> u8 {
-    f.arity.required + f.arity.optional + f.arity.rest as u8
 }
 
 fn alloc_const(f: &mut Function, value: Value) {

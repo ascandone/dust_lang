@@ -6,7 +6,7 @@ mod tests {
         compiler::compiler::{to_big_endian_u16, Compiler},
         vm::{
             bytecode::OpCode,
-            value::{Function, FunctionArity, Value},
+            value::{Function, Value},
         },
     };
     use std::rc::Rc;
@@ -16,7 +16,7 @@ mod tests {
         let ast = true.into();
         let f = Compiler::new().compile_expr(ast).unwrap();
 
-        assert_eq!(f.arity.required, 0);
+        assert_eq!(f.arity, 0);
         assert_eq!(
             f.bytecode,
             vec![OpCode::ConstTrue as u8, OpCode::Return as u8]
@@ -328,10 +328,7 @@ mod tests {
 
         let compiled_lambda = Function {
             bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
-            arity: FunctionArity {
-                required: 2,
-                ..FunctionArity::default()
-            },
+            arity: 2,
             ..Function::default()
         };
 
@@ -357,11 +354,8 @@ mod tests {
         let f = Compiler::new().compile_expr(ast).unwrap();
 
         let compiled_lambda = Function {
+            arity: 2,
             bytecode: vec![OpCode::GetLocal as u8, 1, OpCode::Return as u8],
-            arity: FunctionArity {
-                required: 2,
-                ..FunctionArity::default()
-            },
             ..Function::default()
         };
 
@@ -545,10 +539,7 @@ mod tests {
         assert_eq!(
             outer_function.constant_pool[0],
             Value::Function(Rc::new(Function {
-                arity: FunctionArity {
-                    required: 1,
-                    ..Default::default()
-                },
+                arity: 1,
                 bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
                 ..Default::default()
             })),
@@ -601,10 +592,7 @@ mod tests {
         assert_eq!(
             outer_function.constant_pool[0],
             Value::Function(Rc::new(Function {
-                arity: FunctionArity {
-                    required: 1,
-                    ..Default::default()
-                },
+                arity: 1,
                 bytecode: vec![
                     OpCode::GetFree as u8,
                     0,

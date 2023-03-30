@@ -4,7 +4,7 @@ mod tests {
 
     use crate::vm::{
         bytecode::OpCode,
-        value::{Closure, Function, FunctionArity, Value},
+        value::{Closure, Function, Value},
         vm::Vm,
     };
 
@@ -380,10 +380,7 @@ mod tests {
     #[test]
     fn test_call_1_arg() {
         let f = Function {
-            arity: FunctionArity {
-                required: 1,
-                ..FunctionArity::default()
-            },
+            arity: 1,
             constant_pool: vec![Value::Num(1.0)],
             bytecode: vec![
                 OpCode::GetLocal as u8,
@@ -419,10 +416,7 @@ mod tests {
     #[test]
     fn test_call_2_args() {
         let f = Function {
-            arity: FunctionArity {
-                required: 2,
-                ..FunctionArity::default()
-            },
+            arity: 2,
             bytecode: vec![
                 OpCode::GetLocal as u8,
                 0,
@@ -466,19 +460,13 @@ mod tests {
         // ?=> false
 
         let nested = Value::Function(Rc::new(Function {
-            arity: FunctionArity {
-                required: 1,
-                ..FunctionArity::default()
-            },
+            arity: 1,
             bytecode: vec![OpCode::GetLocal as u8, 0, OpCode::Return as u8],
             ..Default::default()
         }));
 
         let f = Function {
-            arity: FunctionArity {
-                required: 1,
-                ..FunctionArity::default()
-            },
+            arity: 1,
             constant_pool: vec![nested],
             bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
             ..Default::default()
@@ -510,10 +498,7 @@ mod tests {
     fn call_1_arg_and_return_local_test() {
         // fn(x) { let y = true; y }
         let f = Function {
-            arity: FunctionArity {
-                required: 1,
-                ..FunctionArity::default()
-            },
+            arity: 1,
             locals: 1,
             bytecode: vec![
                 OpCode::ConstTrue as u8,
@@ -550,10 +535,7 @@ mod tests {
     fn call_1_arg_and_return_arg_test() {
         // fn(x) { let y = true; x }
         let f = Function {
-            arity: FunctionArity {
-                required: 1,
-                ..FunctionArity::default()
-            },
+            arity: 1,
             locals: 1,
             bytecode: vec![
                 OpCode::ConstTrue as u8,
@@ -589,10 +571,7 @@ mod tests {
     #[test]
     fn test_call_not_enough_required_args() {
         let f = Function {
-            arity: FunctionArity {
-                required: 2,
-                ..FunctionArity::default()
-            },
+            arity: 2,
             bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
             ..Default::default()
         };
@@ -616,10 +595,6 @@ mod tests {
     #[test]
     fn call_too_many_args_test() {
         let f = Function {
-            arity: FunctionArity {
-                required: 0,
-                ..FunctionArity::default()
-            },
             bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
             ..Default::default()
         };

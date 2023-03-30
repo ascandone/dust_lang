@@ -201,10 +201,10 @@ impl Vm {
                         x => return Err(format!("Expected a callable object (got {x} instead)")),
                     };
                     let function = &closure.function;
-                    if passed_args_number != function.arity.required {
+                    if passed_args_number != function.arity {
                         return Err(format!(
                             "Invalid args number passed: expected at {:?}, got {:?} instead",
-                            function.arity.required, passed_args_number
+                            function.arity, passed_args_number
                         ));
                     }
 

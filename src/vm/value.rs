@@ -1,16 +1,9 @@
 use std::{borrow::Borrow, fmt::Display, rc::Rc};
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub struct FunctionArity {
-    pub required: u8,
-    pub optional: u8,
-    pub rest: bool,
-}
-
 /// A compiled function
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Function {
-    pub arity: FunctionArity,
+    pub arity: u8,
     pub name: Option<String>,
     pub bytecode: Vec<u8>,
     pub locals: u8,

@@ -30,7 +30,7 @@
 * [ ] HARD repl hot reloading (depends on modules)
 * [ ] HARD concurrency
 * [ ] HARD better parsing errors (depends on AST-CST splitting)
-* [ ] HARD formatter
+* [ ] HARD formatter (depends on AST-CST splitting)
 * [ ] MEDIUM persistent data structures (list, records, tuples, syms) 
 * [ ] HARD pattern matching
 * [ ] HARD test suite

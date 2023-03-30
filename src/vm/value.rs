@@ -10,10 +10,35 @@ pub struct Function {
     pub constant_pool: Vec<Value>,
 }
 
+impl Function {
+    pub fn display_name(&self) -> String {
+        self.name.clone().unwrap_or("<anonymous>".to_string())
+    }
+}
+
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Closure {
     pub function: Rc<Function>,
     pub free: Vec<Value>,
+}
+
+pub struct NativeFunction {
+    pub name: String,
+    pub args_number: u8,
+    pub body: Box<dyn Fn(&[Value]) -> Result<Value, String>>,
+}
+
+impl std::fmt::Debug for NativeFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NativeFunction<{}>", self.name)
+    }
+}
+
+impl PartialEq for NativeFunction {
+    // TODO improve
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
 }
 
 /// Runtime value representation
@@ -27,6 +52,7 @@ pub enum Value {
     String(Rc<String>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
+    NativeFunction(Rc<NativeFunction>),
 }
 
 impl Value {
@@ -128,15 +154,23 @@ impl Display for Value {
             Value::Num(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
             Value::Function(r) => {
-                let name = match r.name.clone() {
-                    Some(n) => n,
-                    None => "<anonymous>".to_string(),
-                };
-
-                write!(f, "#[Function {name} at {:?}]", Rc::as_ptr(r))
+                write!(f, "#[function {} at {:?}]", r.display_name(), Rc::as_ptr(r))
             }
             Value::Closure(clo) => {
-                write!(f, "#[Function <closure> at {:?}]", Rc::as_ptr(clo))
+                write!(
+                    f,
+                    "#[function (closure) {} at {:?}]",
+                    clo.function.display_name(),
+                    Rc::as_ptr(clo)
+                )
+            }
+            Value::NativeFunction(native) => {
+                write!(
+                    f,
+                    "#[function (built-in) {:?} at {:?}]",
+                    native.name,
+                    Rc::as_ptr(native)
+                )
             }
         }
     }

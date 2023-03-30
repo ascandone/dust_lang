@@ -4,6 +4,7 @@ use super::{
     value::{Closure, Function, Value},
 };
 use std::mem::transmute;
+use std::ops::Deref;
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]
@@ -198,15 +199,21 @@ impl Vm {
                             free: vec![],
                         }),
                         Value::Closure(clo) => clo,
+                        Value::NativeFunction(nf) => {
+                            validate_args_number(passed_args_number, nf.args_number)?;
+                            let nf = &(nf.deref()).body;
+                            let args = &stack.as_slice()[frame.base_pointer..];
+                            let res = nf(args)?;
+
+                            stack.push(res.clone());
+                            continue;
+                        }
                         x => return Err(format!("Expected a callable object (got {x} instead)")),
                     };
+
                     let function = &closure.function;
-                    if passed_args_number != function.arity {
-                        return Err(format!(
-                            "Invalid args number passed: expected at {:?}, got {:?} instead",
-                            function.arity, passed_args_number
-                        ));
-                    }
+
+                    validate_args_number(passed_args_number, function.arity)?;
 
                     let base_pointer = stack.len() - passed_args_number as usize;
 
@@ -291,6 +298,17 @@ impl Vm {
                 })?,
             }
         }
+    }
+}
+
+fn validate_args_number(passed_args_number: u8, function_arity: u8) -> Result<(), String> {
+    if passed_args_number != function_arity {
+        Err(format!(
+            "Invalid args number passed: expected at {:?}, got {:?} instead",
+            function_arity, passed_args_number
+        ))
+    } else {
+        Ok(())
     }
 }
 

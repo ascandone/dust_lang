@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-
+    use crate::vm::value::NativeFunction;
     use crate::vm::{
         bytecode::OpCode,
         value::{Closure, Function, Value},
         vm::Vm,
     };
+    use std::rc::Rc;
 
     #[test]
     fn test_const() {
@@ -719,6 +719,47 @@ mod tests {
         assert_eq!(
             Vm::default().run_main(Rc::new(main)).unwrap(),
             Value::Num(42.0)
+        );
+    }
+
+    #[test]
+    fn call_native_test() {
+        fn sum(body: &[Value]) -> Result<Value, String> {
+            match body {
+                [Value::Num(a), Value::Num(b)] => Ok(Value::Num(a + b)),
+                _ => panic!("Invalid body"),
+            }
+        }
+
+        let native_f = Rc::new(NativeFunction {
+            name: "example".to_string(),
+            args_number: 2,
+            body: Box::new(sum),
+        });
+
+        let main = Function {
+            constant_pool: vec![
+                Value::Num(10.0),
+                Value::Num(20.0),
+                Value::NativeFunction(native_f),
+            ],
+            bytecode: vec![
+                OpCode::Const as u8,
+                0,
+                OpCode::Const as u8,
+                1,
+                OpCode::Const as u8,
+                2,
+                OpCode::Call as u8,
+                2,
+                OpCode::Return as u8,
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            Vm::default().run_main(Rc::new(main)).unwrap(),
+            Value::Num(30.0)
         );
     }
 }

@@ -161,6 +161,10 @@ impl SymbolTable {
     }
 
     pub fn resolve(&mut self, name: &str) -> Option<Scope> {
+        if name == "_" {
+            return None;
+        }
+
         if let Some(ident) = &self.current_local().get(name) {
             return Some(Scope::Local(**ident));
         }

@@ -158,8 +158,17 @@ double(1) + double(10)
 
 #[test]
 fn let_binding_err() {
-    let res = compile_src("let x = { x }; x");
-    assert!(res.is_err());
+    assert_err("let x = { x }; x");
+}
+
+#[test]
+fn blank_identifiers_do_not_bind() {
+    assert_err("let _ = nil; _");
+    assert_err("{ let _ = nil; _ }");
+    assert_err("(fn _ { _ })(nil)");
+
+    assert_result("let second = fn _, x { x }; second(0, 1)", 1);
+    assert_result("let second = fn x, _ { x }; second(0, 1)", 0);
 }
 
 fn compile_src(src: &str) -> Result<Value, String> {
@@ -179,4 +188,9 @@ where
 {
     let value_result = compile_src(src).unwrap();
     assert_eq!(value_result, expected_value.into(), "{:?}", src);
+}
+
+fn assert_err(src: &str) {
+    let res = compile_src(src);
+    assert!(res.is_err(), "{:?}", src);
 }

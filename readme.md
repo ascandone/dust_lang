@@ -19,7 +19,7 @@
 * [ ] HARD better GC
 
 ### Extra
-* [ ] EASY blank identifiers (prevent _ to bind variables)
+* [x] EASY blank identifiers (prevent _ to bind variables)
 * [x] EASY comments
 * [x] EASY function name inference
 * [ ] EASY arbitrary infix operators (depends on AST-CST splitting)

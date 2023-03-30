@@ -107,6 +107,7 @@ impl Compiler {
                     self.symbol_table.define_local(&required);
                 }
 
+                self.binding_name = None;
                 self.compile_expr_chunk(&mut inner_f, *body)?;
                 inner_f.bytecode.push(OpCode::Return as u8);
                 inner_f.locals = self.symbol_table.count_locals() - &inner_f.arity;

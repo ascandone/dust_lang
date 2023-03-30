@@ -53,6 +53,10 @@ impl Compiler {
         }
     }
 
+    pub fn define_global(&mut self, name: &str) -> u16 {
+        self.symbol_table.define_global(name)
+    }
+
     fn compile_expr_chunk(&mut self, f: &mut Function, ast: Expr) -> Result<(), String> {
         let tail_position_reset = self.tail_position;
         match ast {

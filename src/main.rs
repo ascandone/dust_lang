@@ -1,6 +1,6 @@
-use monkey_lang_rust_interpreter::compiler::compiler::Compiler;
-use monkey_lang_rust_interpreter::parser::parse;
-use monkey_lang_rust_interpreter::vm::vm::Vm;
+use dust_lang::compiler::compiler::Compiler;
+use dust_lang::parser::parse;
+use dust_lang::vm::vm::Vm;
 use std::{env, fs, rc::Rc};
 
 fn main() {

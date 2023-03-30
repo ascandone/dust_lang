@@ -1,7 +1,8 @@
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse, ParsingError};
-use crate::vm::value::Value;
+use crate::vm::value::{NativeFunction, Value};
 use crate::vm::vm::Vm;
+use std::rc::Rc;
 
 pub struct Interpreter {
     compiler: Compiler,
@@ -27,6 +28,21 @@ impl Interpreter {
         }
     }
 
+    pub fn define_native<F>(&mut self, name: &str, args_number: u8, body: F)
+    where
+        F: Fn(&[Value]) -> Result<Value, String> + 'static,
+    {
+        let id = self.compiler.define_global(name);
+
+        let native_f = Rc::new(NativeFunction {
+            name: name.to_string(),
+            body: Box::new(body),
+            args_number,
+        });
+
+        self.vm.define_global(id, Value::NativeFunction(native_f));
+    }
+
     pub fn run(&mut self, src: &str) -> Result<Value, Error> {
         let program = parse(src).map_err(Error::Parsing)?;
         let main = self
@@ -34,10 +50,7 @@ impl Interpreter {
             .compile_program(program)
             .map_err(Error::Compilation)?;
 
-        let value = self
-            .vm
-            .run_main(std::rc::Rc::new(main))
-            .map_err(Error::Runtime)?;
+        let value = self.vm.run_main(Rc::new(main)).map_err(Error::Runtime)?;
 
         Ok(value)
     }

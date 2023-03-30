@@ -1,4 +1,4 @@
-use dust_lang::interpreter::eval;
+use dust_lang::interpreter::{eval, Interpreter};
 use dust_lang::vm::value::Value;
 
 #[test]
@@ -166,6 +166,23 @@ fn blank_identifiers_do_not_bind() {
 
     assert_result("let second = fn _, x { x }; second(0, 1)", 1);
     assert_result("let second = fn x, _ { x }; second(0, 1)", 0);
+}
+
+#[test]
+fn native_fn() {
+    fn sum(body: &[Value]) -> Result<Value, String> {
+        match body {
+            [Value::Num(a), Value::Num(b)] => Ok(Value::Num(a + b)),
+            _ => Err("Invalid body".to_string()),
+        }
+    }
+
+    let mut interpreter = Interpreter::new();
+    interpreter.define_native("sum", 2, sum);
+
+    let value = interpreter.run("sum(10, 20)").unwrap();
+
+    assert_eq!(value, Value::Num(30.0))
 }
 
 fn assert_result<A>(src: &str, expected_value: A)

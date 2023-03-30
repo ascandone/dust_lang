@@ -40,6 +40,10 @@ pub struct Vm {
 }
 
 impl Vm {
+    pub fn define_global(&mut self, id: u16, value: Value) {
+        self.globals.resize(id as usize + 1, value);
+    }
+
     pub fn run_main(&mut self, f: Rc<Function>) -> Result<Value, String> {
         self.run_function(f, &[])
     }

@@ -1,3 +1,5 @@
 pub mod compiler;
 mod symbol_table;
-mod tests;
+
+#[cfg(test)]
+mod compiler_tests;

@@ -1,5 +1,7 @@
 pub mod bytecode;
 mod stack;
-mod tests;
 pub mod value;
 pub mod vm;
+
+#[cfg(test)]
+mod vm_tests;

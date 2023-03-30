@@ -687,7 +687,6 @@ mod tests {
         assert!(result.is_err());
     }
 
-    #[ignore]
     #[test]
     fn tailcall_test() {
         // let f = fn x, y { f(x + 1, y + x) }

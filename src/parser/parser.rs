@@ -96,6 +96,7 @@ impl<'a> Parser<'a> {
             Token::Fn => self.parse_fn_expr(),
             Token::If => self.parse_if_expr(),
             Token::Let if inside_block => self.parse_let_expr(),
+            Token::LetStar if inside_block => self.parse_let_star_expr(),
 
             Token::LBrace => self.parse_block_expr(),
 
@@ -270,11 +271,22 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_let_star_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::LetStar)?;
+        let name = self.expect_ident()?;
+        self.expect_token(Token::Assign)?;
+        let value = self.parse_expr(LOWEST_PREC, false)?;
+        self.expect_token(Token::Semicolon)?;
+        let body = self.parse_expr(LOWEST_PREC, true)?;
+
+        Ok(desugar_let_star(&name, value, body))
+    }
+
     fn parse_let_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::Let)?;
         let name = self.expect_ident()?;
         self.expect_token(Token::Assign)?;
-        let value = self.parse_expr(HIGHEST_PREC, false)?;
+        let value = self.parse_expr(LOWEST_PREC, false)?;
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
@@ -349,5 +361,26 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
+    }
+}
+
+// TODO move to a cst->ast function
+// TODO refactor as result
+fn desugar_let_star(binding: &str, f_call: Expr, body: Expr) -> Expr {
+    match f_call {
+        Expr::Call { f, args } => {
+            // TODO check that f is an identifier
+
+            let mut args = args;
+
+            args.push(Expr::Fn {
+                params: vec![binding.to_string()],
+                body: Box::new(body),
+            });
+
+            Expr::Call { f, args }
+        }
+
+        _ => panic!("Expected a function call in let* sugar"),
     }
 }

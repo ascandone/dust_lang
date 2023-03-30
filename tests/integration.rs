@@ -169,6 +169,22 @@ fn blank_identifiers_do_not_bind() {
 }
 
 #[test]
+fn let_start_syntax_sugar() {
+    let src = "
+    let apply = fn x, f {
+        f(x)
+    };
+
+    {
+        let* a = apply(42);
+        a * 2
+    }
+    ";
+
+    assert_result(src, 42 * 2);
+}
+
+#[test]
 fn native_fn() {
     fn sum(body: &[Value]) -> Result<Value, String> {
         match body {

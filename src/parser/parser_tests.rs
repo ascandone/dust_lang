@@ -382,3 +382,44 @@ fn parse_let_statement_and_semicolon_with_infix() {
         ]
     );
 }
+
+#[test]
+fn parse_let_star_sugar() {
+    let sugar = "
+        {
+            let* a = f(x, y);
+            expr(a)
+        }
+    ";
+
+    let desugared = "
+        f(x, y, fn a {
+            expr(a)
+        })
+    ";
+
+    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+}
+
+#[test]
+fn parse_nested_let_star_sugar() {
+    let sugar = "
+        {
+            let* a = f(x, y);
+            let b = 100;
+            let* c = g(b, a);
+            h(c)
+        }
+    ";
+
+    let desugared = "
+        f(x, y, fn a {
+            let b = 100;
+            g(b, a, fn c {
+                h(c)
+            })
+        })
+    ";
+
+    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+}

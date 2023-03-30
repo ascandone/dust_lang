@@ -158,6 +158,7 @@ impl<'a> Lexer<'a> {
                 self.read_position -= 1;
 
                 if let Some(tk) = self.try_consume_many(&[
+                    ("let*", Token::LetStar),
                     ("let", Token::Let),
                     ("if", Token::If),
                     ("fn", Token::Fn),
@@ -273,6 +274,14 @@ mod tests {
         assert_tokens("true false nil", {
             use Token::*;
             &[True, False, Nil]
+        });
+    }
+
+    #[test]
+    fn keywords() {
+        assert_tokens("let let*", {
+            use Token::*;
+            &[Let, LetStar]
         });
     }
 

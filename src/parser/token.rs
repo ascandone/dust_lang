@@ -74,6 +74,9 @@ pub enum Token {
     /// `let`
     Let,
 
+    /// `let*`
+    LetStar,
+
     /// `if`
     If,
 

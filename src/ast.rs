@@ -17,7 +17,7 @@ pub enum Lit {
 }
 
 impl fmt::Debug for Lit {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Lit::Nil => write!(f, "nil"),
             Lit::Bool(true) => write!(f, "true"),

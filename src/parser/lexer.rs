@@ -157,17 +157,24 @@ impl<'a> Lexer<'a> {
             _ => {
                 self.read_position -= 1;
 
+                if let Some(tk) = self.try_consume_many(&[
+                    ("let", Token::Let),
+                    ("if", Token::If),
+                    ("fn", Token::Fn),
+                    ("else", Token::Else),
+                    ("true", Token::True),
+                    ("false", Token::False),
+                    ("nil", Token::Nil),
+                ]) {
+                    return tk;
+                };
+
+                if self.try_consume("let") {
+                    return Token::Let;
+                }
+
                 if let Some(ident) = self.consume_while(is_letter) {
-                    return match ident {
-                        "let" => Token::Let,
-                        "fn" => Token::Fn,
-                        "if" => Token::If,
-                        "else" => Token::Else,
-                        "true" => Token::True,
-                        "false" => Token::False,
-                        "nil" => Token::Nil,
-                        _ => Token::Ident(ident.to_string()),
-                    };
+                    return Token::Ident(ident.to_string());
                 }
 
                 if let Some(n) = self.consume_while(is_number) {
@@ -177,6 +184,30 @@ impl<'a> Lexer<'a> {
                 self.panic_invalid_token()
             }
         }
+    }
+
+    fn try_consume(&mut self, kw: &str) -> bool {
+        let initial_position = self.read_position;
+        for ch in kw.chars() {
+            if self.peek_char() != Some(ch) {
+                self.read_position = initial_position;
+                return false;
+            }
+
+            self.next_char();
+        }
+
+        true
+    }
+
+    fn try_consume_many(&mut self, pairs: &[(&str, Token)]) -> Option<Token> {
+        for (kw, tk) in pairs {
+            if self.try_consume(*kw) {
+                return Some(tk.clone());
+            }
+        }
+
+        None
     }
 }
 

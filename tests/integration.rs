@@ -1,8 +1,5 @@
-use dust_lang::compiler::compiler::Compiler;
-use dust_lang::parser::parse;
+use dust_lang::interpreter::eval;
 use dust_lang::vm::value::Value;
-use dust_lang::vm::vm::Vm;
-use std::rc::Rc;
 
 #[test]
 fn test_lit() {
@@ -171,26 +168,15 @@ fn blank_identifiers_do_not_bind() {
     assert_result("let second = fn x, _ { x }; second(0, 1)", 0);
 }
 
-fn compile_src(src: &str) -> Result<Value, String> {
-    let program = parse(src).unwrap();
-    let mut compiler = Compiler::default();
-    let mut vm = Vm::default();
-
-    let compiled_fn = compiler.compile_program(program)?;
-    let value_result = vm.run_main(Rc::new(compiled_fn))?;
-
-    Ok(value_result)
-}
-
 fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,
 {
-    let value_result = compile_src(src).unwrap();
+    let value_result = eval(src).unwrap();
     assert_eq!(value_result, expected_value.into(), "{:?}", src);
 }
 
 fn assert_err(src: &str) {
-    let res = compile_src(src);
+    let res = eval(src);
     assert!(res.is_err(), "{:?}", src);
 }

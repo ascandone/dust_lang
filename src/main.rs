@@ -1,7 +1,5 @@
-use dust_lang::compiler::compiler::Compiler;
-use dust_lang::parser::parse;
-use dust_lang::vm::vm::Vm;
-use std::{env, fs, rc::Rc};
+use dust_lang::interpreter::eval;
+use std::{env, fs};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -13,23 +11,7 @@ fn main() {
 
     let content = fs::read_to_string(file_path).expect("Cannot read file");
 
-    let program = match parse(&content) {
-        Ok(parsed) => parsed,
-        Err(err) => {
-            println!("Parsing error: {:?}", err);
-            return;
-        }
-    };
-
-    let mut compiler = Compiler::new();
-
-    let compiled_fn = compiler.compile_program(program).unwrap();
-
-    let mut vm = Vm::default();
-
-    let value = vm
-        .run_main(Rc::new(compiled_fn))
-        .expect("Error during execution");
+    let value = eval(&content).unwrap();
 
     println!("{value}");
 }

@@ -670,6 +670,57 @@ mod tests {
     }
 
     #[test]
+    fn tailcall_test() {
+        // let f = fn x, y { f(x + 1, y + x) }
+
+        let ast = Statement::Let {
+            name: "f".to_string(),
+            value: Expr::Fn {
+                params: vec!["x".to_string(), "y".to_string()],
+                body: Box::new(Expr::Call {
+                    f: Box::new(Ident("f".to_string())),
+                    args: vec![
+                        Expr::Infix(
+                            "+".to_string(),
+                            Box::new(Ident("x".to_string())),
+                            Box::new(1.0.into()),
+                        ),
+                        Expr::Infix(
+                            "+".to_string(),
+                            Box::new(Ident("x".to_string())),
+                            Box::new(Ident("y".to_string())),
+                        ),
+                    ],
+                }),
+            },
+        };
+
+        let main = Compiler::new().compile_program(vec![ast]).unwrap();
+        let f = &main.constant_pool[0].as_fn();
+
+        assert_eq!(
+            f.bytecode,
+            vec![
+                OpCode::GetLocal as u8,
+                0,
+                OpCode::Const as u8,
+                0,
+                OpCode::Add as u8,
+                OpCode::GetLocal as u8,
+                0,
+                OpCode::GetLocal as u8,
+                1,
+                OpCode::Add as u8,
+                // TODO instead of CALL, execute JMP(0)
+                OpCode::GetCurrentClosure as u8,
+                OpCode::Call as u8,
+                2,
+                OpCode::Return as u8
+            ]
+        );
+    }
+
+    #[test]
     fn let1_does_not_leak_test() {
         // (do (let1 (x #true) #true) x)
         let ast = Expr::Do(

@@ -148,8 +148,8 @@ impl Vm {
                     None => return Ok(stack.pop()),
                     Some(parent_frame) => {
                         let ret_value = stack.pop();
-                        let num_locals = stack.len() - parent_frame.base_pointer;
-                        for _ in 1..num_locals {
+                        let num_locals = stack.len() - frame.base_pointer;
+                        for _ in 0..num_locals {
                             stack.pop();
                         }
                         stack.push(ret_value);

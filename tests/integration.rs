@@ -145,6 +145,18 @@ to_zero(3)
 }
 
 #[test]
+fn complex_expr() {
+    assert_result(
+        "
+let double = fn n { n * 2 };
+
+double(1) + double(10) 
+    ",
+        2 + 20,
+    );
+}
+
+#[test]
 fn let_binding_err() {
     let res = compile_src("let x = { x }; x");
     assert!(res.is_err());

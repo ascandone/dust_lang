@@ -387,7 +387,7 @@ fn parse_let_statement_and_semicolon_with_infix() {
 fn parse_let_star_sugar() {
     let sugar = "
         {
-            let* a = f(x, y);
+            use a <- f(x, y);
             expr(a)
         }
     ";
@@ -405,9 +405,9 @@ fn parse_let_star_sugar() {
 fn parse_nested_let_star_sugar() {
     let sugar = "
         {
-            let* a = f(x, y);
+            use a <- f(x, y);
             let b = 100;
-            let* c = g(b, a);
+            use c <- g(b, a);
             h(c)
         }
     ";

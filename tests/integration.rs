@@ -169,14 +169,14 @@ fn blank_identifiers_do_not_bind() {
 }
 
 #[test]
-fn let_start_syntax_sugar() {
+fn use_sugar() {
     let src = "
     let apply = fn x, f {
         f(x)
     };
 
     {
-        let* a = apply(42);
+        use a <- apply(42);
         a * 2
     }
     ";

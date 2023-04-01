@@ -83,7 +83,22 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        let Some(ch) = self.next_char() else { return Token::Eof };
+        if let Some(tk) = self.try_consume_many(&[
+            ("<-", Token::ArrowLeft),
+            ("use", Token::Use),
+            ("let", Token::Let),
+            ("if", Token::If),
+            ("fn", Token::Fn),
+            ("else", Token::Else),
+            ("true", Token::True),
+            ("false", Token::False),
+            ("nil", Token::Nil),
+        ]) {
+            return tk;
+        };
+
+        let Some(ch) = self.peek_char() else { return Token::Eof };
+        self.next_char();
 
         match ch {
             '=' => match self.peek_char() {
@@ -156,19 +171,6 @@ impl<'a> Lexer<'a> {
 
             _ => {
                 self.read_position -= 1;
-
-                if let Some(tk) = self.try_consume_many(&[
-                    ("let*", Token::LetStar),
-                    ("let", Token::Let),
-                    ("if", Token::If),
-                    ("fn", Token::Fn),
-                    ("else", Token::Else),
-                    ("true", Token::True),
-                    ("false", Token::False),
-                    ("nil", Token::Nil),
-                ]) {
-                    return tk;
-                };
 
                 if self.try_consume("let") {
                     return Token::Let;
@@ -279,9 +281,9 @@ mod tests {
 
     #[test]
     fn keywords() {
-        assert_tokens("let let*", {
+        assert_tokens("let use", {
             use Token::*;
-            &[Let, LetStar]
+            &[Let, Use]
         });
     }
 

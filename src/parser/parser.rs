@@ -96,7 +96,7 @@ impl<'a> Parser<'a> {
             Token::Fn => self.parse_fn_expr(),
             Token::If => self.parse_if_expr(),
             Token::Let if inside_block => self.parse_let_expr(),
-            Token::LetStar if inside_block => self.parse_let_star_expr(),
+            Token::Use if inside_block => self.parse_use_expr(),
 
             Token::LBrace => self.parse_block_expr(),
 
@@ -271,10 +271,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_let_star_expr(&mut self) -> Result<Expr, ParsingError> {
-        self.expect_token(Token::LetStar)?;
+    fn parse_use_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::Use)?;
         let name = self.expect_ident()?;
-        self.expect_token(Token::Assign)?;
+        self.expect_token(Token::ArrowLeft)?;
         let value = self.parse_expr(LOWEST_PREC, false)?;
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
@@ -381,6 +381,6 @@ fn desugar_let_star(binding: &str, f_call: Expr, body: Expr) -> Expr {
             Expr::Call { f, args }
         }
 
-        _ => panic!("Expected a function call in let* sugar"),
+        _ => panic!("Expected a function call in use syntax sugar"),
     }
 }

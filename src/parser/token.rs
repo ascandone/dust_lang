@@ -75,7 +75,10 @@ pub enum Token {
     Let,
 
     /// `let*`
-    LetStar,
+    Use,
+
+    /// `<-`
+    ArrowLeft,
 
     /// `if`
     If,

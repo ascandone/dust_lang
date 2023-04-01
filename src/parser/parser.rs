@@ -273,13 +273,34 @@ impl<'a> Parser<'a> {
 
     fn parse_use_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::Use)?;
-        let name = self.expect_ident()?;
+
+        let bindings = {
+            let mut bindings = vec![];
+
+            loop {
+                match &self.current_token.clone() {
+                    Token::Comma => {
+                        self.advance_token();
+                    }
+                    Token::Ident(name) => {
+                        bindings.push(name.clone());
+                        self.advance_token();
+                    }
+                    _ => {
+                        break;
+                    }
+                };
+            }
+
+            bindings
+        };
+
         self.expect_token(Token::ArrowLeft)?;
         let value = self.parse_expr(LOWEST_PREC, false)?;
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
-        Ok(desugar_let_star(&name, value, body))
+        Ok(desugar_let_star(bindings, value, body))
     }
 
     fn parse_let_expr(&mut self) -> Result<Expr, ParsingError> {
@@ -366,7 +387,7 @@ impl<'a> Parser<'a> {
 
 // TODO move to a cst->ast function
 // TODO refactor as result
-fn desugar_let_star(binding: &str, f_call: Expr, body: Expr) -> Expr {
+fn desugar_let_star(bindings: Vec<String>, f_call: Expr, body: Expr) -> Expr {
     match f_call {
         Expr::Call { f, args } => {
             // TODO check that f is an identifier
@@ -374,7 +395,7 @@ fn desugar_let_star(binding: &str, f_call: Expr, body: Expr) -> Expr {
             let mut args = args;
 
             args.push(Expr::Fn {
-                params: vec![binding.to_string()],
+                params: bindings,
                 body: Box::new(body),
             });
 

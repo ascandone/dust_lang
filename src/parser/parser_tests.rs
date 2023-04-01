@@ -402,6 +402,42 @@ fn parse_let_star_sugar() {
 }
 
 #[test]
+fn parse_let_star_sugar_no_args() {
+    let sugar = "
+        {
+            use <- f(x, y);
+            expr()
+        }
+    ";
+
+    let desugared = "
+        f(x, y, fn {
+            expr()
+        })
+    ";
+
+    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+}
+
+#[test]
+fn parse_let_star_sugar_many_args() {
+    let sugar = "
+        {
+            use a, b <- f(x, y);
+            expr(a, b)
+        }
+    ";
+
+    let desugared = "
+        f(x, y, fn a, b {
+            expr(a, b)
+        })
+    ";
+
+    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+}
+
+#[test]
 fn parse_nested_let_star_sugar() {
     let sugar = "
         {

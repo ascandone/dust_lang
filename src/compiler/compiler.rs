@@ -40,7 +40,6 @@ pub struct Compiler {
     symbol_table: SymbolTable,
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
-    tail_position: bool,
 }
 
 impl Compiler {
@@ -49,7 +48,6 @@ impl Compiler {
             symbol_table: SymbolTable::new(),
             binding_name: None,
             current_function_arity: None,
-            tail_position: false,
         }
     }
 
@@ -57,8 +55,12 @@ impl Compiler {
         self.symbol_table.define_global(name)
     }
 
-    fn compile_expr_chunk(&mut self, f: &mut Function, ast: Expr) -> Result<(), String> {
-        let tail_position_reset = self.tail_position;
+    fn compile_expr_chunk(
+        &mut self,
+        f: &mut Function,
+        ast: Expr,
+        tail_position: bool,
+    ) -> Result<(), String> {
         match ast {
             Expr::Lit(Lit::Nil) => f.bytecode.push(OpCode::ConstNil as u8),
             Expr::Lit(Lit::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
@@ -79,26 +81,23 @@ impl Compiler {
                 if_branch,
                 else_branch,
             } => {
-                self.tail_position = false;
-                self.compile_expr_chunk(f, *condition)?;
-                self.tail_position = tail_position_reset;
+                self.compile_expr_chunk(f, *condition, false)?;
 
                 let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfFalse);
 
-                self.compile_expr_chunk(f, *if_branch)?;
+                self.compile_expr_chunk(f, *if_branch, tail_position)?;
                 let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
 
                 // TODO throw on overflow
                 set_big_endian_u16(f, first_jump_index);
 
-                self.compile_expr_chunk(f, *else_branch)?;
+                self.compile_expr_chunk(f, *else_branch, tail_position)?;
 
                 // TODO throw on overflow
                 set_big_endian_u16(f, second_jump_index);
             }
 
             Expr::Fn { params, body } => {
-                self.tail_position = true;
                 self.current_function_arity = Some(params.len());
                 self.symbol_table.enter_scope(self.binding_name.clone());
                 let mut inner_f = Function {
@@ -112,7 +111,7 @@ impl Compiler {
                 }
 
                 self.binding_name = None;
-                self.compile_expr_chunk(&mut inner_f, *body)?;
+                self.compile_expr_chunk(&mut inner_f, *body, true)?;
                 inner_f.bytecode.push(OpCode::Return as u8);
                 inner_f.locals = self.symbol_table.count_locals() - &inner_f.arity;
                 let free_vars = &self.symbol_table.free();
@@ -130,20 +129,18 @@ impl Compiler {
                     f.bytecode.push(free_vars.len() as u8);
                 }
                 self.current_function_arity = None;
-                self.tail_position = tail_position_reset;
             }
 
             Expr::Call { f: caller, args } => {
                 // TODO return err when args > 256
                 let args_len = args.len();
 
-                self.tail_position = false;
                 for arg in args {
-                    self.compile_expr_chunk(f, arg)?;
+                    self.compile_expr_chunk(f, arg, false)?;
                 }
-                self.tail_position = tail_position_reset;
 
-                let is_tailrec = self.check_if_tailrec(caller.deref(), args_len)?;
+                let is_tailrec =
+                    tail_position && self.check_if_tailrec(caller.deref(), args_len)?;
                 if is_tailrec {
                     for index in (0..args_len).rev() {
                         f.bytecode.push(OpCode::SetLocal as u8);
@@ -153,9 +150,7 @@ impl Compiler {
                     f.bytecode.push(0);
                     f.bytecode.push(0);
                 } else {
-                    self.tail_position = false;
-                    self.compile_expr_chunk(f, *caller)?;
-                    self.tail_position = tail_position_reset;
+                    self.compile_expr_chunk(f, *caller, false)?;
 
                     f.bytecode.push(OpCode::Call as u8);
                     f.bytecode.push(args_len as u8);
@@ -166,65 +161,60 @@ impl Compiler {
                 let binding_index = self.symbol_table.define_local(&name);
 
                 self.binding_name = Some(name.clone());
-                self.tail_position = false;
-                self.compile_expr_chunk(f, *value)?;
-                self.tail_position = tail_position_reset;
+
+                self.compile_expr_chunk(f, *value, false)?;
+
                 self.binding_name = None;
 
                 f.bytecode.push(OpCode::SetLocal as u8);
                 f.bytecode.push(binding_index);
-                self.compile_expr_chunk(f, *body)?;
+                self.compile_expr_chunk(f, *body, tail_position)?;
                 self.symbol_table.remove_local(&name);
             }
 
             Expr::Do(left, right) => {
-                self.tail_position = false;
-                self.compile_expr_chunk(f, *left)?;
-                self.tail_position = tail_position_reset;
+                self.compile_expr_chunk(f, *left, false)?;
 
                 f.bytecode.push(OpCode::Pop as u8);
-                self.compile_expr_chunk(f, *right)?;
+                self.compile_expr_chunk(f, *right, tail_position)?;
             }
 
             Expr::Prefix(op, value) => match prefix_to_opcode(&op) {
                 Some(opcode) => {
-                    self.tail_position = false;
-                    self.compile_expr_chunk(f, *value)?;
-                    self.tail_position = tail_position_reset;
+                    self.compile_expr_chunk(f, *value, false)?;
+
                     f.bytecode.push(opcode as u8);
                 }
                 None => return Err(format!("Invalid prefix op: {op}")),
             },
 
             Expr::Infix(op, left, right) if op == "&&" => {
-                self.tail_position = false;
-                self.compile_expr_chunk(f, *left)?;
-                self.tail_position = tail_position_reset;
+                self.compile_expr_chunk(f, *left, false)?;
+
                 let jump_index = set_jump_placeholder(f, OpCode::JumpIfFalseElsePop);
-                self.compile_expr_chunk(f, *right)?;
+                self.compile_expr_chunk(f, *right, tail_position)?;
                 set_big_endian_u16(f, jump_index);
             }
 
             Expr::Infix(op, left, right) if op == "||" => {
-                self.tail_position = false;
-                self.compile_expr_chunk(f, *left)?;
-                self.tail_position = tail_position_reset;
+                self.compile_expr_chunk(f, *left, false)?;
+
                 let jump_index = set_jump_placeholder(f, OpCode::JumpIfTrueElsePop);
-                self.compile_expr_chunk(f, *right)?;
+                self.compile_expr_chunk(f, *right, tail_position)?;
                 set_big_endian_u16(f, jump_index);
             }
 
             Expr::Infix(op, left, right) if op == "|>" => {
                 let desugared = desugar_pipe_right_macro(left, right)?;
-                self.compile_expr_chunk(f, desugared)?;
+                self.compile_expr_chunk(f, desugared, tail_position)?;
             }
 
             Expr::Infix(op, left, right) => {
                 let opcode = infix_to_opcode(&op).ok_or(format!("Invalid infix op: {op}"))?;
-                self.tail_position = false;
-                self.compile_expr_chunk(f, *left)?;
-                self.compile_expr_chunk(f, *right)?;
-                self.tail_position = tail_position_reset;
+
+                self.compile_expr_chunk(f, *left, false)?;
+                self.compile_expr_chunk(f, *right, false)?;
+
                 f.bytecode.push(opcode as u8);
             }
         };
@@ -237,12 +227,10 @@ impl Compiler {
         f: &mut Function,
         statement: Statement,
     ) -> Result<(), String> {
-        assert!(!self.tail_position, "FAIL: {:?}", statement);
-
         match statement {
             Statement::Let { name, value } => {
                 self.binding_name = Some(name.clone());
-                self.compile_expr_chunk(f, value)?;
+                self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;
 
                 f.bytecode.push(OpCode::SetGlobal as u8);
@@ -254,7 +242,7 @@ impl Compiler {
                 f.bytecode.push(lsb);
                 Ok(())
             }
-            Statement::Expr(expr) => self.compile_expr_chunk(f, expr),
+            Statement::Expr(expr) => self.compile_expr_chunk(f, expr, false),
         }
     }
 
@@ -296,7 +284,7 @@ impl Compiler {
                 return  Err(format!("Invalid number of arguments: Required: {required_arity}, got {args_len} instead"));
             }
 
-            Ok(self.tail_position)
+            Ok(true)
         } else {
             Ok(false)
         }

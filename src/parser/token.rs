@@ -74,7 +74,7 @@ pub enum Token {
     /// `let`
     Let,
 
-    /// `let*`
+    /// `use`
     Use,
 
     /// `<-`

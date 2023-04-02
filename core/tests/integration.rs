@@ -1,5 +1,5 @@
-use dust_lang::interpreter::{eval, Interpreter};
-use dust_lang::vm::value::Value;
+use core::interpreter::{eval, Interpreter};
+use core::vm::value::Value;
 
 #[test]
 fn test_lit() {

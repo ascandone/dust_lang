@@ -1,4 +1,4 @@
-use dust_lang::interpreter::eval;
+use core::interpreter::eval;
 use std::{env, fs};
 
 fn main() {

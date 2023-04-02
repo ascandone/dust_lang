@@ -3,5 +3,12 @@
 version = 3
 
 [[package]]
-name = "dust_lang"
+name = "cli"
+version = "0.1.0"
+dependencies = [
+ "core",
+]
+
+[[package]]
+name = "core"
 version = "0.1.0"

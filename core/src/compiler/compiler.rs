@@ -82,17 +82,12 @@ impl Compiler {
                 else_branch,
             } => {
                 self.compile_expr_chunk(f, *condition, false)?;
-
                 let first_jump_index = set_jump_placeholder(f, OpCode::JumpIfFalse);
-
                 self.compile_expr_chunk(f, *if_branch, tail_position)?;
                 let second_jump_index = set_jump_placeholder(f, OpCode::Jump);
-
                 // TODO throw on overflow
                 set_big_endian_u16(f, first_jump_index);
-
                 self.compile_expr_chunk(f, *else_branch, tail_position)?;
-
                 // TODO throw on overflow
                 set_big_endian_u16(f, second_jump_index);
             }
@@ -123,7 +118,6 @@ impl Compiler {
                     for scope in free_vars {
                         compile_symbol_lookup(f, *scope);
                     }
-
                     alloc_const(f, Value::Function(Rc::new(inner_f)));
                     f.bytecode.push(OpCode::MakeClosure as u8);
                     f.bytecode.push(free_vars.len() as u8);
@@ -134,7 +128,6 @@ impl Compiler {
             Expr::Call { f: caller, args } => {
                 // TODO return err when args > 256
                 let args_len = args.len();
-
                 for arg in args {
                     self.compile_expr_chunk(f, arg, false)?;
                 }
@@ -151,7 +144,6 @@ impl Compiler {
                     f.bytecode.push(0);
                 } else {
                     self.compile_expr_chunk(f, *caller, false)?;
-
                     f.bytecode.push(OpCode::Call as u8);
                     f.bytecode.push(args_len as u8);
                 }
@@ -159,13 +151,9 @@ impl Compiler {
 
             Expr::Let { name, value, body } => {
                 let binding_index = self.symbol_table.define_local(&name);
-
                 self.binding_name = Some(name.clone());
-
                 self.compile_expr_chunk(f, *value, false)?;
-
                 self.binding_name = None;
-
                 f.bytecode.push(OpCode::SetLocal as u8);
                 f.bytecode.push(binding_index);
                 self.compile_expr_chunk(f, *body, tail_position)?;
@@ -174,7 +162,6 @@ impl Compiler {
 
             Expr::Do(left, right) => {
                 self.compile_expr_chunk(f, *left, false)?;
-
                 f.bytecode.push(OpCode::Pop as u8);
                 self.compile_expr_chunk(f, *right, tail_position)?;
             }
@@ -182,7 +169,6 @@ impl Compiler {
             Expr::Prefix(op, value) => match prefix_to_opcode(&op) {
                 Some(opcode) => {
                     self.compile_expr_chunk(f, *value, false)?;
-
                     f.bytecode.push(opcode as u8);
                 }
                 None => return Err(format!("Invalid prefix op: {op}")),
@@ -190,7 +176,6 @@ impl Compiler {
 
             Expr::Infix(op, left, right) if op == "&&" => {
                 self.compile_expr_chunk(f, *left, false)?;
-
                 let jump_index = set_jump_placeholder(f, OpCode::JumpIfFalseElsePop);
                 self.compile_expr_chunk(f, *right, tail_position)?;
                 set_big_endian_u16(f, jump_index);
@@ -198,7 +183,6 @@ impl Compiler {
 
             Expr::Infix(op, left, right) if op == "||" => {
                 self.compile_expr_chunk(f, *left, false)?;
-
                 let jump_index = set_jump_placeholder(f, OpCode::JumpIfTrueElsePop);
                 self.compile_expr_chunk(f, *right, tail_position)?;
                 set_big_endian_u16(f, jump_index);

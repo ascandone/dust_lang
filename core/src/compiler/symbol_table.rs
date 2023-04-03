@@ -35,8 +35,11 @@ impl LocalScope {
     }
 }
 
+#[derive(Hash, PartialEq, Eq)]
+struct QualifiedIdent(pub ModuleName, pub String);
+
 pub struct SymbolTable {
-    globals: HashMap<String, u16>,
+    globals: HashMap<QualifiedIdent, u16>,
     next_global: u16,
     locals: Vec<LocalScope>,
 }
@@ -78,11 +81,13 @@ impl SymbolTable {
     }
 
     pub fn define_global(&mut self, module_name: &ModuleName, unqualified_name: &str) -> u16 {
-        let qualified_name = qualify_name(module_name, unqualified_name.to_string());
-        let ident = self.next_global;
-        self.globals.insert(qualified_name, ident);
+        let ident = QualifiedIdent(module_name.clone(), unqualified_name.to_string());
+
+        let id = self.next_global;
+
+        self.globals.insert(ident, id);
         self.next_global += 1;
-        ident
+        id
     }
 
     pub fn define_local(&mut self, name: &str) -> u8 {
@@ -187,21 +192,16 @@ impl SymbolTable {
         }
 
         let ident_ns = ident_ns.clone().unwrap_or(current_module.clone());
-        let qualified_name = qualify_name(&ident_ns, unqualified_name.clone());
 
-        if let Some(ident) = self.globals.get(&qualified_name) {
+        if let Some(ident) = self
+            .globals
+            .get(&QualifiedIdent(ident_ns, unqualified_name.to_string()))
+        {
             return Some(Scope::Global(*ident));
         }
 
         None
     }
-}
-
-fn qualify_name(module: &ModuleName, ident: String) -> String {
-    let ModuleName(mut ns, name) = module.clone();
-    ns.push(name.clone());
-    ns.push(ident);
-    ns.join(".")
 }
 
 #[cfg(test)]
@@ -507,22 +507,6 @@ mod tests {
             symbol_table.resolve(&main_module(), &Ident(Some(mod_b.clone()), "x".to_string())),
             Some(Scope::Global(1)),
             "resolve B.x"
-        );
-    }
-
-    #[test]
-    fn qualify_name_test() {
-        assert_eq!(
-            &qualify_name(
-                &ModuleName(vec!["Maybe".to_string()], "Extra".to_string()),
-                "map".to_string()
-            ),
-            "Maybe.Extra.map"
-        );
-
-        assert_eq!(
-            &qualify_name(&ModuleName(vec![], "Maybe".to_string()), "map".to_string()),
-            "Maybe.map"
         );
     }
 }

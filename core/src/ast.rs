@@ -2,7 +2,7 @@ use std::fmt;
 
 pub type Program = Vec<Statement>;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct ModuleName(pub Vec<String>, pub String);
 
 impl ModuleName {

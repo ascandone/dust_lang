@@ -1,3 +1,4 @@
+use crate::ast::ModuleName;
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse, ParsingError};
 use crate::vm::value::{NativeFunction, Value};
@@ -22,8 +23,10 @@ pub fn eval(src: &str) -> Result<Value, Error> {
 
 impl Interpreter {
     pub fn new() -> Self {
+        let module = ModuleName(vec![], "User".to_string());
+
         Self {
-            compiler: Compiler::new(),
+            compiler: Compiler::new(module),
             vm: Vm::default(),
         }
     }

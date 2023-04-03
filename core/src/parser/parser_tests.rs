@@ -1,3 +1,4 @@
+use crate::ast::ident;
 use crate::{
     ast::{Expr, Statement, NIL},
     parser::{parse, parse_expr},
@@ -101,14 +102,14 @@ fn parse_infix_mixed() {
             "+".to_string(),
             Box::new(Expr::Infix(
                 "+".to_string(),
-                Box::new(Expr::Ident("a".to_string())),
+                Box::new(ident("a")),
                 Box::new(Expr::Infix(
                     "*".to_string(),
-                    Box::new(Expr::Ident("b".to_string())),
-                    Box::new(Expr::Ident("Z".to_string())),
+                    Box::new(ident("b")),
+                    Box::new(ident("Z")),
                 )),
             )),
-            Box::new(Expr::Ident("c".to_string())),
+            Box::new(ident("c")),
         )
     );
 }
@@ -134,7 +135,7 @@ fn parse_call_expr_no_args() {
     assert_eq!(
         parse_expr("f()").unwrap(),
         Expr::Call {
-            f: Box::new(Expr::Ident("f".to_string())),
+            f: Box::new(ident("f")),
             args: vec![]
         }
     );
@@ -145,7 +146,7 @@ fn parse_call_expr_one_arg() {
     assert_eq!(
         parse_expr("f(42)").unwrap(),
         Expr::Call {
-            f: Box::new(Expr::Ident("f".to_string())),
+            f: Box::new(ident("f")),
             args: vec![42.0.into()]
         }
     );
@@ -156,7 +157,7 @@ fn parse_call_expr_two_args() {
     assert_eq!(
         parse_expr("f(0, 1)").unwrap(),
         Expr::Call {
-            f: Box::new(Expr::Ident("f".to_string())),
+            f: Box::new(ident("f")),
             args: vec![0.0.into(), 1.0.into()]
         }
     );

@@ -1,4 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
+use crate::ast::ModuleName;
 use crate::{
     ast::{Expr, Lit, Program, Statement},
     vm::{
@@ -35,24 +36,25 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
     }
 }
 
-#[derive(Default)]
 pub struct Compiler {
     symbol_table: SymbolTable,
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
+    module: ModuleName,
 }
 
 impl Compiler {
-    pub fn new() -> Self {
+    pub fn new(module: ModuleName) -> Self {
         Self {
             symbol_table: SymbolTable::new(),
             binding_name: None,
             current_function_arity: None,
+            module,
         }
     }
 
     pub fn define_global(&mut self, name: &str) -> u16 {
-        self.symbol_table.define_global(name)
+        self.symbol_table.define_global(&self.module, name)
     }
 
     fn compile_expr_chunk(
@@ -68,11 +70,12 @@ impl Compiler {
             Expr::Lit(Lit::String(s)) => alloc_const(f, Value::String(Rc::new(s))),
             Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
-            Expr::Ident(name) => {
-                let lookup = self.symbol_table.resolve(&name);
+            Expr::Ident(ident) => {
+                let lookup = self.symbol_table.resolve(&self.module, &ident);
+
                 match lookup {
                     Some(scope) => compile_symbol_lookup(f, scope),
-                    None => return Err(format!("Lookup not found for {name}")),
+                    None => return Err(format!("Lookup not found for {:?}", ident)),
                 }
             }
 
@@ -219,7 +222,7 @@ impl Compiler {
 
                 f.bytecode.push(OpCode::SetGlobal as u8);
 
-                let index = self.symbol_table.define_global(&name);
+                let index = self.symbol_table.define_global(&self.module, &name);
 
                 let (msb, lsb) = to_big_endian_u16(index);
                 f.bytecode.push(msb);
@@ -251,8 +254,8 @@ impl Compiler {
 
     fn check_is_recursive_call(&mut self, caller: &Expr) -> bool {
         match caller {
-            Expr::Ident(caller_name) => {
-                self.symbol_table.resolve(&caller_name) == Some(Scope::Function)
+            Expr::Ident(ident) => {
+                self.symbol_table.resolve(&self.module, ident) == Some(Scope::Function)
             }
             _ => false,
         }

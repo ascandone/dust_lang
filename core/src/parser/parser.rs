@@ -1,5 +1,5 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Expr, Lit, Program, Statement, NIL};
+use crate::ast::{Expr, Ident, Lit, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -84,7 +84,8 @@ impl<'a> Parser<'a> {
             Token::True => self.consume_expr(true.into()),
             Token::False => self.consume_expr(false.into()),
             Token::Num(n) => self.consume_expr(n.into()),
-            Token::Ident(ref name) => self.consume_expr(Expr::Ident(name.clone())),
+            // TODO parse module name
+            Token::Ident(ref name) => self.consume_expr(Expr::Ident(Ident(None, name.clone()))),
             Token::String(ref str) => self.consume_expr(Expr::Lit(Lit::String(str.clone()))),
 
             // Prefix

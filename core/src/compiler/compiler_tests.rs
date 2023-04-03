@@ -1,4 +1,4 @@
-use crate::ast::Expr::Ident;
+use crate::ast::{ident, Ident, ModuleName};
 use crate::{
     ast::{Expr, Statement, NIL},
     compiler::compiler::Compiler,
@@ -8,11 +8,17 @@ use crate::{
     },
 };
 use std::rc::Rc;
+use std::string::ToString;
+
+fn new_compiler() -> Compiler {
+    let name = ModuleName(vec![], "Main".to_string());
+    Compiler::new(name)
+}
 
 #[test]
 fn const_true_test() {
     let ast = true.into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.arity, 0);
     assert_eq!(
@@ -24,7 +30,7 @@ fn const_true_test() {
 #[test]
 fn const_false_test() {
     let ast = false.into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -35,7 +41,7 @@ fn const_false_test() {
 #[test]
 fn nil_const_test() {
     let ast = NIL;
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -46,7 +52,7 @@ fn nil_const_test() {
 #[test]
 fn int_const_test() {
     let ast = 42.0.into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.constant_pool[0], Value::Num(42.0));
 
@@ -59,7 +65,7 @@ fn int_const_test() {
 #[test]
 fn string_const_test() {
     let ast = "abc".into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.constant_pool[0],
@@ -75,7 +81,7 @@ fn string_const_test() {
 #[test]
 fn multiple_exprs_do_test() {
     let ast = Expr::Do(Box::new(NIL), Box::new(true.into()));
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -95,7 +101,7 @@ fn def_test() {
         value: true.into(),
     }];
 
-    let f = Compiler::new().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -122,7 +128,7 @@ fn def_twice_test() {
         },
     ];
 
-    let f = Compiler::new().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -148,10 +154,10 @@ fn global_scope_test() {
             name: "x".to_string(),
             value: true.into(),
         },
-        Statement::Expr(Expr::Ident("x".to_string())),
+        Statement::Expr(ident("x")),
     ];
 
-    let f = Compiler::new().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -177,7 +183,7 @@ fn and_test() {
         Box::new(false.into()),
     );
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -202,7 +208,7 @@ fn or_test() {
         Box::new(false.into()),
     );
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -227,7 +233,7 @@ fn if_expr_test() {
         else_branch: Box::new(1.0.into()),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.constant_pool, vec![Value::Num(0.0), Value::Num(1.0),]);
 
@@ -258,7 +264,7 @@ fn lambda_expr_no_args_test() {
         body: Box::new(42.0.into()),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     let compiled_lambda = Function {
         bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
@@ -289,7 +295,7 @@ fn infer_lambda_name_from_let_expr() {
         body: Box::new(NIL),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     let f = &main.constant_pool[0].as_fn();
 
@@ -307,7 +313,7 @@ fn infer_lambda_name_from_let_statement() {
         },
     };
 
-    let main = Compiler::new().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast]).unwrap();
 
     let f = &main.constant_pool[0].as_fn();
 
@@ -322,7 +328,7 @@ fn lambda_expr_required_args_test() {
         body: Box::new(NIL),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     let compiled_lambda = Function {
         bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
@@ -346,10 +352,10 @@ fn lambda_args_lookup_test() {
     // (lambda* (x y) y)
     let ast = Expr::Fn {
         params: vec!["x".to_string(), "y".to_string()],
-        body: Box::new(Expr::Ident("y".to_string())),
+        body: Box::new(ident("y")),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     let compiled_lambda = Function {
         arity: 2,
@@ -376,7 +382,7 @@ fn f_call_no_args_test() {
         args: vec![],
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -403,7 +409,7 @@ fn f_call_test() {
         args: vec![true.into()],
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -428,7 +434,7 @@ fn let_test() {
         body: Box::new(NIL),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.locals, 1);
 
@@ -460,7 +466,7 @@ fn multiple_let_test() {
         }),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.locals, 2);
 
@@ -486,10 +492,10 @@ fn local_binding_test() {
     let ast = Expr::Let {
         name: "x".to_string(),
         value: Box::new(true.into()),
-        body: Box::new(Expr::Ident("x".to_string())),
+        body: Box::new(ident("x")),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -512,11 +518,11 @@ fn nested_fn() {
         params: vec!["x".to_string()],
         body: Box::new(Expr::Fn {
             params: vec!["y".to_string()],
-            body: Box::new(Expr::Ident("y".to_string())),
+            body: Box::new(ident("y")),
         }),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -555,13 +561,13 @@ fn make_closure_test() {
             params: vec!["y".to_string()],
             body: Box::new(Expr::Infix(
                 "+".to_string(),
-                Box::new(Expr::Ident("x".to_string())),
-                Box::new(Expr::Ident("y".to_string())),
+                Box::new(ident("x")),
+                Box::new(ident("y")),
             )),
         }),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -614,11 +620,11 @@ fn make_let_closure_test() {
         value: Box::new(true.into()),
         body: Box::new(Expr::Fn {
             params: vec![],
-            body: Box::new(Expr::Ident("x".to_string())),
+            body: Box::new(ident("x")),
         }),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -654,11 +660,11 @@ fn get_current_closure_test() {
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec![],
-            body: Box::new(Ident("f".to_string())),
+            body: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
         },
     };
 
-    let main = Compiler::new().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast]).unwrap();
     let f = &main.constant_pool[0].as_fn();
 
     assert_eq!(
@@ -675,13 +681,13 @@ fn error_on_rec_invalid_params() {
         value: Expr::Fn {
             params: vec!["x".to_string()],
             body: Box::new(Expr::Call {
-                f: Box::new(Ident("f".to_string())),
+                f: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
                 args: vec![],
             }),
         },
     };
 
-    let result = Compiler::new().compile_program(vec![ast]);
+    let result = new_compiler().compile_program(vec![ast]);
     assert!(result.is_err());
 }
 
@@ -694,24 +700,16 @@ fn tailcall_test() {
         value: Expr::Fn {
             params: vec!["x".to_string(), "y".to_string()],
             body: Box::new(Expr::Call {
-                f: Box::new(Ident("f".to_string())),
+                f: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
                 args: vec![
-                    Expr::Infix(
-                        "+".to_string(),
-                        Box::new(Ident("x".to_string())),
-                        Box::new(1.0.into()),
-                    ),
-                    Expr::Infix(
-                        "+".to_string(),
-                        Box::new(Ident("x".to_string())),
-                        Box::new(Ident("y".to_string())),
-                    ),
+                    Expr::Infix("+".to_string(), Box::new(ident("x")), Box::new(1.0.into())),
+                    Expr::Infix("+".to_string(), Box::new(ident("x")), Box::new(ident("y"))),
                 ],
             }),
         },
     };
 
-    let main = Compiler::new().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast]).unwrap();
     let f = &main.constant_pool[0].as_fn();
 
     assert_eq!(
@@ -751,9 +749,9 @@ fn let1_does_not_leak_test() {
             value: Box::new(true.into()),
             body: Box::new(true.into()),
         }),
-        Box::new(Expr::Ident("x".to_string())),
+        Box::new(ident("x")),
     );
 
-    let result = Compiler::new().compile_expr(ast);
+    let result = new_compiler().compile_expr(ast);
     assert!(result.is_err(), "{:?} should be Err(_)", result)
 }

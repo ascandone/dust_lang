@@ -2,6 +2,21 @@ use std::fmt;
 
 pub type Program = Vec<Statement>;
 
+#[derive(PartialEq, Debug, Clone)]
+pub struct ModuleName(pub Vec<String>, pub String);
+
+impl ModuleName {
+    pub fn from_path(path: &[&str]) -> Result<ModuleName, ()> {
+        match path {
+            [init @ .., last] => Ok(ModuleName(
+                init.into_iter().map(|s| s.to_string()).collect(),
+                last.to_string(),
+            )),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub enum Statement {
     Let { name: String, value: Expr },
@@ -29,8 +44,11 @@ impl fmt::Debug for Lit {
 }
 
 #[derive(PartialEq, Debug)]
+pub struct Ident(pub Option<ModuleName>, pub String);
+
+#[derive(PartialEq, Debug)]
 pub enum Expr {
-    Ident(String),
+    Ident(Ident),
     Lit(Lit),
     Do(Box<Expr>, Box<Expr>),
     If {
@@ -53,6 +71,11 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<Expr>,
     },
+}
+
+/// utility to create an unqualified identifier
+pub fn ident(name: &str) -> Expr {
+    Expr::Ident(Ident(None, name.to_string()))
 }
 
 pub const NIL: Expr = Expr::Lit(Lit::Nil);

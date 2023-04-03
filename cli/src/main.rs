@@ -1,17 +1,23 @@
-use core::interpreter::eval;
-use std::{env, fs};
+mod run;
+use crate::run::Run;
+use argh::FromArgs;
+
+#[derive(FromArgs, Debug)]
+/// Dust lang cli
+struct TopLevel {
+    #[argh(subcommand)]
+    command: Command,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand)]
+enum Command {
+    Run(Run),
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let &[_, ref file_path ,..] = args.as_slice() else {
-        println!("Missing file args");
-        return;
-    };
-
-    let content = fs::read_to_string(file_path).expect("Cannot read file");
-
-    let value = eval(&content).unwrap();
-
-    println!("{value}");
+    let up: TopLevel = argh::from_env();
+    match up.command {
+        Command::Run(run) => run.run(),
+    }
 }

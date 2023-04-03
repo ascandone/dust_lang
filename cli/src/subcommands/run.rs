@@ -2,7 +2,7 @@ use argh::FromArgs;
 use core::interpreter::{Error, Interpreter};
 use std::fs;
 
-#[derive(FromArgs, PartialEq, Debug)]
+#[derive(FromArgs, PartialEq)]
 /// Run a dust script
 #[argh(subcommand, name = "run")]
 pub struct Run {

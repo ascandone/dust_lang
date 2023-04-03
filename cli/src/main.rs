@@ -1,24 +1,28 @@
-mod subcommands; 
+mod dust_json;
+mod subcommands;
 
+use crate::subcommands::init::Init;
 use crate::subcommands::run::Run;
 use argh::FromArgs;
 
-#[derive(FromArgs, Debug)]
+#[derive(FromArgs)]
 /// Dust lang cli
 struct TopLevel {
     #[argh(subcommand)]
     command: Command,
 }
 
-#[derive(FromArgs, PartialEq, Debug)]
+#[derive(FromArgs, PartialEq)]
 #[argh(subcommand)]
 enum Command {
     Run(Run),
+    Init(Init),
 }
 
 fn main() {
     let up: TopLevel = argh::from_env();
     match up.command {
         Command::Run(run) => run.run(),
+        Command::Init(init) => init.run(),
     }
 }

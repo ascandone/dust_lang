@@ -1,7 +1,7 @@
 use crate::ast::Expr::Ident;
 use crate::{
     ast::{Expr, Statement, NIL},
-    compiler::compiler::{to_big_endian_u16, Compiler},
+    compiler::compiler::Compiler,
     vm::{
         bytecode::OpCode,
         value::{Function, Value},
@@ -756,16 +756,4 @@ fn let1_does_not_leak_test() {
 
     let result = Compiler::new().compile_expr(ast);
     assert!(result.is_err(), "{:?} should be Err(_)", result)
-}
-
-#[test]
-fn endianess() {
-    for n in &[0, 1, 22, 255, 256, 300, 600, 1400, u16::pow(2, 8) - 1] {
-        let (msb, lsb) = to_big_endian_u16(*n);
-        assert_eq!(
-            ((msb as u16) << 8) + lsb as u16,
-            *n,
-            "big_endianess_invariant for {n}"
-        );
-    }
 }

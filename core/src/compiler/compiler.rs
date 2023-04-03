@@ -329,21 +329,33 @@ fn set_jump_placeholder(f: &mut Function, opcode: OpCode) -> usize {
     jump_index
 }
 
-pub fn to_big_endian_u16(n: u16) -> (u8, u8) {
+fn to_big_endian_u16(n: u16) -> (u8, u8) {
     let msb = n >> 8;
     (msb as u8, n as u8)
 }
 
-pub fn push_big_endian_u16(f: &mut Function, value: u16) {
+fn push_big_endian_u16(f: &mut Function, value: u16) {
     let (msb, lsb) = to_big_endian_u16(value);
     f.bytecode.push(msb);
     f.bytecode.push(lsb);
 }
 
-pub fn set_big_endian_u16(f: &mut Function, index: usize) {
+fn set_big_endian_u16(f: &mut Function, index: usize) {
     let value = f.bytecode.len() as u16;
     let (msb, lsb) = to_big_endian_u16(value);
 
     f.bytecode[index] = msb;
     f.bytecode[index + 1] = lsb;
+}
+
+#[test]
+fn endianess() {
+    for n in &[0, 1, 22, 255, 256, 300, 600, 1400, u16::pow(2, 8) - 1] {
+        let (msb, lsb) = to_big_endian_u16(*n);
+        assert_eq!(
+            ((msb as u16) << 8) + lsb as u16,
+            *n,
+            "big_endianess_invariant for {n}"
+        );
+    }
 }

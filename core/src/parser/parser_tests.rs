@@ -1,4 +1,4 @@
-use crate::ast::{ident, Import, Namespace};
+use crate::ast::{ident, Ident, Import, Namespace};
 use crate::{
     ast::{Expr, Statement, NIL},
     parser::{parse, parse_expr},
@@ -31,6 +31,29 @@ fn parse_str() {
 fn parse_ident() {
     assert_eq!(parse_expr("abc").unwrap(), ident("abc"));
     assert_eq!(parse_expr("abc1").unwrap(), ident("abc1"));
+}
+
+#[test]
+fn parse_qualified_ident() {
+    assert_eq!(
+        parse_expr("A.abc").unwrap(),
+        Expr::Ident(Ident(
+            Some(Namespace(vec!["A".to_string()])),
+            "abc".to_string()
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("A.B.C.abc").unwrap(),
+        Expr::Ident(Ident(
+            Some(Namespace(vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string()
+            ])),
+            "abc".to_string()
+        ))
+    );
 }
 
 #[test]

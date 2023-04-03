@@ -89,8 +89,10 @@ impl<'a> Parser<'a> {
             Token::True => self.consume_expr(true.into()),
             Token::False => self.consume_expr(false.into()),
             Token::Num(n) => self.consume_expr(n.into()),
-            // TODO parse module name
+
             Token::Ident(ref name) => self.consume_expr(Expr::Ident(Ident(None, name.clone()))),
+            Token::NsIndent(_) => self.parse_qualified_ident(),
+
             Token::String(ref str) => self.consume_expr(Expr::Lit(Lit::String(str.clone()))),
 
             // Prefix
@@ -229,6 +231,13 @@ impl<'a> Parser<'a> {
             params,
             body: Box::new(body),
         })
+    }
+
+    fn parse_qualified_ident(&mut self) -> Result<Expr, ParsingError> {
+        let ns = self.parse_namespace()?;
+        let ident = self.expect_ident()?;
+
+        Ok(Expr::Ident(Ident(Some(ns), ident)))
     }
 
     fn expect_ident(&mut self) -> Result<String, ParsingError> {

@@ -84,6 +84,7 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
 
         if let Some(tk) = self.try_consume_many(&[
+            (".", Token::Dot),
             ("<-", Token::ArrowLeft),
             ("use", Token::Use),
             ("let", Token::Let),
@@ -174,12 +175,14 @@ impl<'a> Lexer<'a> {
             _ => {
                 self.read_position -= 1;
 
-                if self.try_consume("let") {
-                    return Token::Let;
+                let ch = self.peek_char().unwrap();
+
+                if is_ident_starting_letter(ch) {
+                    return self.expect_ident();
                 }
 
-                if let Some(ident) = self.consume_while(is_letter) {
-                    return Token::Ident(ident.to_string());
+                if is_ns_ident_starting_letter(ch) {
+                    return self.expect_ns_ident();
                 }
 
                 if let Some(n) = self.consume_while(is_number) {
@@ -189,6 +192,24 @@ impl<'a> Lexer<'a> {
                 self.panic_invalid_token()
             }
         }
+    }
+
+    fn expect_ident(&mut self) -> Token {
+        let ch = self.next_char().unwrap();
+        let mut str = ch.to_string();
+        if let Some(ident) = self.consume_while(is_ident_tail_letter) {
+            str.push_str(ident);
+        }
+        Token::Ident(str.to_string())
+    }
+
+    fn expect_ns_ident(&mut self) -> Token {
+        let ch = self.next_char().unwrap();
+        let mut str = ch.to_string();
+        if let Some(ident) = self.consume_while(is_ns_ident_tail_letter) {
+            str.push_str(ident);
+        }
+        Token::NsIndent(str.to_string())
     }
 
     fn try_consume(&mut self, kw: &str) -> bool {
@@ -216,16 +237,25 @@ impl<'a> Lexer<'a> {
     }
 }
 
+fn is_ident_starting_letter(ch: char) -> bool {
+    matches!(ch, '_' | 'a'..='z')
+}
+
+fn is_ident_tail_letter(ch: char) -> bool {
+    matches!(ch, '_' | 'a'..='z' | '0' ..='9')
+}
+
+fn is_ns_ident_starting_letter(ch: char) -> bool {
+    matches!(ch, 'A'..='Z')
+}
+
+fn is_ns_ident_tail_letter(ch: char) -> bool {
+    matches!(ch, 'A'..='Z' | 'a'..='z')
+}
+
 fn is_whitespace(ch: char) -> bool {
     match ch {
         ' ' | '\t' | '\n' | '\r' => true,
-        _ => false,
-    }
-}
-
-fn is_letter(ch: char) -> bool {
-    match ch {
-        'a'..='z' | 'A'..='Z' | '_' => true,
         _ => false,
     }
 }
@@ -316,6 +346,28 @@ mod tests {
     fn str_literal() {
         assert_tokens("\"\"", &[Token::String("".to_string())]);
         assert_tokens("\"abc\"", &[Token::String("abc".to_string())]);
+    }
+
+    #[test]
+    fn ident() {
+        assert_tokens("abc", &[Token::Ident("abc".to_string())]);
+        assert_tokens("_", &[Token::Ident("_".to_string())]);
+        assert_tokens("abc1", &[Token::Ident("abc1".to_string())]);
+    }
+
+    #[test]
+    fn ns_ident() {
+        assert_tokens("Abc", &[Token::NsIndent("Abc".to_string())]);
+        assert_tokens("AbcAbc", &[Token::NsIndent("AbcAbc".to_string())]);
+
+        assert_tokens(
+            "AbcAbc.x",
+            &[
+                Token::NsIndent("AbcAbc".to_string()),
+                Token::Dot,
+                Token::Ident("x".to_string()),
+            ],
+        );
     }
 
     #[test]

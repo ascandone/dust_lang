@@ -1,5 +1,4 @@
-use crate::ast::ident;
-use crate::ast::Lit::Nil;
+use crate::ast::{ident, Import, Namespace};
 use crate::{
     ast::{Expr, Statement, NIL},
     parser::{parse, parse_expr},
@@ -26,6 +25,12 @@ fn parse_num() {
 fn parse_str() {
     assert_eq!(parse_expr("\"\"").unwrap(), "".into());
     assert_eq!(parse_expr("\"abc\"").unwrap(), "abc".into());
+}
+
+#[test]
+fn parse_ident() {
+    assert_eq!(parse_expr("abc").unwrap(), ident("abc"));
+    assert_eq!(parse_expr("abc1").unwrap(), ident("abc1"));
 }
 
 #[test]
@@ -99,7 +104,7 @@ fn parse_infix_twice() {
 #[test]
 fn parse_infix_mixed() {
     assert_eq!(
-        parse_expr("a + b * Z + c").unwrap(),
+        parse_expr("a + b * z + c").unwrap(),
         Expr::Infix(
             "+".to_string(),
             Box::new(Expr::Infix(
@@ -108,7 +113,7 @@ fn parse_infix_mixed() {
                 Box::new(Expr::Infix(
                     "*".to_string(),
                     Box::new(ident("b")),
-                    Box::new(ident("Z")),
+                    Box::new(ident("z")),
                 )),
             )),
             Box::new(ident("c")),
@@ -474,5 +479,16 @@ fn parse_pub_let() {
             name: "x".to_string(),
             value: NIL
         }]
+    );
+}
+
+#[ignore]
+#[test]
+fn parse_import_statement() {
+    assert_eq!(
+        parse("import A").unwrap(),
+        vec![Statement::Import(Import {
+            ns: Namespace::from_path(&["A"])
+        })]
     );
 }

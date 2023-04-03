@@ -1,5 +1,5 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Expr, Ident, Lit, Program, Statement, NIL};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
                     self.expect_token(Token::Pub)?;
                     statements.push(self.parse_let_decl(true)?)
                 }
-
+                Token::Import => statements.push(self.parse_import_statement()?),
                 Token::Semicolon => self.advance_token(),
                 Token::Eof => return Ok(statements),
 
@@ -390,6 +390,16 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
+    }
+
+    fn parse_import_statement(&mut self) -> Result<Statement, ParsingError> {
+        self.expect_token(Token::Import)?;
+        let ns = self.parse_namespace()?;
+        Ok(Statement::Import(Import { ns }))
+    }
+
+    fn parse_namespace(&mut self) -> Result<Namespace, ParsingError> {
+        todo!("ns")
     }
 }
 

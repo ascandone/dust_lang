@@ -101,7 +101,11 @@ pub enum Token {
     /// `false`
     False,
 
+    /// `.`
+    Dot,
+
     Ident(String),
+    NsIndent(String),
     Num(f64),
     String(String),
 }

@@ -5,6 +5,7 @@ use crate::vm::{
     value::{Function, Value},
 };
 use std::collections::{HashMap, HashSet};
+use std::fmt::format;
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -229,8 +230,7 @@ impl Compiler {
                     Ok(())
                 } else {
                     match self.unimported_modules.remove(&ns) {
-                        // TODO better err
-                        None => Err("Import not found".to_string()),
+                        None => Err(format!("Module not found: {:?}", ns)),
                         Some(program) => {
                             self.imported_modules.insert(ns.clone());
                             let initial_ns = self.current_ns.clone();

@@ -31,6 +31,12 @@ impl Interpreter {
         }
     }
 
+    pub fn add_module(&mut self, ns: Namespace, src: &str) -> Result<(), Error> {
+        let program = parse(src).map_err(Error::Parsing)?;
+        self.compiler.add_module(ns, program);
+        Ok(())
+    }
+
     pub fn define_native<F>(&mut self, name: &str, args_number: u8, body: F)
     where
         F: Fn(&[Value]) -> Result<Value, String> + 'static,

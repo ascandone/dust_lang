@@ -83,6 +83,12 @@ pub enum Token {
     /// `if`
     If,
 
+    /// `import`
+    Import,
+
+    /// `pub`
+    Pub,
+
     /// `else`
     Else,
 

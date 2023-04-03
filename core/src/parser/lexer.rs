@@ -93,6 +93,8 @@ impl<'a> Lexer<'a> {
             ("true", Token::True),
             ("false", Token::False),
             ("nil", Token::Nil),
+            ("import", Token::Import),
+            ("pub", Token::Pub),
         ]) {
             return tk;
         };
@@ -281,9 +283,9 @@ mod tests {
 
     #[test]
     fn keywords() {
-        assert_tokens("let use", {
+        assert_tokens("let use import pub", {
             use Token::*;
-            &[Let, Use]
+            &[Let, Use, Import, Pub]
         });
     }
 

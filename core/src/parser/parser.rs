@@ -59,7 +59,12 @@ impl<'a> Parser<'a> {
 
         loop {
             match self.current_token {
-                Token::Let => statements.push(self.parse_let_decl()?),
+                Token::Let => statements.push(self.parse_let_decl(false)?),
+                Token::Pub => {
+                    self.expect_token(Token::Pub)?;
+                    statements.push(self.parse_let_decl(true)?)
+                }
+
                 Token::Semicolon => self.advance_token(),
                 Token::Eof => return Ok(statements),
 
@@ -204,8 +209,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Pre: let token has been encountered
-    fn parse_let_decl(&mut self) -> Result<Statement, ParsingError> {
-        self.advance_token();
+    fn parse_let_decl(&mut self, public: bool) -> Result<Statement, ParsingError> {
+        self.expect_token(Token::Let)?;
         let Token::Ident(ref name) = self.current_token.clone() else {
           return Err(ParsingError::UnexpectedToken(self.current_token.clone(), "Expected a Ident token".to_string()))
         };
@@ -217,7 +222,7 @@ impl<'a> Parser<'a> {
 
         // TODO add `pub` parsing
         Ok(Statement::Let {
-            public: false,
+            public,
             name: name.clone(),
             value,
         })

@@ -1,4 +1,5 @@
 use crate::ast::ident;
+use crate::ast::Lit::Nil;
 use crate::{
     ast::{Expr, Statement, NIL},
     parser::{parse, parse_expr},
@@ -462,4 +463,16 @@ fn parse_nested_let_star_sugar() {
     ";
 
     assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+}
+
+#[test]
+fn parse_pub_let() {
+    assert_eq!(
+        parse("pub let x = nil").unwrap(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: NIL
+        }]
+    );
 }

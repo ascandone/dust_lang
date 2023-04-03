@@ -5,7 +5,6 @@ use crate::vm::{
     value::{Function, Value},
 };
 use std::collections::{HashMap, HashSet};
-use std::fmt::format;
 use std::ops::Deref;
 use std::rc::Rc;
 

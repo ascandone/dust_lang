@@ -6,20 +6,27 @@ pub type Program = Vec<Statement>;
 pub struct Namespace(pub Vec<String>, pub String);
 
 impl Namespace {
-    pub fn from_path(path: &[&str]) -> Result<Namespace, ()> {
+    #[cfg(test)]
+    pub fn from_path(path: &[&str]) -> Namespace {
         match path {
-            [init @ .., last] => Ok(Namespace(
+            [init @ .., last] => Namespace(
                 init.into_iter().map(|s| s.to_string()).collect(),
                 last.to_string(),
-            )),
-            _ => Err(()),
+            ),
+            _ => panic!("Empty path"),
         }
     }
 }
 
 #[derive(PartialEq, Debug)]
+pub struct Import {
+    pub ns: Namespace,
+}
+
+#[derive(PartialEq, Debug)]
 pub enum Statement {
     Let { name: String, value: Expr },
+    Import(Import),
     Expr(Expr),
 }
 

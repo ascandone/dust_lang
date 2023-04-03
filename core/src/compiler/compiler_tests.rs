@@ -1,4 +1,4 @@
-use crate::ast::{ident, Ident, Namespace};
+use crate::ast::{ident, Ident, Import, Namespace};
 use crate::{
     ast::{Expr, Statement, NIL},
     compiler::compiler::Compiler,
@@ -754,4 +754,72 @@ fn let1_does_not_leak_test() {
 
     let result = new_compiler().compile_expr(ast);
     assert!(result.is_err(), "{:?} should be Err(_)", result)
+}
+
+#[test]
+fn modules_import_test() {
+    /*
+    A.ds
+    ```
+    nil
+    ```
+
+    Main.ds
+    ```
+    import A
+    ```
+     */
+    let a_ns = Namespace::from_path(&["a"]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(a_ns.clone(), vec![Statement::Expr(NIL)]);
+
+    let program = vec![
+        Statement::Import(Import { ns: a_ns }),
+        //         Statement::Expr(Expr::Ident(Ident(Some(a_ns), "x".to_string()))),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![OpCode::ConstNil as u8, OpCode::Return as u8]
+    );
+}
+
+#[test]
+fn modules_import_twice_test() {
+    /*
+    A.ds
+    ```
+    true
+    ```
+
+    Main.ds
+    ```
+    import A
+    import A
+    ```
+     */
+    let a_ns = Namespace::from_path(&["a"]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(a_ns.clone(), vec![Statement::Expr(true.into())]);
+
+    let program = vec![
+        Statement::Import(Import { ns: a_ns.clone() }),
+        Statement::Import(Import { ns: a_ns }),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::Pop as u8,
+            OpCode::ConstNil as u8,
+            OpCode::Return as u8
+        ]
+    );
 }

@@ -491,8 +491,8 @@ mod tests {
     fn test_two_qualified_lookups() {
         let mut symbol_table = SymbolTable::new();
 
-        let mod_a = Namespace::from_path(&["A"]).unwrap();
-        let mod_b = Namespace::from_path(&["B"]).unwrap();
+        let mod_a = Namespace::from_path(&["A"]);
+        let mod_b = Namespace::from_path(&["B"]);
 
         symbol_table.define_global(&mod_a, "x");
         symbol_table.define_global(&mod_b, "x");

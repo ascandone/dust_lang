@@ -1,12 +1,10 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::Namespace;
-use crate::{
-    ast::{Expr, Lit, Program, Statement},
-    vm::{
-        bytecode::OpCode,
-        value::{Function, Value},
-    },
+use crate::ast::{Expr, Import, Lit, Namespace, Program, Statement};
+use crate::vm::{
+    bytecode::OpCode,
+    value::{Function, Value},
 };
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -41,6 +39,8 @@ pub struct Compiler {
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
     current_ns: Namespace,
+    unimported_modules: HashMap<Namespace, Program>,
+    imported_modules: HashSet<Namespace>,
 }
 
 impl Compiler {
@@ -50,7 +50,13 @@ impl Compiler {
             binding_name: None,
             current_function_arity: None,
             current_ns: ns,
+            unimported_modules: HashMap::new(),
+            imported_modules: HashSet::new(),
         }
+    }
+
+    pub fn add_module(&mut self, ns: Namespace, program: Program) {
+        self.unimported_modules.insert(ns, program);
     }
 
     pub fn define_global(&mut self, name: &str) -> u16 {
@@ -215,6 +221,22 @@ impl Compiler {
         statement: Statement,
     ) -> Result<(), String> {
         match statement {
+            Statement::Import(Import { ns }) => {
+                if self.imported_modules.contains(&ns) {
+                    f.bytecode.push(OpCode::ConstNil as u8);
+                    Ok(())
+                } else {
+                    match self.unimported_modules.remove(&ns) {
+                        // TODO better err
+                        None => Err("Import not found".to_string()),
+                        Some(program) => {
+                            self.imported_modules.insert(ns);
+                            self.compile_program_chunk(f, program)?;
+                            Ok(())
+                        }
+                    }
+                }
+            }
             Statement::Let { name, value } => {
                 self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, value, false)?;
@@ -233,16 +255,21 @@ impl Compiler {
         }
     }
 
-    /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
-    pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
-        let mut f = Function::default();
+    fn compile_program_chunk(&mut self, f: &mut Function, program: Program) -> Result<(), String> {
         for (i, statement) in program.into_iter().enumerate() {
             if i != 0 {
                 f.bytecode.push(OpCode::Pop as u8)
             }
-
-            self.compile_statement_chunk(&mut f, statement)?;
+            self.compile_statement_chunk(f, statement)?;
         }
+
+        Ok(())
+    }
+
+    /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
+    pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
+        let mut f = Function::default();
+        self.compile_program_chunk(&mut f, program)?;
         f.bytecode.push(OpCode::Return as u8);
         f.locals = self.symbol_table.count_locals();
         Ok(f)

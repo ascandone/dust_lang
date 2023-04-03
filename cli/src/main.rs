@@ -1,5 +1,6 @@
-mod run;
-use crate::run::Run;
+mod subcommands; 
+
+use crate::subcommands::run::Run;
 use argh::FromArgs;
 
 #[derive(FromArgs, Debug)]

@@ -245,6 +245,20 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn expect_ns_ident(&mut self) -> Result<String, ParsingError> {
+        match &self.current_token {
+            Token::NsIndent(name) => {
+                let name = name.clone();
+                self.advance_token();
+                Ok(name)
+            }
+            _ => Err(ParsingError::UnexpectedToken(
+                self.current_token.clone(),
+                "Expected an NsIndent token".to_string(),
+            )),
+        }
+    }
+
     fn parse_use_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::Use)?;
 
@@ -346,7 +360,21 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_namespace(&mut self) -> Result<Namespace, ParsingError> {
-        todo!("ns")
+        let first = self.expect_ns_ident()?;
+
+        let mut ns = vec![first];
+
+        loop {
+            match &self.current_token {
+                Token::NsIndent(id) => ns.push(id.clone()),
+                Token::Dot => {}
+                _ => break,
+            }
+
+            self.advance_token();
+        }
+
+        Ok(Namespace(ns))
     }
 
     fn sep_by_zero_or_more<T, F>(

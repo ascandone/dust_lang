@@ -482,13 +482,19 @@ fn parse_pub_let() {
     );
 }
 
-#[ignore]
 #[test]
 fn parse_import_statement() {
     assert_eq!(
         parse("import A").unwrap(),
         vec![Statement::Import(Import {
             ns: Namespace(vec!["A".to_string()])
+        })]
+    );
+
+    assert_eq!(
+        parse("import A.B").unwrap(),
+        vec![Statement::Import(Import {
+            ns: Namespace(vec!["A".to_string(), "B".to_string()])
         })]
     );
 }

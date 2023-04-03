@@ -1,4 +1,4 @@
-use crate::ast::{Ident, ModuleName};
+use crate::ast::{Ident, Namespace};
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -36,7 +36,7 @@ impl LocalScope {
 }
 
 #[derive(Hash, PartialEq, Eq)]
-struct QualifiedIdent(pub ModuleName, pub String);
+struct QualifiedIdent(pub Namespace, pub String);
 
 pub struct SymbolTable {
     globals: HashMap<QualifiedIdent, u16>,
@@ -80,8 +80,8 @@ impl SymbolTable {
         }
     }
 
-    pub fn define_global(&mut self, module_name: &ModuleName, unqualified_name: &str) -> u16 {
-        let ident = QualifiedIdent(module_name.clone(), unqualified_name.to_string());
+    pub fn define_global(&mut self, ns: &Namespace, unqualified_name: &str) -> u16 {
+        let ident = QualifiedIdent(ns.clone(), unqualified_name.to_string());
 
         let id = self.next_global;
 
@@ -169,7 +169,7 @@ impl SymbolTable {
 
     pub fn resolve(
         &mut self,
-        current_module: &ModuleName,
+        current_ns: &Namespace,
         Ident(ident_ns, unqualified_name): &Ident,
     ) -> Option<Scope> {
         // TODO handle blank identifiers at a parsing+ast level
@@ -191,7 +191,7 @@ impl SymbolTable {
             return Some(Scope::Free(ident));
         }
 
-        let ident_ns = ident_ns.clone().unwrap_or(current_module.clone());
+        let ident_ns = ident_ns.clone().unwrap_or(current_ns.clone());
 
         if let Some(ident) = self
             .globals
@@ -208,18 +208,18 @@ impl SymbolTable {
 mod tests {
     use super::*;
 
-    fn main_module() -> ModuleName {
-        ModuleName(vec![], "Main".to_string())
+    fn main_ns() -> Namespace {
+        Namespace(vec![], "Main".to_string())
     }
 
     #[test]
     fn test_define_global() {
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_global(&main_module(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(0))
         )
     }
@@ -228,11 +228,11 @@ mod tests {
     fn test_shadowing_global() {
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_global(&main_module(), &"x".to_string());
-        symbol_table.define_global(&main_module(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(1))
         )
     }
@@ -241,12 +241,12 @@ mod tests {
     fn test_shadowing_global_twice() {
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_global(&main_module(), &"x".to_string());
-        symbol_table.define_global(&main_module(), &"x".to_string());
-        symbol_table.define_global(&main_module(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(2))
         )
     }
@@ -255,11 +255,11 @@ mod tests {
     fn test_define_global_resolve_nested() {
         let mut symbol_table = SymbolTable::new();
 
-        symbol_table.define_global(&main_module(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
         symbol_table.enter_scope(None);
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(0))
         )
     }
@@ -269,22 +269,22 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.enter_scope(None);
-        symbol_table.define_global(&main_module(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(0))
         );
 
         symbol_table.exit_scope();
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(0))
         );
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Global(0))
         );
     }
@@ -296,7 +296,7 @@ mod tests {
         symbol_table.define_local(&"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(0))
         )
     }
@@ -311,9 +311,9 @@ mod tests {
         symbol_table.define_local(&y);
         symbol_table.remove_local(&x);
 
-        assert_eq!(symbol_table.resolve(&main_module(), &Ident(None, x)), None);
+        assert_eq!(symbol_table.resolve(&main_ns(), &Ident(None, x)), None);
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, y)),
+            symbol_table.resolve(&main_ns(), &Ident(None, y)),
             Some(Scope::Local(1))
         );
     }
@@ -329,7 +329,7 @@ mod tests {
         symbol_table.remove_local(&x);
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, x)),
+            symbol_table.resolve(&main_ns(), &Ident(None, x)),
             Some(Scope::Local(0))
         );
     }
@@ -342,7 +342,7 @@ mod tests {
         symbol_table.define_local(&"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(1))
         )
     }
@@ -355,7 +355,7 @@ mod tests {
         symbol_table.define_local(&"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(0))
         )
     }
@@ -364,14 +364,14 @@ mod tests {
     fn test_shadowing_global_local() {
         let mut symbol_table = SymbolTable::new();
 
-        symbol_table.define_global(&main_module(), &"x".to_string());
+        symbol_table.define_global(&main_ns(), &"x".to_string());
 
         symbol_table.enter_scope(None);
 
         symbol_table.define_local(&"x".to_string());
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(0))
         )
     }
@@ -383,7 +383,7 @@ mod tests {
         symbol_table.define_local(&"x".to_string());
         symbol_table.enter_scope(None);
 
-        let lookup = symbol_table.resolve(&main_module(), &Ident(None, "x".to_string()));
+        let lookup = symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string()));
         assert_eq!(lookup, Some(Scope::Free(0)));
         assert_eq!(&symbol_table.current_local().free, &vec![Scope::Local(0)]);
     }
@@ -395,8 +395,8 @@ mod tests {
         symbol_table.define_local(&"x".to_string());
         symbol_table.enter_scope(None);
 
-        let _ = symbol_table.resolve(&main_module(), &Ident(None, "x".to_string()));
-        let lookup = symbol_table.resolve(&main_module(), &Ident(None, "x".to_string()));
+        let _ = symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string()));
+        let lookup = symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string()));
         assert_eq!(lookup, Some(Scope::Free(0)));
         assert_eq!(&symbol_table.current_local().free, &vec![Scope::Local(0)]);
     }
@@ -409,8 +409,8 @@ mod tests {
         symbol_table.define_local(&"x".to_string());
         symbol_table.enter_scope(None);
 
-        let lookup_x = symbol_table.resolve(&main_module(), &Ident(None, "x".to_string()));
-        let lookup_y = symbol_table.resolve(&main_module(), &Ident(None, "y".to_string()));
+        let lookup_x = symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string()));
+        let lookup_y = symbol_table.resolve(&main_ns(), &Ident(None, "y".to_string()));
 
         assert_eq!(lookup_x, Some(Scope::Free(0)));
         assert_eq!(lookup_y, Some(Scope::Free(1)));
@@ -429,7 +429,7 @@ mod tests {
         symbol_table.enter_scope(None);
         symbol_table.enter_scope(None);
 
-        let lookup = symbol_table.resolve(&main_module(), &Ident(None, "x".to_string()));
+        let lookup = symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string()));
         assert_eq!(lookup, Some(Scope::Free(0)));
         assert_eq!(&symbol_table.current_local().free, &vec![Scope::Free(0)]);
 
@@ -445,18 +445,18 @@ mod tests {
         symbol_table.enter_scope(Some("x".to_string()));
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Function)
         );
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "not-found".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "not-found".to_string())),
             None
         );
 
         symbol_table.exit_scope();
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             None
         );
     }
@@ -469,7 +469,7 @@ mod tests {
         symbol_table.define_local("x");
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(0))
         );
     }
@@ -479,10 +479,10 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.enter_scope(Some("x".to_string()));
-        symbol_table.define_global(&main_module(), "x");
+        symbol_table.define_global(&main_ns(), "x");
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(None, "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Function)
         );
     }
@@ -491,20 +491,20 @@ mod tests {
     fn test_two_qualified_lookups() {
         let mut symbol_table = SymbolTable::new();
 
-        let mod_a = ModuleName::from_path(&["A"]).unwrap();
-        let mod_b = ModuleName::from_path(&["B"]).unwrap();
+        let mod_a = Namespace::from_path(&["A"]).unwrap();
+        let mod_b = Namespace::from_path(&["B"]).unwrap();
 
         symbol_table.define_global(&mod_a, "x");
         symbol_table.define_global(&mod_b, "x");
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(Some(mod_a.clone()), "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(Some(mod_a.clone()), "x".to_string())),
             Some(Scope::Global(0)),
             "resolve A.x"
         );
 
         assert_eq!(
-            symbol_table.resolve(&main_module(), &Ident(Some(mod_b.clone()), "x".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(Some(mod_b.clone()), "x".to_string())),
             Some(Scope::Global(1)),
             "resolve B.x"
         );

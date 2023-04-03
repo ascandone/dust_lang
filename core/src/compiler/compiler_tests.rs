@@ -1,4 +1,4 @@
-use crate::ast::{ident, Ident, ModuleName};
+use crate::ast::{ident, Ident, Namespace};
 use crate::{
     ast::{Expr, Statement, NIL},
     compiler::compiler::Compiler,
@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::string::ToString;
 
 fn new_compiler() -> Compiler {
-    let name = ModuleName(vec![], "Main".to_string());
+    let name = Namespace(vec![], "Main".to_string());
     Compiler::new(name)
 }
 

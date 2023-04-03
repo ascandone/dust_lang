@@ -1,5 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::ModuleName;
+use crate::ast::Namespace;
 use crate::{
     ast::{Expr, Lit, Program, Statement},
     vm::{
@@ -40,21 +40,21 @@ pub struct Compiler {
     symbol_table: SymbolTable,
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
-    module: ModuleName,
+    current_ns: Namespace,
 }
 
 impl Compiler {
-    pub fn new(module: ModuleName) -> Self {
+    pub fn new(ns: Namespace) -> Self {
         Self {
             symbol_table: SymbolTable::new(),
             binding_name: None,
             current_function_arity: None,
-            module,
+            current_ns: ns,
         }
     }
 
     pub fn define_global(&mut self, name: &str) -> u16 {
-        self.symbol_table.define_global(&self.module, name)
+        self.symbol_table.define_global(&self.current_ns, name)
     }
 
     fn compile_expr_chunk(
@@ -71,7 +71,7 @@ impl Compiler {
             Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
             Expr::Ident(ident) => {
-                let lookup = self.symbol_table.resolve(&self.module, &ident);
+                let lookup = self.symbol_table.resolve(&self.current_ns, &ident);
 
                 match lookup {
                     Some(scope) => compile_symbol_lookup(f, scope),
@@ -222,7 +222,7 @@ impl Compiler {
 
                 f.bytecode.push(OpCode::SetGlobal as u8);
 
-                let index = self.symbol_table.define_global(&self.module, &name);
+                let index = self.symbol_table.define_global(&self.current_ns, &name);
 
                 let (msb, lsb) = to_big_endian_u16(index);
                 f.bytecode.push(msb);
@@ -255,7 +255,7 @@ impl Compiler {
     fn check_is_recursive_call(&mut self, caller: &Expr) -> bool {
         match caller {
             Expr::Ident(ident) => {
-                self.symbol_table.resolve(&self.module, ident) == Some(Scope::Function)
+                self.symbol_table.resolve(&self.current_ns, ident) == Some(Scope::Function)
             }
             _ => false,
         }

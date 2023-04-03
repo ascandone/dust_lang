@@ -1,4 +1,4 @@
-use crate::ast::ModuleName;
+use crate::ast::Namespace;
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse, ParsingError};
 use crate::vm::value::{NativeFunction, Value};
@@ -23,10 +23,10 @@ pub fn eval(src: &str) -> Result<Value, Error> {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let module = ModuleName(vec![], "User".to_string());
+        let ns = Namespace(vec![], "User".to_string());
 
         Self {
-            compiler: Compiler::new(module),
+            compiler: Compiler::new(ns),
             vm: Vm::default(),
         }
     }

@@ -3,12 +3,12 @@ use std::fmt;
 pub type Program = Vec<Statement>;
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct ModuleName(pub Vec<String>, pub String);
+pub struct Namespace(pub Vec<String>, pub String);
 
-impl ModuleName {
-    pub fn from_path(path: &[&str]) -> Result<ModuleName, ()> {
+impl Namespace {
+    pub fn from_path(path: &[&str]) -> Result<Namespace, ()> {
         match path {
-            [init @ .., last] => Ok(ModuleName(
+            [init @ .., last] => Ok(Namespace(
                 init.into_iter().map(|s| s.to_string()).collect(),
                 last.to_string(),
             )),
@@ -44,7 +44,7 @@ impl fmt::Debug for Lit {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct Ident(pub Option<ModuleName>, pub String);
+pub struct Ident(pub Option<Namespace>, pub String);
 
 #[derive(PartialEq, Debug)]
 pub enum Expr {

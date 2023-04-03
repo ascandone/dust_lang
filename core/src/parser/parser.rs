@@ -215,7 +215,9 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
+        // TODO add `pub` parsing
         Ok(Statement::Let {
+            public: false,
             name: name.clone(),
             value,
         })

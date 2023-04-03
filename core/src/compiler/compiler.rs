@@ -60,7 +60,9 @@ impl Compiler {
     }
 
     pub fn define_global(&mut self, name: &str) -> u16 {
-        self.symbol_table.define_global(&self.current_ns, name)
+        // TODO handle visibility
+        self.symbol_table
+            .define_global(false, &self.current_ns, name)
     }
 
     fn compile_expr_chunk(
@@ -230,21 +232,30 @@ impl Compiler {
                         // TODO better err
                         None => Err("Import not found".to_string()),
                         Some(program) => {
-                            self.imported_modules.insert(ns);
+                            self.imported_modules.insert(ns.clone());
+                            let initial_ns = self.current_ns.clone();
+                            self.current_ns = ns;
                             self.compile_program_chunk(f, program)?;
+                            self.current_ns = initial_ns;
                             Ok(())
                         }
                     }
                 }
             }
-            Statement::Let { name, value } => {
+            Statement::Let {
+                name,
+                value,
+                public,
+            } => {
                 self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;
 
                 f.bytecode.push(OpCode::SetGlobal as u8);
 
-                let index = self.symbol_table.define_global(&self.current_ns, &name);
+                let index = self
+                    .symbol_table
+                    .define_global(public, &self.current_ns, &name);
 
                 let (msb, lsb) = to_big_endian_u16(index);
                 f.bytecode.push(msb);

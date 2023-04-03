@@ -25,7 +25,11 @@ pub struct Import {
 
 #[derive(PartialEq, Debug)]
 pub enum Statement {
-    Let { name: String, value: Expr },
+    Let {
+        public: bool,
+        name: String,
+        value: Expr,
+    },
     Import(Import),
     Expr(Expr),
 }

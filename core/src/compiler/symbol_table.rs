@@ -35,11 +35,18 @@ impl LocalScope {
     }
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Debug)]
 struct QualifiedIdent(pub Namespace, pub String);
 
+// TODO remove
+#[derive(Debug)]
+struct Global {
+    id: u16,
+    public: bool,
+}
+
 pub struct SymbolTable {
-    globals: HashMap<QualifiedIdent, u16>,
+    globals: HashMap<QualifiedIdent, Global>,
     next_global: u16,
     locals: Vec<LocalScope>,
 }
@@ -80,12 +87,12 @@ impl SymbolTable {
         }
     }
 
-    pub fn define_global(&mut self, ns: &Namespace, unqualified_name: &str) -> u16 {
+    pub fn define_global(&mut self, public: bool, ns: &Namespace, unqualified_name: &str) -> u16 {
         let ident = QualifiedIdent(ns.clone(), unqualified_name.to_string());
 
         let id = self.next_global;
 
-        self.globals.insert(ident, id);
+        self.globals.insert(ident, Global { id, public });
         self.next_global += 1;
         id
     }
@@ -193,11 +200,13 @@ impl SymbolTable {
 
         let ident_ns = ident_ns.clone().unwrap_or(current_ns.clone());
 
-        if let Some(ident) = self
-            .globals
-            .get(&QualifiedIdent(ident_ns, unqualified_name.to_string()))
-        {
-            return Some(Scope::Global(*ident));
+        if let Some(Global { id, public }) = self.globals.get(&QualifiedIdent(
+            ident_ns.clone(),
+            unqualified_name.to_string(),
+        )) {
+            if *public || &ident_ns == current_ns {
+                return Some(Scope::Global(*id));
+            }
         }
 
         None
@@ -216,7 +225,7 @@ mod tests {
     fn test_define_global() {
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
@@ -228,8 +237,8 @@ mod tests {
     fn test_shadowing_global() {
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_global(&main_ns(), &"x".to_string());
-        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
@@ -241,9 +250,9 @@ mod tests {
     fn test_shadowing_global_twice() {
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_global(&main_ns(), &"x".to_string());
-        symbol_table.define_global(&main_ns(), &"x".to_string());
-        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
@@ -255,7 +264,7 @@ mod tests {
     fn test_define_global_resolve_nested() {
         let mut symbol_table = SymbolTable::new();
 
-        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
         symbol_table.enter_scope(None);
 
         assert_eq!(
@@ -269,7 +278,7 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.enter_scope(None);
-        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
@@ -364,7 +373,7 @@ mod tests {
     fn test_shadowing_global_local() {
         let mut symbol_table = SymbolTable::new();
 
-        symbol_table.define_global(&main_ns(), &"x".to_string());
+        symbol_table.define_global(false, &main_ns(), &"x".to_string());
 
         symbol_table.enter_scope(None);
 
@@ -479,7 +488,7 @@ mod tests {
         let mut symbol_table = SymbolTable::new();
 
         symbol_table.enter_scope(Some("x".to_string()));
-        symbol_table.define_global(&main_ns(), "x");
+        symbol_table.define_global(false, &main_ns(), "x");
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
@@ -494,8 +503,8 @@ mod tests {
         let mod_a = Namespace::from_path(&["A"]);
         let mod_b = Namespace::from_path(&["B"]);
 
-        symbol_table.define_global(&mod_a, "x");
-        symbol_table.define_global(&mod_b, "x");
+        symbol_table.define_global(true, &mod_a, "x");
+        symbol_table.define_global(true, &mod_b, "x");
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(Some(mod_a.clone()), "x".to_string())),
@@ -507,6 +516,20 @@ mod tests {
             symbol_table.resolve(&main_ns(), &Ident(Some(mod_b.clone()), "x".to_string())),
             Some(Scope::Global(1)),
             "resolve B.x"
+        );
+    }
+
+    #[test]
+    fn test_private_var() {
+        let mut symbol_table = SymbolTable::new();
+
+        let mod_a = Namespace::from_path(&["A"]);
+
+        symbol_table.define_global(false, &mod_a, "x");
+
+        assert_eq!(
+            symbol_table.resolve(&main_ns(), &Ident(Some(mod_a.clone()), "x".to_string())),
+            None,
         );
     }
 }

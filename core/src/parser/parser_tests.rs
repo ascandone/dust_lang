@@ -32,6 +32,7 @@ fn parse_let_decl() {
     assert_eq!(
         parse("let x = nil").unwrap(),
         vec![Statement::Let {
+            public: false,
             name: "x".to_string(),
             value: NIL
         }]
@@ -356,6 +357,7 @@ fn parse_let_statement_and_semicolon() {
         parse("let x = 0; 1; 2").unwrap(),
         vec![
             Statement::Let {
+                public: false,
                 name: "x".to_string(),
                 value: 0.0.into(),
             },
@@ -371,6 +373,7 @@ fn parse_let_statement_and_semicolon_with_infix() {
         parse("let x = 0; 1 + 2; 3").unwrap(),
         vec![
             Statement::Let {
+                public: false,
                 name: "x".to_string(),
                 value: 0.0.into(),
             },

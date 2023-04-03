@@ -99,6 +99,7 @@ fn def_test() {
     let ast = vec![Statement::Let {
         name: "x".to_string(),
         value: true.into(),
+        public: false,
     }];
 
     let f = new_compiler().compile_program(ast).unwrap();
@@ -121,10 +122,12 @@ fn def_twice_test() {
         Statement::Let {
             name: "x".to_string(),
             value: true.into(),
+            public: false,
         },
         Statement::Let {
             name: "y".to_string(),
             value: false.into(),
+            public: false,
         },
     ];
 
@@ -151,6 +154,7 @@ fn def_twice_test() {
 fn global_scope_test() {
     let ast = vec![
         Statement::Let {
+            public: false,
             name: "x".to_string(),
             value: true.into(),
         },
@@ -306,6 +310,7 @@ fn infer_lambda_name_from_let_expr() {
 fn infer_lambda_name_from_let_statement() {
     // let f = fn {nil}
     let ast = Statement::Let {
+        public: false,
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec![],
@@ -662,6 +667,7 @@ fn get_current_closure_test() {
             params: vec![],
             body: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
         },
+        public: false,
     };
 
     let main = new_compiler().compile_program(vec![ast]).unwrap();
@@ -677,6 +683,7 @@ fn get_current_closure_test() {
 fn error_on_rec_invalid_params() {
     // let f = fn x { f() }
     let ast = Statement::Let {
+        public: false,
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec!["x".to_string()],
@@ -696,6 +703,7 @@ fn tailcall_test() {
     // let f = fn x, y { f(x + 1, y + x) }
 
     let ast = Statement::Let {
+        public: false,
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec!["x".to_string(), "y".to_string()],
@@ -769,15 +777,12 @@ fn modules_import_test() {
     import A
     ```
      */
-    let a_ns = Namespace::from_path(&["a"]);
+    let a_ns = Namespace::from_path(&["A"]);
 
     let mut compiler = new_compiler();
     compiler.add_module(a_ns.clone(), vec![Statement::Expr(NIL)]);
 
-    let program = vec![
-        Statement::Import(Import { ns: a_ns }),
-        //         Statement::Expr(Expr::Ident(Ident(Some(a_ns), "x".to_string()))),
-    ];
+    let program = vec![Statement::Import(Import { ns: a_ns })];
 
     let main = compiler.compile_program(program).unwrap();
 
@@ -801,7 +806,7 @@ fn modules_import_twice_test() {
     import A
     ```
      */
-    let a_ns = Namespace::from_path(&["a"]);
+    let a_ns = Namespace::from_path(&["A"]);
 
     let mut compiler = new_compiler();
     compiler.add_module(a_ns.clone(), vec![Statement::Expr(true.into())]);
@@ -819,6 +824,55 @@ fn modules_import_twice_test() {
             OpCode::ConstTrue as u8,
             OpCode::Pop as u8,
             OpCode::ConstNil as u8,
+            OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn modules_import_value() {
+    /*
+    A.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    import A
+    A.x
+    ```
+     */
+    let a_ns = Namespace::from_path(&["A"]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![
+        Statement::Import(Import { ns: a_ns.clone() }),
+        Statement::Expr(Expr::Ident(Ident(Some(a_ns), "x".to_string()))),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::SetGlobal as u8,
+            0,
+            0,
+            OpCode::Pop as u8,
+            OpCode::GetGlobal as u8,
+            0,
+            0,
             OpCode::Return as u8
         ]
     );

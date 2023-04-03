@@ -488,7 +488,7 @@ fn parse_import_statement() {
     assert_eq!(
         parse("import A").unwrap(),
         vec![Statement::Import(Import {
-            ns: Namespace::from_path(&["A"])
+            ns: Namespace(vec!["A".to_string()])
         })]
     );
 }

@@ -11,7 +11,7 @@ use std::rc::Rc;
 use std::string::ToString;
 
 fn new_compiler() -> Compiler {
-    let name = Namespace(vec![], "Main".to_string());
+    let name = Namespace(vec!["Main".to_string()]);
     Compiler::new(name)
 }
 
@@ -777,7 +777,7 @@ fn modules_import_test() {
     import A
     ```
      */
-    let a_ns = Namespace::from_path(&["A"]);
+    let a_ns = Namespace(vec!["A".to_string()]);
 
     let mut compiler = new_compiler();
     compiler.add_module(a_ns.clone(), vec![Statement::Expr(NIL)]);
@@ -806,7 +806,7 @@ fn modules_import_twice_test() {
     import A
     ```
      */
-    let a_ns = Namespace::from_path(&["A"]);
+    let a_ns = Namespace(vec!["A".to_string()]);
 
     let mut compiler = new_compiler();
     compiler.add_module(a_ns.clone(), vec![Statement::Expr(true.into())]);
@@ -843,7 +843,7 @@ fn modules_import_value() {
     A.x
     ```
      */
-    let a_ns = Namespace::from_path(&["A"]);
+    let a_ns = Namespace(vec!["A".to_string()]);
 
     let mut compiler = new_compiler();
     compiler.add_module(

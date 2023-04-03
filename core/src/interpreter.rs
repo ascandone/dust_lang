@@ -23,7 +23,7 @@ pub fn eval(src: &str) -> Result<Value, Error> {
 
 impl Interpreter {
     pub fn new() -> Self {
-        let ns = Namespace(vec![], "User".to_string());
+        let ns = Namespace(vec!["User".to_string()]);
 
         Self {
             compiler: Compiler::new(ns),

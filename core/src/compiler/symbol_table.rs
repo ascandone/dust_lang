@@ -36,7 +36,10 @@ impl LocalScope {
 }
 
 #[derive(Hash, PartialEq, Eq, Debug)]
-struct QualifiedIdent(pub Namespace, pub String);
+struct QualifiedIdent {
+    pub ns: Namespace,
+    pub name: String,
+}
 
 // TODO remove
 #[derive(Debug)]
@@ -88,11 +91,15 @@ impl SymbolTable {
     }
 
     pub fn define_global(&mut self, public: bool, ns: &Namespace, unqualified_name: &str) -> u16 {
-        let ident = QualifiedIdent(ns.clone(), unqualified_name.to_string());
-
         let id = self.next_global;
 
-        self.globals.insert(ident, Global { id, public });
+        self.globals.insert(
+            QualifiedIdent {
+                ns: ns.clone(),
+                name: unqualified_name.to_string(),
+            },
+            Global { id, public },
+        );
         self.next_global += 1;
         id
     }
@@ -200,10 +207,10 @@ impl SymbolTable {
 
         let ident_ns = ident_ns.clone().unwrap_or(current_ns.clone());
 
-        if let Some(Global { id, public }) = self.globals.get(&QualifiedIdent(
-            ident_ns.clone(),
-            unqualified_name.to_string(),
-        )) {
+        if let Some(Global { id, public }) = self.globals.get(&QualifiedIdent {
+            ns: ident_ns.clone(),
+            name: unqualified_name.to_string(),
+        }) {
             if *public || &ident_ns == current_ns {
                 return Some(Scope::Global(*id));
             }
@@ -218,7 +225,7 @@ mod tests {
     use super::*;
 
     fn main_ns() -> Namespace {
-        Namespace(vec![], "Main".to_string())
+        Namespace(vec!["Main".to_string()])
     }
 
     #[test]
@@ -500,8 +507,8 @@ mod tests {
     fn test_two_qualified_lookups() {
         let mut symbol_table = SymbolTable::new();
 
-        let mod_a = Namespace::from_path(&["A"]);
-        let mod_b = Namespace::from_path(&["B"]);
+        let mod_a = Namespace(vec!["A".to_string()]);
+        let mod_b = Namespace(vec!["B".to_string()]);
 
         symbol_table.define_global(true, &mod_a, "x");
         symbol_table.define_global(true, &mod_b, "x");
@@ -523,7 +530,7 @@ mod tests {
     fn test_private_var() {
         let mut symbol_table = SymbolTable::new();
 
-        let mod_a = Namespace::from_path(&["A"]);
+        let mod_a = Namespace(vec!["A".to_string()]);
 
         symbol_table.define_global(false, &mod_a, "x");
 

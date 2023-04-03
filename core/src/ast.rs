@@ -3,20 +3,7 @@ use std::fmt;
 pub type Program = Vec<Statement>;
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
-pub struct Namespace(pub Vec<String>, pub String);
-
-impl Namespace {
-    #[cfg(test)]
-    pub fn from_path(path: &[&str]) -> Namespace {
-        match path {
-            [init @ .., last] => Namespace(
-                init.into_iter().map(|s| s.to_string()).collect(),
-                last.to_string(),
-            ),
-            _ => panic!("Empty path"),
-        }
-    }
-}
+pub struct Namespace(pub Vec<String>);
 
 #[derive(PartialEq, Debug)]
 pub struct Import {

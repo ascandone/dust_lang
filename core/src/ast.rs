@@ -8,6 +8,14 @@ pub struct Namespace(pub Vec<String>);
 #[derive(PartialEq, Debug)]
 pub struct Import {
     pub ns: Namespace,
+    pub rename: Option<String>,
+}
+
+impl Import {
+    #[cfg(test)]
+    pub fn new(ns: Namespace) -> Self {
+        Self { ns, rename: None }
+    }
 }
 
 #[derive(PartialEq, Debug)]

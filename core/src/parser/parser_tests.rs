@@ -510,14 +510,16 @@ fn parse_import_statement() {
     assert_eq!(
         parse("import A").unwrap(),
         vec![Statement::Import(Import {
-            ns: Namespace(vec!["A".to_string()])
+            ns: Namespace(vec!["A".to_string()]),
+            rename: None
         })]
     );
 
     assert_eq!(
         parse("import A.B").unwrap(),
         vec![Statement::Import(Import {
-            ns: Namespace(vec!["A".to_string(), "B".to_string()])
+            ns: Namespace(vec!["A".to_string(), "B".to_string()]),
+            rename: None
         })]
     );
 }

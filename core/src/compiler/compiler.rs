@@ -1,5 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::{Expr, Import, Lit, Namespace, Program, Statement};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement};
 use crate::vm::{
     bytecode::OpCode,
     value::{Function, Value},
@@ -39,6 +39,7 @@ pub struct Compiler {
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
     current_ns: Namespace,
+    visible_modules: HashSet<Namespace>,
     unimported_modules: HashMap<Namespace, Program>,
     imported_modules: HashSet<Namespace>,
 }
@@ -50,6 +51,7 @@ impl Compiler {
             binding_name: None,
             current_function_arity: None,
             current_ns: ns,
+            visible_modules: HashSet::new(),
             unimported_modules: HashMap::new(),
             imported_modules: HashSet::new(),
         }
@@ -79,6 +81,13 @@ impl Compiler {
             Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
             Expr::Ident(ident) => {
+                let Ident(ref ns, _) = ident;
+                if let Some(ns) = ns {
+                    if !self.visible_modules.contains(ns) {
+                        return Err(format!("Ns not found: {:?}", ns));
+                    }
+                }
+
                 let lookup = self.symbol_table.resolve(&self.current_ns, &ident);
 
                 match lookup {
@@ -223,7 +232,9 @@ impl Compiler {
         statement: Statement,
     ) -> Result<(), String> {
         match statement {
-            Statement::Import(Import { ns }) => {
+            Statement::Import(Import { ns, .. }) => {
+                self.visible_modules.insert(ns.clone());
+
                 if self.imported_modules.contains(&ns) {
                     f.bytecode.push(OpCode::ConstNil as u8);
                     Ok(())
@@ -232,10 +243,16 @@ impl Compiler {
                         None => Err(format!("Module not found: {:?}", ns)),
                         Some(program) => {
                             self.imported_modules.insert(ns.clone());
+
                             let initial_ns = self.current_ns.clone();
+                            // NOTE this copy is expensive; an immutable data structure would perform better
+                            let initial_visible_modules = self.visible_modules.clone();
+
                             self.current_ns = ns;
+                            self.visible_modules = HashSet::new();
                             self.compile_program_chunk(f, program)?;
                             self.current_ns = initial_ns;
+                            self.visible_modules = initial_visible_modules;
                             Ok(())
                         }
                     }

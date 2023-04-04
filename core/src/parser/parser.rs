@@ -365,7 +365,7 @@ impl<'a> Parser<'a> {
     fn parse_import_statement(&mut self) -> Result<Statement, ParsingError> {
         self.expect_token(Token::Import)?;
         let ns = self.parse_namespace()?;
-        Ok(Statement::Import(Import { ns }))
+        Ok(Statement::Import(Import { ns, rename: None }))
     }
 
     fn parse_namespace(&mut self) -> Result<Namespace, ParsingError> {

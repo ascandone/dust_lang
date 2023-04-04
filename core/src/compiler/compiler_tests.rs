@@ -782,7 +782,10 @@ fn modules_import_test() {
     let mut compiler = new_compiler();
     compiler.add_module(a_ns.clone(), vec![Statement::Expr(NIL)]);
 
-    let program = vec![Statement::Import(Import { ns: a_ns })];
+    let program = vec![Statement::Import(Import {
+        ns: a_ns,
+        rename: None,
+    })];
 
     let main = compiler.compile_program(program).unwrap();
 
@@ -812,8 +815,14 @@ fn modules_import_twice_test() {
     compiler.add_module(a_ns.clone(), vec![Statement::Expr(true.into())]);
 
     let program = vec![
-        Statement::Import(Import { ns: a_ns.clone() }),
-        Statement::Import(Import { ns: a_ns }),
+        Statement::Import(Import {
+            ns: a_ns.clone(),
+            rename: None,
+        }),
+        Statement::Import(Import {
+            ns: a_ns,
+            rename: None,
+        }),
     ];
 
     let main = compiler.compile_program(program).unwrap();
@@ -856,7 +865,10 @@ fn modules_import_value() {
     );
 
     let program = vec![
-        Statement::Import(Import { ns: a_ns.clone() }),
+        Statement::Import(Import {
+            ns: a_ns.clone(),
+            rename: None,
+        }),
         Statement::Expr(Expr::Ident(Ident(Some(a_ns), "x".to_string()))),
     ];
 
@@ -876,4 +888,83 @@ fn modules_import_value() {
             OpCode::Return as u8
         ]
     );
+}
+
+#[test]
+fn module_not_imported_err() {
+    /*
+    A.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    A.x // should be err
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![Statement::Expr(Expr::Ident(Ident(
+        Some(a_ns),
+        "x".to_string(),
+    )))];
+
+    let result = compiler.compile_program(program);
+    assert!(matches!(result, Err(_)));
+}
+
+#[test]
+fn modules_imports_are_scoped() {
+    /*
+    A.ds
+    ```
+    import B;
+    ```
+
+    B.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    import A;
+    B.x // should be err
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+    let b_ns = Namespace(vec!["B".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Import(Import::new(b_ns.clone()))],
+    );
+
+    compiler.add_module(
+        b_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![
+        Statement::Import(Import::new(a_ns.clone())),
+        Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
+    ];
+
+    assert!(matches!(compiler.compile_program(program), Err(_)));
 }

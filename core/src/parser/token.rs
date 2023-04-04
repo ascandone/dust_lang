@@ -83,6 +83,12 @@ pub enum Token {
     /// `if`
     If,
 
+    /// `import`
+    Import,
+
+    /// `pub`
+    Pub,
+
     /// `else`
     Else,
 
@@ -95,7 +101,14 @@ pub enum Token {
     /// `false`
     False,
 
+    /// `as`
+    As,
+
+    /// `.`
+    Dot,
+
     Ident(String),
+    NsIndent(String),
     Num(f64),
     String(String),
 }

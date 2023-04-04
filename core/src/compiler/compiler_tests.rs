@@ -1,4 +1,4 @@
-use crate::ast::Expr::Ident;
+use crate::ast::{ident, Ident, Import, Namespace};
 use crate::{
     ast::{Expr, Statement, NIL},
     compiler::compiler::Compiler,
@@ -8,11 +8,17 @@ use crate::{
     },
 };
 use std::rc::Rc;
+use std::string::ToString;
+
+fn new_compiler() -> Compiler {
+    let name = Namespace(vec!["Main".to_string()]);
+    Compiler::new(name)
+}
 
 #[test]
 fn const_true_test() {
     let ast = true.into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.arity, 0);
     assert_eq!(
@@ -24,7 +30,7 @@ fn const_true_test() {
 #[test]
 fn const_false_test() {
     let ast = false.into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -35,7 +41,7 @@ fn const_false_test() {
 #[test]
 fn nil_const_test() {
     let ast = NIL;
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -46,7 +52,7 @@ fn nil_const_test() {
 #[test]
 fn int_const_test() {
     let ast = 42.0.into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.constant_pool[0], Value::Num(42.0));
 
@@ -59,7 +65,7 @@ fn int_const_test() {
 #[test]
 fn string_const_test() {
     let ast = "abc".into();
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.constant_pool[0],
@@ -75,7 +81,7 @@ fn string_const_test() {
 #[test]
 fn multiple_exprs_do_test() {
     let ast = Expr::Do(Box::new(NIL), Box::new(true.into()));
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -93,9 +99,10 @@ fn def_test() {
     let ast = vec![Statement::Let {
         name: "x".to_string(),
         value: true.into(),
+        public: false,
     }];
 
-    let f = Compiler::new().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -115,14 +122,16 @@ fn def_twice_test() {
         Statement::Let {
             name: "x".to_string(),
             value: true.into(),
+            public: false,
         },
         Statement::Let {
             name: "y".to_string(),
             value: false.into(),
+            public: false,
         },
     ];
 
-    let f = Compiler::new().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -145,13 +154,14 @@ fn def_twice_test() {
 fn global_scope_test() {
     let ast = vec![
         Statement::Let {
+            public: false,
             name: "x".to_string(),
             value: true.into(),
         },
-        Statement::Expr(Expr::Ident("x".to_string())),
+        Statement::Expr(ident("x")),
     ];
 
-    let f = Compiler::new().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -177,7 +187,7 @@ fn and_test() {
         Box::new(false.into()),
     );
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -202,7 +212,7 @@ fn or_test() {
         Box::new(false.into()),
     );
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -227,7 +237,7 @@ fn if_expr_test() {
         else_branch: Box::new(1.0.into()),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.constant_pool, vec![Value::Num(0.0), Value::Num(1.0),]);
 
@@ -258,7 +268,7 @@ fn lambda_expr_no_args_test() {
         body: Box::new(42.0.into()),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     let compiled_lambda = Function {
         bytecode: vec![OpCode::Const as u8, 0, OpCode::Return as u8],
@@ -289,7 +299,7 @@ fn infer_lambda_name_from_let_expr() {
         body: Box::new(NIL),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     let f = &main.constant_pool[0].as_fn();
 
@@ -300,6 +310,7 @@ fn infer_lambda_name_from_let_expr() {
 fn infer_lambda_name_from_let_statement() {
     // let f = fn {nil}
     let ast = Statement::Let {
+        public: false,
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec![],
@@ -307,7 +318,7 @@ fn infer_lambda_name_from_let_statement() {
         },
     };
 
-    let main = Compiler::new().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast]).unwrap();
 
     let f = &main.constant_pool[0].as_fn();
 
@@ -322,7 +333,7 @@ fn lambda_expr_required_args_test() {
         body: Box::new(NIL),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     let compiled_lambda = Function {
         bytecode: vec![OpCode::ConstNil as u8, OpCode::Return as u8],
@@ -346,10 +357,10 @@ fn lambda_args_lookup_test() {
     // (lambda* (x y) y)
     let ast = Expr::Fn {
         params: vec!["x".to_string(), "y".to_string()],
-        body: Box::new(Expr::Ident("y".to_string())),
+        body: Box::new(ident("y")),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     let compiled_lambda = Function {
         arity: 2,
@@ -376,7 +387,7 @@ fn f_call_no_args_test() {
         args: vec![],
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -403,7 +414,7 @@ fn f_call_test() {
         args: vec![true.into()],
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -428,7 +439,7 @@ fn let_test() {
         body: Box::new(NIL),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.locals, 1);
 
@@ -460,7 +471,7 @@ fn multiple_let_test() {
         }),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(f.locals, 2);
 
@@ -486,10 +497,10 @@ fn local_binding_test() {
     let ast = Expr::Let {
         name: "x".to_string(),
         value: Box::new(true.into()),
-        body: Box::new(Expr::Ident("x".to_string())),
+        body: Box::new(ident("x")),
     };
 
-    let f = Compiler::new().compile_expr(ast).unwrap();
+    let f = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -512,11 +523,11 @@ fn nested_fn() {
         params: vec!["x".to_string()],
         body: Box::new(Expr::Fn {
             params: vec!["y".to_string()],
-            body: Box::new(Expr::Ident("y".to_string())),
+            body: Box::new(ident("y")),
         }),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -555,13 +566,13 @@ fn make_closure_test() {
             params: vec!["y".to_string()],
             body: Box::new(Expr::Infix(
                 "+".to_string(),
-                Box::new(Expr::Ident("x".to_string())),
-                Box::new(Expr::Ident("y".to_string())),
+                Box::new(ident("x")),
+                Box::new(ident("y")),
             )),
         }),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -614,11 +625,11 @@ fn make_let_closure_test() {
         value: Box::new(true.into()),
         body: Box::new(Expr::Fn {
             params: vec![],
-            body: Box::new(Expr::Ident("x".to_string())),
+            body: Box::new(ident("x")),
         }),
     };
 
-    let main = Compiler::new().compile_expr(ast).unwrap();
+    let main = new_compiler().compile_expr(ast).unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -654,11 +665,12 @@ fn get_current_closure_test() {
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec![],
-            body: Box::new(Ident("f".to_string())),
+            body: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
         },
+        public: false,
     };
 
-    let main = Compiler::new().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast]).unwrap();
     let f = &main.constant_pool[0].as_fn();
 
     assert_eq!(
@@ -671,17 +683,18 @@ fn get_current_closure_test() {
 fn error_on_rec_invalid_params() {
     // let f = fn x { f() }
     let ast = Statement::Let {
+        public: false,
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec!["x".to_string()],
             body: Box::new(Expr::Call {
-                f: Box::new(Ident("f".to_string())),
+                f: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
                 args: vec![],
             }),
         },
     };
 
-    let result = Compiler::new().compile_program(vec![ast]);
+    let result = new_compiler().compile_program(vec![ast]);
     assert!(result.is_err());
 }
 
@@ -690,28 +703,21 @@ fn tailcall_test() {
     // let f = fn x, y { f(x + 1, y + x) }
 
     let ast = Statement::Let {
+        public: false,
         name: "f".to_string(),
         value: Expr::Fn {
             params: vec!["x".to_string(), "y".to_string()],
             body: Box::new(Expr::Call {
-                f: Box::new(Ident("f".to_string())),
+                f: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
                 args: vec![
-                    Expr::Infix(
-                        "+".to_string(),
-                        Box::new(Ident("x".to_string())),
-                        Box::new(1.0.into()),
-                    ),
-                    Expr::Infix(
-                        "+".to_string(),
-                        Box::new(Ident("x".to_string())),
-                        Box::new(Ident("y".to_string())),
-                    ),
+                    Expr::Infix("+".to_string(), Box::new(ident("x")), Box::new(1.0.into())),
+                    Expr::Infix("+".to_string(), Box::new(ident("x")), Box::new(ident("y"))),
                 ],
             }),
         },
     };
 
-    let main = Compiler::new().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast]).unwrap();
     let f = &main.constant_pool[0].as_fn();
 
     assert_eq!(
@@ -751,9 +757,267 @@ fn let1_does_not_leak_test() {
             value: Box::new(true.into()),
             body: Box::new(true.into()),
         }),
-        Box::new(Expr::Ident("x".to_string())),
+        Box::new(ident("x")),
     );
 
-    let result = Compiler::new().compile_expr(ast);
+    let result = new_compiler().compile_expr(ast);
     assert!(result.is_err(), "{:?} should be Err(_)", result)
+}
+
+#[test]
+fn modules_import_test() {
+    /*
+    A.ds
+    ```
+    nil
+    ```
+
+    Main.ds
+    ```
+    import A
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(a_ns.clone(), vec![Statement::Expr(NIL)]);
+
+    let program = vec![Statement::Import(Import {
+        ns: a_ns,
+        rename: None,
+    })];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![OpCode::ConstNil as u8, OpCode::Return as u8]
+    );
+}
+
+#[test]
+fn modules_import_twice_test() {
+    /*
+    A.ds
+    ```
+    true
+    ```
+
+    Main.ds
+    ```
+    import A
+    import A
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(a_ns.clone(), vec![Statement::Expr(true.into())]);
+
+    let program = vec![
+        Statement::Import(Import {
+            ns: a_ns.clone(),
+            rename: None,
+        }),
+        Statement::Import(Import {
+            ns: a_ns,
+            rename: None,
+        }),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::Pop as u8,
+            OpCode::ConstNil as u8,
+            OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn modules_import_value() {
+    /*
+    A.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    import A
+    A.x
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![
+        Statement::Import(Import {
+            ns: a_ns.clone(),
+            rename: None,
+        }),
+        Statement::Expr(Expr::Ident(Ident(Some(a_ns), "x".to_string()))),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::SetGlobal as u8,
+            0,
+            0,
+            OpCode::Pop as u8,
+            OpCode::GetGlobal as u8,
+            0,
+            0,
+            OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn module_not_imported_err() {
+    /*
+    A.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    A.x // should be err
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![Statement::Expr(Expr::Ident(Ident(
+        Some(a_ns),
+        "x".to_string(),
+    )))];
+
+    let result = compiler.compile_program(program);
+    assert!(matches!(result, Err(_)));
+}
+
+#[test]
+fn modules_imports_are_scoped() {
+    /*
+    A.ds
+    ```
+    import B;
+    ```
+
+    B.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    import A;
+    B.x // should be err
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+    let b_ns = Namespace(vec!["B".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Import(Import::new(b_ns.clone()))],
+    );
+
+    compiler.add_module(
+        b_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![
+        Statement::Import(Import::new(a_ns.clone())),
+        Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
+    ];
+
+    assert!(matches!(compiler.compile_program(program), Err(_)));
+}
+
+#[test]
+fn modules_renamed_imports() {
+    /*
+    A.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    import A as B;
+    B.x
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+    let b_ns = Namespace(vec!["B".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![
+        Statement::Import(Import {
+            ns: a_ns.clone(),
+            rename: Some(b_ns.clone()),
+        }),
+        Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::SetGlobal as u8,
+            0,
+            0,
+            OpCode::Pop as u8,
+            OpCode::GetGlobal as u8,
+            0,
+            0,
+            OpCode::Return as u8
+        ]
+    );
 }

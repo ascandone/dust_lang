@@ -1,3 +1,4 @@
+use crate::ast::Namespace;
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse, ParsingError};
 use crate::vm::value::{NativeFunction, Value};
@@ -22,10 +23,18 @@ pub fn eval(src: &str) -> Result<Value, Error> {
 
 impl Interpreter {
     pub fn new() -> Self {
+        let ns = Namespace(vec!["User".to_string()]);
+
         Self {
-            compiler: Compiler::new(),
+            compiler: Compiler::new(ns),
             vm: Vm::default(),
         }
+    }
+
+    pub fn add_module(&mut self, ns: Namespace, src: &str) -> Result<(), Error> {
+        let program = parse(src).map_err(Error::Parsing)?;
+        self.compiler.add_module(ns, program);
+        Ok(())
     }
 
     pub fn define_native<F>(&mut self, name: &str, args_number: u8, body: F)

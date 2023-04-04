@@ -1,5 +1,5 @@
 [package]
-name = "cli"
+name = "dust"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,8 @@ edition = "2021"
 
 [dependencies]
 core = { path = "../core" }
+argh = "^0.1"
+colored = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+glob = "0.3.1"

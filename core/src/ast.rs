@@ -2,9 +2,30 @@ use std::fmt;
 
 pub type Program = Vec<Statement>;
 
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
+pub struct Namespace(pub Vec<String>);
+
+#[derive(PartialEq, Debug)]
+pub struct Import {
+    pub ns: Namespace,
+    pub rename: Option<Namespace>,
+}
+
+impl Import {
+    #[cfg(test)]
+    pub fn new(ns: Namespace) -> Self {
+        Self { ns, rename: None }
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub enum Statement {
-    Let { name: String, value: Expr },
+    Let {
+        public: bool,
+        name: String,
+        value: Expr,
+    },
+    Import(Import),
     Expr(Expr),
 }
 
@@ -17,7 +38,7 @@ pub enum Lit {
 }
 
 impl fmt::Debug for Lit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Lit::Nil => write!(f, "nil"),
             Lit::Bool(true) => write!(f, "true"),
@@ -29,8 +50,11 @@ impl fmt::Debug for Lit {
 }
 
 #[derive(PartialEq, Debug)]
+pub struct Ident(pub Option<Namespace>, pub String);
+
+#[derive(PartialEq, Debug)]
 pub enum Expr {
-    Ident(String),
+    Ident(Ident),
     Lit(Lit),
     Do(Box<Expr>, Box<Expr>),
     If {
@@ -53,6 +77,11 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<Expr>,
     },
+}
+
+/// utility to create an unqualified identifier
+pub fn ident(name: &str) -> Expr {
+    Expr::Ident(Ident(None, name.to_string()))
 }
 
 pub const NIL: Expr = Expr::Lit(Lit::Nil);

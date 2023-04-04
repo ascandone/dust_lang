@@ -1,5 +1,5 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Expr, Lit, Program, Statement, NIL};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -59,7 +59,12 @@ impl<'a> Parser<'a> {
 
         loop {
             match self.current_token {
-                Token::Let => statements.push(self.parse_let_decl()?),
+                Token::Let => statements.push(self.parse_let_decl(false)?),
+                Token::Pub => {
+                    self.expect_token(Token::Pub)?;
+                    statements.push(self.parse_let_decl(true)?)
+                }
+                Token::Import => statements.push(self.parse_import_statement()?),
                 Token::Semicolon => self.advance_token(),
                 Token::Eof => return Ok(statements),
 
@@ -84,7 +89,10 @@ impl<'a> Parser<'a> {
             Token::True => self.consume_expr(true.into()),
             Token::False => self.consume_expr(false.into()),
             Token::Num(n) => self.consume_expr(n.into()),
-            Token::Ident(ref name) => self.consume_expr(Expr::Ident(name.clone())),
+
+            Token::Ident(ref name) => self.consume_expr(Expr::Ident(Ident(None, name.clone()))),
+            Token::NsIndent(_) => self.parse_qualified_ident(),
+
             Token::String(ref str) => self.consume_expr(Expr::Lit(Lit::String(str.clone()))),
 
             // Prefix
@@ -173,21 +181,9 @@ impl<'a> Parser<'a> {
     fn parse_call_expr(&mut self, left: Expr) -> Result<Expr, ParsingError> {
         self.advance_token();
 
-        let mut args = vec![];
-
-        loop {
-            match self.current_token {
-                Token::RParen => {
-                    self.advance_token();
-                    break;
-                }
-                Token::Comma => self.advance_token(),
-                _ => {
-                    let expr = self.parse_expr(LOWEST_PREC, false)?;
-                    args.push(expr);
-                }
-            }
-        }
+        let args = self.sep_by_zero_or_more(Token::Comma, Token::RParen, |p| {
+            p.parse_expr(LOWEST_PREC, false)
+        })?;
 
         Ok(Expr::Call {
             f: Box::new(left),
@@ -203,8 +199,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Pre: let token has been encountered
-    fn parse_let_decl(&mut self) -> Result<Statement, ParsingError> {
-        self.advance_token();
+    fn parse_let_decl(&mut self, public: bool) -> Result<Statement, ParsingError> {
+        self.expect_token(Token::Let)?;
         let Token::Ident(ref name) = self.current_token.clone() else {
           return Err(ParsingError::UnexpectedToken(self.current_token.clone(), "Expected a Ident token".to_string()))
         };
@@ -214,7 +210,9 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
+        // TODO add `pub` parsing
         Ok(Statement::Let {
+            public,
             name: name.clone(),
             value,
         })
@@ -223,29 +221,7 @@ impl<'a> Parser<'a> {
     fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
         let () = self.expect_token(Token::Fn)?;
 
-        let mut params = vec![];
-
-        loop {
-            match &self.current_token {
-                Token::Ident(name) => {
-                    params.push(name.clone());
-                    self.advance_token();
-                }
-                Token::Comma => {
-                    self.advance_token();
-                }
-                Token::LBrace => {
-                    self.advance_token();
-                    break;
-                }
-                _ => {
-                    return Err(ParsingError::UnexpectedToken(
-                        self.current_token.clone(),
-                        "Expected either a Comma, LBrace or Ident tokens".to_string(),
-                    ))
-                }
-            }
-        }
+        let params = self.sep_by_zero_or_more(Token::Comma, Token::LBrace, Parser::expect_ident)?;
 
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
@@ -255,6 +231,13 @@ impl<'a> Parser<'a> {
             params,
             body: Box::new(body),
         })
+    }
+
+    fn parse_qualified_ident(&mut self) -> Result<Expr, ParsingError> {
+        let ns = self.parse_namespace()?;
+        let ident = self.expect_ident()?;
+
+        Ok(Expr::Ident(Ident(Some(ns), ident)))
     }
 
     fn expect_ident(&mut self) -> Result<String, ParsingError> {
@@ -271,31 +254,26 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn expect_ns_ident(&mut self) -> Result<String, ParsingError> {
+        match &self.current_token {
+            Token::NsIndent(name) => {
+                let name = name.clone();
+                self.advance_token();
+                Ok(name)
+            }
+            _ => Err(ParsingError::UnexpectedToken(
+                self.current_token.clone(),
+                "Expected an NsIndent token".to_string(),
+            )),
+        }
+    }
+
     fn parse_use_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::Use)?;
 
-        let bindings = {
-            let mut bindings = vec![];
+        let bindings =
+            self.sep_by_zero_or_more(Token::Comma, Token::ArrowLeft, Parser::expect_ident)?;
 
-            loop {
-                match &self.current_token.clone() {
-                    Token::Comma => {
-                        self.advance_token();
-                    }
-                    Token::Ident(name) => {
-                        bindings.push(name.clone());
-                        self.advance_token();
-                    }
-                    _ => {
-                        break;
-                    }
-                };
-            }
-
-            bindings
-        };
-
-        self.expect_token(Token::ArrowLeft)?;
         let value = self.parse_expr(LOWEST_PREC, false)?;
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
@@ -382,6 +360,67 @@ impl<'a> Parser<'a> {
         } else {
             false
         }
+    }
+
+    fn parse_import_statement(&mut self) -> Result<Statement, ParsingError> {
+        self.expect_token(Token::Import)?;
+        let ns = self.parse_namespace()?;
+
+        let rename = if self.maybe_token(Token::As) {
+            // only a single-ident ns is allowed
+            let ident = self.expect_ns_ident()?;
+            Some(Namespace(vec![ident]))
+        } else {
+            None
+        };
+
+        Ok(Statement::Import(Import { ns, rename }))
+    }
+
+    fn parse_namespace(&mut self) -> Result<Namespace, ParsingError> {
+        let first = self.expect_ns_ident()?;
+
+        let mut ns = vec![first];
+
+        loop {
+            match &self.current_token {
+                Token::NsIndent(id) => ns.push(id.clone()),
+                Token::Dot => {}
+                _ => break,
+            }
+
+            self.advance_token();
+        }
+
+        Ok(Namespace(ns))
+    }
+
+    fn sep_by_zero_or_more<T, F>(
+        &mut self,
+        separator: Token,
+        end: Token,
+        f: F,
+    ) -> Result<Vec<T>, ParsingError>
+    where
+        F: Fn(&mut Self) -> Result<T, ParsingError>,
+    {
+        let mut args = vec![];
+
+        loop {
+            if self.current_token == end {
+                self.advance_token();
+                break;
+            }
+
+            if self.current_token == separator {
+                self.advance_token();
+            }
+
+            let expr = f(self)?;
+            args.push(expr);
+        }
+
+        Ok(args)
     }
 }
 

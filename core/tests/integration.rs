@@ -1,3 +1,4 @@
+use core::ast::Namespace;
 use core::interpreter::{eval, Interpreter};
 use core::vm::value::Value;
 
@@ -182,6 +183,37 @@ fn use_sugar() {
     ";
 
     assert_result(src, 42 * 2);
+}
+
+#[test]
+fn modules_import() {
+    let mod_a = "
+    pub let x = 42;
+    ";
+
+    let mod_b_c = "
+    import A;
+    pub let x = A.x + 100;
+    ";
+
+    let src = "
+    import B.C;
+    import A as Z;
+    Z.x + B.C.x + 1
+    ";
+
+    let mut interpreter = Interpreter::new();
+    interpreter
+        .add_module(Namespace(vec!["A".to_string()]), mod_a)
+        .unwrap();
+
+    interpreter
+        .add_module(Namespace(vec!["B".to_string(), "C".to_string()]), mod_b_c)
+        .unwrap();
+
+    let result = interpreter.run(src).unwrap();
+
+    assert_eq!(result, (42.0 + 42.0 + 100.0 + 1.0).into())
 }
 
 #[test]

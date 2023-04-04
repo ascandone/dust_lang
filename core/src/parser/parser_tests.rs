@@ -1,3 +1,4 @@
+use crate::ast::{ident, Ident, Import, Namespace};
 use crate::{
     ast::{Expr, Statement, NIL},
     parser::{parse, parse_expr},
@@ -27,10 +28,40 @@ fn parse_str() {
 }
 
 #[test]
+fn parse_ident() {
+    assert_eq!(parse_expr("abc").unwrap(), ident("abc"));
+    assert_eq!(parse_expr("abc1").unwrap(), ident("abc1"));
+}
+
+#[test]
+fn parse_qualified_ident() {
+    assert_eq!(
+        parse_expr("A.abc").unwrap(),
+        Expr::Ident(Ident(
+            Some(Namespace(vec!["A".to_string()])),
+            "abc".to_string()
+        ))
+    );
+
+    assert_eq!(
+        parse_expr("A.B.C.abc").unwrap(),
+        Expr::Ident(Ident(
+            Some(Namespace(vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string()
+            ])),
+            "abc".to_string()
+        ))
+    );
+}
+
+#[test]
 fn parse_let_decl() {
     assert_eq!(
         parse("let x = nil").unwrap(),
         vec![Statement::Let {
+            public: false,
             name: "x".to_string(),
             value: NIL
         }]
@@ -96,19 +127,19 @@ fn parse_infix_twice() {
 #[test]
 fn parse_infix_mixed() {
     assert_eq!(
-        parse_expr("a + b * Z + c").unwrap(),
+        parse_expr("a + b * z + c").unwrap(),
         Expr::Infix(
             "+".to_string(),
             Box::new(Expr::Infix(
                 "+".to_string(),
-                Box::new(Expr::Ident("a".to_string())),
+                Box::new(ident("a")),
                 Box::new(Expr::Infix(
                     "*".to_string(),
-                    Box::new(Expr::Ident("b".to_string())),
-                    Box::new(Expr::Ident("Z".to_string())),
+                    Box::new(ident("b")),
+                    Box::new(ident("z")),
                 )),
             )),
-            Box::new(Expr::Ident("c".to_string())),
+            Box::new(ident("c")),
         )
     );
 }
@@ -134,7 +165,7 @@ fn parse_call_expr_no_args() {
     assert_eq!(
         parse_expr("f()").unwrap(),
         Expr::Call {
-            f: Box::new(Expr::Ident("f".to_string())),
+            f: Box::new(ident("f")),
             args: vec![]
         }
     );
@@ -145,7 +176,7 @@ fn parse_call_expr_one_arg() {
     assert_eq!(
         parse_expr("f(42)").unwrap(),
         Expr::Call {
-            f: Box::new(Expr::Ident("f".to_string())),
+            f: Box::new(ident("f")),
             args: vec![42.0.into()]
         }
     );
@@ -156,7 +187,7 @@ fn parse_call_expr_two_args() {
     assert_eq!(
         parse_expr("f(0, 1)").unwrap(),
         Expr::Call {
-            f: Box::new(Expr::Ident("f".to_string())),
+            f: Box::new(ident("f")),
             args: vec![0.0.into(), 1.0.into()]
         }
     );
@@ -355,6 +386,7 @@ fn parse_let_statement_and_semicolon() {
         parse("let x = 0; 1; 2").unwrap(),
         vec![
             Statement::Let {
+                public: false,
                 name: "x".to_string(),
                 value: 0.0.into(),
             },
@@ -370,6 +402,7 @@ fn parse_let_statement_and_semicolon_with_infix() {
         parse("let x = 0; 1 + 2; 3").unwrap(),
         vec![
             Statement::Let {
+                public: false,
                 name: "x".to_string(),
                 value: 0.0.into(),
             },
@@ -458,4 +491,46 @@ fn parse_nested_let_star_sugar() {
     ";
 
     assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+}
+
+#[test]
+fn parse_pub_let() {
+    assert_eq!(
+        parse("pub let x = nil").unwrap(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: NIL
+        }]
+    );
+}
+
+#[test]
+fn parse_import_statement() {
+    assert_eq!(
+        parse("import A").unwrap(),
+        vec![Statement::Import(Import {
+            ns: Namespace(vec!["A".to_string()]),
+            rename: None
+        })]
+    );
+
+    assert_eq!(
+        parse("import A.B").unwrap(),
+        vec![Statement::Import(Import {
+            ns: Namespace(vec!["A".to_string(), "B".to_string()]),
+            rename: None
+        })]
+    );
+}
+
+#[test]
+fn parse_import_statement_rename() {
+    assert_eq!(
+        parse("import A as B").unwrap(),
+        vec![Statement::Import(Import {
+            ns: Namespace(vec!["A".to_string()]),
+            rename: Some(Namespace(vec!["B".to_string()]))
+        })]
+    );
 }

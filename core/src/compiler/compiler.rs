@@ -1,11 +1,10 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::{
-    ast::{Expr, Lit, Program, Statement},
-    vm::{
-        bytecode::OpCode,
-        value::{Function, Value},
-    },
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement};
+use crate::vm::{
+    bytecode::OpCode,
+    value::{Function, Value},
 };
+use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
 
@@ -35,24 +34,50 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
     }
 }
 
-#[derive(Default)]
+// Note: Clone is expensive because of HashMap. A persistent data structure would be a better fit
+#[derive(Clone)]
+struct ModuleContext {
+    pub ns: Namespace,
+    pub visible_modules: HashMap<Namespace, Namespace>,
+}
+
+impl ModuleContext {
+    pub fn new(ns: Namespace) -> Self {
+        Self {
+            ns,
+            visible_modules: HashMap::new(),
+        }
+    }
+}
+
 pub struct Compiler {
     symbol_table: SymbolTable,
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
+    module_context: ModuleContext,
+    unimported_modules: HashMap<Namespace, Program>,
+    imported_modules: HashSet<Namespace>,
 }
 
 impl Compiler {
-    pub fn new() -> Self {
+    pub fn new(ns: Namespace) -> Self {
         Self {
             symbol_table: SymbolTable::new(),
             binding_name: None,
             current_function_arity: None,
+            module_context: ModuleContext::new(ns),
+            unimported_modules: HashMap::new(),
+            imported_modules: HashSet::new(),
         }
     }
 
+    pub fn add_module(&mut self, ns: Namespace, program: Program) {
+        self.unimported_modules.insert(ns, program);
+    }
+
     pub fn define_global(&mut self, name: &str) -> u16 {
-        self.symbol_table.define_global(name)
+        self.symbol_table
+            .define_global(false, &self.module_context.ns, name)
     }
 
     fn compile_expr_chunk(
@@ -68,11 +93,23 @@ impl Compiler {
             Expr::Lit(Lit::String(s)) => alloc_const(f, Value::String(Rc::new(s))),
             Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
-            Expr::Ident(name) => {
-                let lookup = self.symbol_table.resolve(&name);
+            Expr::Ident(ident) => {
+                let Ident(ref ns, ref name) = ident;
+                let ns = match ns {
+                    None => None,
+                    Some(ns) => match self.module_context.visible_modules.get(ns) {
+                        None => return Err(format!("Ns not found: {:?}", ns)),
+                        Some(alias) => Some(alias.clone()),
+                    },
+                };
+
+                let lookup = self
+                    .symbol_table
+                    .resolve(&self.module_context.ns, &Ident(ns, name.clone()));
+
                 match lookup {
                     Some(scope) => compile_symbol_lookup(f, scope),
-                    None => return Err(format!("Lookup not found for {name}")),
+                    None => return Err(format!("Lookup not found for {:?}", ident)),
                 }
             }
 
@@ -212,14 +249,52 @@ impl Compiler {
         statement: Statement,
     ) -> Result<(), String> {
         match statement {
-            Statement::Let { name, value } => {
+            Statement::Import(Import { ns, rename }) => {
+                match rename {
+                    None => self
+                        .module_context
+                        .visible_modules
+                        .insert(ns.clone(), ns.clone()),
+
+                    Some(renamed_ns) => self
+                        .module_context
+                        .visible_modules
+                        .insert(renamed_ns.clone(), ns.clone()),
+                };
+
+                if self.imported_modules.contains(&ns) {
+                    f.bytecode.push(OpCode::ConstNil as u8);
+                    Ok(())
+                } else {
+                    match self.unimported_modules.remove(&ns) {
+                        None => Err(format!("Module not found: {:?}", ns)),
+                        Some(program) => {
+                            self.imported_modules.insert(ns.clone());
+
+                            let this_ctx = self.module_context.clone();
+
+                            self.module_context = ModuleContext::new(ns);
+                            self.compile_program_chunk(f, program)?;
+                            self.module_context = this_ctx;
+                            Ok(())
+                        }
+                    }
+                }
+            }
+            Statement::Let {
+                name,
+                value,
+                public,
+            } => {
                 self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;
 
                 f.bytecode.push(OpCode::SetGlobal as u8);
 
-                let index = self.symbol_table.define_global(&name);
+                let index = self
+                    .symbol_table
+                    .define_global(public, &self.module_context.ns, &name);
 
                 let (msb, lsb) = to_big_endian_u16(index);
                 f.bytecode.push(msb);
@@ -230,16 +305,21 @@ impl Compiler {
         }
     }
 
-    /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
-    pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
-        let mut f = Function::default();
+    fn compile_program_chunk(&mut self, f: &mut Function, program: Program) -> Result<(), String> {
         for (i, statement) in program.into_iter().enumerate() {
             if i != 0 {
                 f.bytecode.push(OpCode::Pop as u8)
             }
-
-            self.compile_statement_chunk(&mut f, statement)?;
+            self.compile_statement_chunk(f, statement)?;
         }
+
+        Ok(())
+    }
+
+    /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
+    pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
+        let mut f = Function::default();
+        self.compile_program_chunk(&mut f, program)?;
         f.bytecode.push(OpCode::Return as u8);
         f.locals = self.symbol_table.count_locals();
         Ok(f)
@@ -251,8 +331,8 @@ impl Compiler {
 
     fn check_is_recursive_call(&mut self, caller: &Expr) -> bool {
         match caller {
-            Expr::Ident(caller_name) => {
-                self.symbol_table.resolve(&caller_name) == Some(Scope::Function)
+            Expr::Ident(ident) => {
+                self.symbol_table.resolve(&self.module_context.ns, ident) == Some(Scope::Function)
             }
             _ => false,
         }

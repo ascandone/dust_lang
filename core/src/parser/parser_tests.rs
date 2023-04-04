@@ -523,3 +523,14 @@ fn parse_import_statement() {
         })]
     );
 }
+
+#[test]
+fn parse_import_statement_rename() {
+    assert_eq!(
+        parse("import A as B").unwrap(),
+        vec![Statement::Import(Import {
+            ns: Namespace(vec!["A".to_string()]),
+            rename: Some(Namespace(vec!["B".to_string()]))
+        })]
+    );
+}

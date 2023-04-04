@@ -101,6 +101,9 @@ pub enum Token {
     /// `false`
     False,
 
+    /// `as`
+    As,
+
     /// `.`
     Dot,
 

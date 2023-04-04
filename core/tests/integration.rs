@@ -198,8 +198,8 @@ fn modules_import() {
 
     let src = "
     import B.C;
-    import A;
-    A.x + B.C.x + 1
+    import A as Z;
+    Z.x + B.C.x + 1
     ";
 
     let mut interpreter = Interpreter::new();

@@ -86,16 +86,17 @@ impl<'a> Lexer<'a> {
         if let Some(tk) = self.try_consume_many(&[
             (".", Token::Dot),
             ("<-", Token::ArrowLeft),
-            ("use", Token::Use),
-            ("let", Token::Let),
-            ("if", Token::If),
-            ("fn", Token::Fn),
+            ("as", Token::As),
             ("else", Token::Else),
-            ("true", Token::True),
             ("false", Token::False),
-            ("nil", Token::Nil),
+            ("fn", Token::Fn),
+            ("if", Token::If),
             ("import", Token::Import),
+            ("let", Token::Let),
+            ("nil", Token::Nil),
             ("pub", Token::Pub),
+            ("true", Token::True),
+            ("use", Token::Use),
         ]) {
             return tk;
         };
@@ -313,9 +314,9 @@ mod tests {
 
     #[test]
     fn keywords() {
-        assert_tokens("let use import pub", {
+        assert_tokens("let use import pub as", {
             use Token::*;
-            &[Let, Use, Import, Pub]
+            &[Let, Use, Import, Pub, As]
         });
     }
 

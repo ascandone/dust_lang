@@ -365,7 +365,16 @@ impl<'a> Parser<'a> {
     fn parse_import_statement(&mut self) -> Result<Statement, ParsingError> {
         self.expect_token(Token::Import)?;
         let ns = self.parse_namespace()?;
-        Ok(Statement::Import(Import { ns, rename: None }))
+
+        let rename = if self.maybe_token(Token::As) {
+            // only a single-ident ns is allowed
+            let ident = self.expect_ns_ident()?;
+            Some(Namespace(vec![ident]))
+        } else {
+            None
+        };
+
+        Ok(Statement::Import(Import { ns, rename }))
     }
 
     fn parse_namespace(&mut self) -> Result<Namespace, ParsingError> {

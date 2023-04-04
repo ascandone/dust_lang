@@ -1,5 +1,6 @@
 use crate::dust_json::DustJson;
 use argh::FromArgs;
+use colored::Colorize;
 use std::fs;
 
 #[derive(FromArgs, PartialEq)]
@@ -25,6 +26,6 @@ impl Init {
 
         dust_json.write().unwrap();
 
-        println!("Done")
+        println!("{}", "Done".bold().green())
     }
 }

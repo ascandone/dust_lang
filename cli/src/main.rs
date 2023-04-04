@@ -1,7 +1,9 @@
 mod dust_json;
+mod project_interpreter;
 mod subcommands;
 
 use crate::subcommands::init::Init;
+use crate::subcommands::repl::Repl;
 use crate::subcommands::run::Run;
 use argh::FromArgs;
 
@@ -17,6 +19,7 @@ struct TopLevel {
 enum Command {
     Run(Run),
     Init(Init),
+    Repl(Repl),
 }
 
 fn main() {
@@ -24,5 +27,6 @@ fn main() {
     match up.command {
         Command::Run(run) => run.run(),
         Command::Init(init) => init.run(),
+        Command::Repl(repl) => repl.run(),
     }
 }

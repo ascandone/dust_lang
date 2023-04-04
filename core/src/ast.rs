@@ -8,7 +8,7 @@ pub struct Namespace(pub Vec<String>);
 #[derive(PartialEq, Debug)]
 pub struct Import {
     pub ns: Namespace,
-    pub rename: Option<String>,
+    pub rename: Option<Namespace>,
 }
 
 impl Import {

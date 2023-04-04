@@ -34,18 +34,18 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
     }
 }
 
-// Note: Clone is expensive because of HashSet. A persistent data structure would be a better fit
+// Note: Clone is expensive because of HashMap. A persistent data structure would be a better fit
 #[derive(Clone)]
 struct ModuleContext {
     pub ns: Namespace,
-    pub visible_modules: HashSet<Namespace>,
+    pub visible_modules: HashMap<Namespace, Namespace>,
 }
 
 impl ModuleContext {
     pub fn new(ns: Namespace) -> Self {
         Self {
             ns,
-            visible_modules: HashSet::new(),
+            visible_modules: HashMap::new(),
         }
     }
 }
@@ -94,14 +94,18 @@ impl Compiler {
             Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
 
             Expr::Ident(ident) => {
-                let Ident(ref ns, _) = ident;
-                if let Some(ns) = ns {
-                    if !self.module_context.visible_modules.contains(ns) {
-                        return Err(format!("Ns not found: {:?}", ns));
-                    }
-                }
+                let Ident(ref ns, ref name) = ident;
+                let ns = match ns {
+                    None => None,
+                    Some(ns) => match self.module_context.visible_modules.get(ns) {
+                        None => return Err(format!("Ns not found: {:?}", ns)),
+                        Some(alias) => Some(alias.clone()),
+                    },
+                };
 
-                let lookup = self.symbol_table.resolve(&self.module_context.ns, &ident);
+                let lookup = self
+                    .symbol_table
+                    .resolve(&self.module_context.ns, &Ident(ns, name.clone()));
 
                 match lookup {
                     Some(scope) => compile_symbol_lookup(f, scope),
@@ -245,8 +249,18 @@ impl Compiler {
         statement: Statement,
     ) -> Result<(), String> {
         match statement {
-            Statement::Import(Import { ns, .. }) => {
-                self.module_context.visible_modules.insert(ns.clone());
+            Statement::Import(Import { ns, rename }) => {
+                match rename {
+                    None => self
+                        .module_context
+                        .visible_modules
+                        .insert(ns.clone(), ns.clone()),
+
+                    Some(renamed_ns) => self
+                        .module_context
+                        .visible_modules
+                        .insert(renamed_ns.clone(), ns.clone()),
+                };
 
                 if self.imported_modules.contains(&ns) {
                     f.bytecode.push(OpCode::ConstNil as u8);

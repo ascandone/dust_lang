@@ -968,3 +968,56 @@ fn modules_imports_are_scoped() {
 
     assert!(matches!(compiler.compile_program(program), Err(_)));
 }
+
+#[test]
+fn modules_renamed_imports() {
+    /*
+    A.ds
+    ```
+    pub let x = true
+    ```
+
+    Main.ds
+    ```
+    import A as B;
+    B.x
+    ```
+     */
+    let a_ns = Namespace(vec!["A".to_string()]);
+    let b_ns = Namespace(vec!["B".to_string()]);
+
+    let mut compiler = new_compiler();
+    compiler.add_module(
+        a_ns.clone(),
+        vec![Statement::Let {
+            public: true,
+            name: "x".to_string(),
+            value: true.into(),
+        }],
+    );
+
+    let program = vec![
+        Statement::Import(Import {
+            ns: a_ns.clone(),
+            rename: Some(b_ns.clone()),
+        }),
+        Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
+    ];
+
+    let main = compiler.compile_program(program).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::SetGlobal as u8,
+            0,
+            0,
+            OpCode::Pop as u8,
+            OpCode::GetGlobal as u8,
+            0,
+            0,
+            OpCode::Return as u8
+        ]
+    );
+}

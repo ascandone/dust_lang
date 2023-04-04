@@ -34,12 +34,27 @@ fn infix_to_opcode(op: &str) -> Option<OpCode> {
     }
 }
 
+// Note: Clone is expensive because of HashSet. A persistent data structure would be a better fit
+#[derive(Clone)]
+struct ModuleContext {
+    pub ns: Namespace,
+    pub visible_modules: HashSet<Namespace>,
+}
+
+impl ModuleContext {
+    pub fn new(ns: Namespace) -> Self {
+        Self {
+            ns,
+            visible_modules: HashSet::new(),
+        }
+    }
+}
+
 pub struct Compiler {
     symbol_table: SymbolTable,
     binding_name: Option<String>,
     current_function_arity: Option<usize>,
-    current_ns: Namespace,
-    visible_modules: HashSet<Namespace>,
+    module_context: ModuleContext,
     unimported_modules: HashMap<Namespace, Program>,
     imported_modules: HashSet<Namespace>,
 }
@@ -50,8 +65,7 @@ impl Compiler {
             symbol_table: SymbolTable::new(),
             binding_name: None,
             current_function_arity: None,
-            current_ns: ns,
-            visible_modules: HashSet::new(),
+            module_context: ModuleContext::new(ns),
             unimported_modules: HashMap::new(),
             imported_modules: HashSet::new(),
         }
@@ -62,9 +76,8 @@ impl Compiler {
     }
 
     pub fn define_global(&mut self, name: &str) -> u16 {
-        // TODO handle visibility
         self.symbol_table
-            .define_global(false, &self.current_ns, name)
+            .define_global(false, &self.module_context.ns, name)
     }
 
     fn compile_expr_chunk(
@@ -83,12 +96,12 @@ impl Compiler {
             Expr::Ident(ident) => {
                 let Ident(ref ns, _) = ident;
                 if let Some(ns) = ns {
-                    if !self.visible_modules.contains(ns) {
+                    if !self.module_context.visible_modules.contains(ns) {
                         return Err(format!("Ns not found: {:?}", ns));
                     }
                 }
 
-                let lookup = self.symbol_table.resolve(&self.current_ns, &ident);
+                let lookup = self.symbol_table.resolve(&self.module_context.ns, &ident);
 
                 match lookup {
                     Some(scope) => compile_symbol_lookup(f, scope),
@@ -233,7 +246,7 @@ impl Compiler {
     ) -> Result<(), String> {
         match statement {
             Statement::Import(Import { ns, .. }) => {
-                self.visible_modules.insert(ns.clone());
+                self.module_context.visible_modules.insert(ns.clone());
 
                 if self.imported_modules.contains(&ns) {
                     f.bytecode.push(OpCode::ConstNil as u8);
@@ -244,15 +257,11 @@ impl Compiler {
                         Some(program) => {
                             self.imported_modules.insert(ns.clone());
 
-                            let initial_ns = self.current_ns.clone();
-                            // NOTE this copy is expensive; an immutable data structure would perform better
-                            let initial_visible_modules = self.visible_modules.clone();
+                            let this_ctx = self.module_context.clone();
 
-                            self.current_ns = ns;
-                            self.visible_modules = HashSet::new();
+                            self.module_context = ModuleContext::new(ns);
                             self.compile_program_chunk(f, program)?;
-                            self.current_ns = initial_ns;
-                            self.visible_modules = initial_visible_modules;
+                            self.module_context = this_ctx;
                             Ok(())
                         }
                     }
@@ -271,7 +280,7 @@ impl Compiler {
 
                 let index = self
                     .symbol_table
-                    .define_global(public, &self.current_ns, &name);
+                    .define_global(public, &self.module_context.ns, &name);
 
                 let (msb, lsb) = to_big_endian_u16(index);
                 f.bytecode.push(msb);
@@ -309,7 +318,7 @@ impl Compiler {
     fn check_is_recursive_call(&mut self, caller: &Expr) -> bool {
         match caller {
             Expr::Ident(ident) => {
-                self.symbol_table.resolve(&self.current_ns, ident) == Some(Scope::Function)
+                self.symbol_table.resolve(&self.module_context.ns, ident) == Some(Scope::Function)
             }
             _ => false,
         }

@@ -1,5 +1,6 @@
-use super::{lexer::Lexer, token::Token};
-use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement, NIL};
+use super::cst::{Expr, Ident, Import, Program, Statement, NIL};
+use super::{cst, lexer::Lexer, token::Token};
+use crate::ast::{Lit, Namespace};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -82,7 +83,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn parse_expr(&mut self, min_prec: u8, inside_block: bool) -> Result<Expr, ParsingError> {
+    fn parse_expr(&mut self, min_prec: u8, inside_block: bool) -> Result<cst::Expr, ParsingError> {
         let mut left = match self.current_token {
             // Simple literals
             Token::Nil => self.consume_expr(NIL),

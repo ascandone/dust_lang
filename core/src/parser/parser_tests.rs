@@ -1,8 +1,6 @@
-use crate::ast::{ident, Ident, Import, Namespace};
-use crate::{
-    ast::{Expr, Statement, NIL},
-    parser::{parse, parse_expr},
-};
+use super::ast::Namespace;
+use super::cst::{ident, Expr, Ident, Import, Statement, NIL};
+use crate::parser::{parse, parse_expr};
 
 #[test]
 fn parse_nil() {

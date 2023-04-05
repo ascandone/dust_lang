@@ -12,7 +12,7 @@ pub struct EvalOutput {
     result: Result<String, String>,
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = evalSrc)]
 pub fn eval_src(src: &str) -> JsValue {
     let result = match interpreter::eval(src) {
         Ok(value) => Ok(value.to_string()),

@@ -122,7 +122,7 @@ impl<'a> Parser<'a> {
             }
 
             left = match self.current_token {
-                Token::PipeRight => self.parse_infix(left, pred, "|>")?,
+                Token::PipeRight => self.parse_pipe_right(left, pred)?,
                 Token::Plus => self.parse_infix(left, pred, "+")?,
                 Token::Minus => self.parse_infix(left, pred, "-")?,
                 Token::Slash => self.parse_infix(left, pred, "/")?,
@@ -152,6 +152,12 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left)
+    }
+
+    fn parse_pipe_right(&mut self, left: Expr, precedence: u8) -> Result<Expr, ParsingError> {
+        self.advance_token();
+        let right = self.parse_expr(precedence, false)?;
+        Ok(Expr::Pipe(Box::new(left), Box::new(right)))
     }
 
     fn parse_infix(

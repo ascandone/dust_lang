@@ -79,6 +79,7 @@ pub enum Expr {
     },
     Prefix(String, Box<Expr>),
     Infix(String, Box<Expr>, Box<Expr>),
+    Pipe(Box<Expr>, Box<Expr>),
     Call {
         f: Box<Expr>,
         args: Vec<Expr>,
@@ -154,6 +155,27 @@ impl TryFrom<Expr> for ast::Expr {
                 let expr = (*expr).try_into()?;
                 Ok(ast::Expr::Prefix(op, Box::new(expr)))
             }
+
+            Expr::Pipe(left, right) => match *right {
+                Expr::Call { f, args } => {
+                    let f = (*f).try_into()?;
+                    let left = (*left).try_into()?;
+
+                    let mut new_args: Vec<ast::Expr> = vec![left];
+                    for arg in args {
+                        new_args.push(arg.try_into()?)
+                    }
+
+                    Ok(ast::Expr::Call {
+                        f: Box::new(f),
+                        args: new_args,
+                    })
+                }
+                _ => Err(
+                    "Invalid usage of `|>` macro: right element should be a function call"
+                        .to_string(),
+                ),
+            },
 
             Expr::Infix(op, e1, e2) => {
                 let e1 = (*e1).try_into()?;

@@ -1,5 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement, NIL};
 use crate::vm::{
     bytecode::OpCode,
     value::{Function, Value},
@@ -319,7 +319,12 @@ impl Compiler {
     /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
     pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
         let mut f = Function::default();
-        self.compile_program_chunk(&mut f, program)?;
+        if program.is_empty() {
+            self.compile_program_chunk(&mut f, vec![Statement::Expr(NIL)])?;
+        } else {
+            self.compile_program_chunk(&mut f, program)?;
+        }
+
         f.bytecode.push(OpCode::Return as u8);
         f.locals = self.symbol_table.count_locals();
         Ok(f)

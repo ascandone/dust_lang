@@ -1,5 +1,5 @@
 use super::cst::{Expr, Ident, Import, Program, Statement, NIL};
-use super::{cst, lexer::Lexer, token::Token};
+use super::{lexer::Lexer, token::Token};
 use crate::ast::{Lit, Namespace};
 
 const LOWEST_PREC: u8 = 0;
@@ -83,7 +83,7 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn parse_expr(&mut self, min_prec: u8, inside_block: bool) -> Result<cst::Expr, ParsingError> {
+    fn parse_expr(&mut self, min_prec: u8, inside_block: bool) -> Result<Expr, ParsingError> {
         let mut left = match self.current_token {
             // Simple literals
             Token::Nil => self.consume_expr(NIL),
@@ -211,7 +211,6 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
-        // TODO add `pub` parsing
         Ok(Statement::Let {
             public,
             name: name.clone(),
@@ -279,7 +278,11 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
-        Ok(desugar_let_star(bindings, value, body))
+        Ok(Expr::Use {
+            f_call: Box::new(value),
+            params: bindings,
+            body: Box::new(body),
+        })
     }
 
     fn parse_let_expr(&mut self) -> Result<Expr, ParsingError> {
@@ -422,26 +425,5 @@ impl<'a> Parser<'a> {
         }
 
         Ok(args)
-    }
-}
-
-// TODO move to a cst->ast function
-// TODO refactor as result
-fn desugar_let_star(bindings: Vec<String>, f_call: Expr, body: Expr) -> Expr {
-    match f_call {
-        Expr::Call { f, args } => {
-            // TODO check that f is an identifier
-
-            let mut args = args;
-
-            args.push(Expr::Fn {
-                params: bindings,
-                body: Box::new(body),
-            });
-
-            Expr::Call { f, args }
-        }
-
-        _ => panic!("Expected a function call in use syntax sugar"),
     }
 }

@@ -1,6 +1,6 @@
 use super::ast::Namespace;
 use super::cst::{ident, Expr, Ident, Import, Statement, NIL};
-use crate::parser::{parse, parse_expr};
+use crate::parser::{parse, parse_ast, parse_expr};
 
 #[test]
 fn parse_nil() {
@@ -429,7 +429,7 @@ fn parse_let_star_sugar() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
@@ -447,7 +447,7 @@ fn parse_let_star_sugar_no_args() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
@@ -465,7 +465,7 @@ fn parse_let_star_sugar_many_args() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
@@ -488,7 +488,7 @@ fn parse_nested_let_star_sugar() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]

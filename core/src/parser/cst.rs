@@ -2,7 +2,7 @@ use crate::ast;
 
 pub type Program = Vec<Statement>;
 
-pub fn try_from_program(program: Program) -> Result<ast::Program, ()> {
+pub fn try_from_program(program: Program) -> Result<ast::Program, String> {
     let mut cst_program = vec![];
     for statement in program {
         cst_program.push(statement.try_into()?)
@@ -41,7 +41,7 @@ pub enum Statement {
 }
 
 impl TryFrom<Statement> for ast::Statement {
-    type Error = ();
+    type Error = String;
 
     fn try_from(value: Statement) -> Result<Self, Self::Error> {
         match value {
@@ -88,6 +88,11 @@ pub enum Expr {
         value: Box<Expr>,
         body: Box<Expr>,
     },
+    Use {
+        params: Vec<String>,
+        f_call: Box<Expr>,
+        body: Box<Expr>,
+    },
     Fn {
         params: Vec<String>,
         body: Box<Expr>,
@@ -115,7 +120,7 @@ impl From<&str> for Expr {
 }
 
 impl TryFrom<Expr> for ast::Expr {
-    type Error = ();
+    type Error = String;
 
     fn try_from(value: Expr) -> Result<Self, Self::Error> {
         match value {
@@ -179,6 +184,36 @@ impl TryFrom<Expr> for ast::Expr {
                     value: Box::new(value),
                     body: Box::new(body),
                 })
+            }
+
+            Expr::Use {
+                body,
+                params,
+                f_call,
+            } => {
+                match *f_call {
+                    Expr::Call { f, args } => {
+                        // TODO check that f is an identifier
+                        let f = (*f).try_into()?;
+                        let body = (*body).try_into()?;
+
+                        let mut converted_args: Vec<ast::Expr> = vec![];
+                        for arg in args {
+                            converted_args.push(arg.try_into()?)
+                        }
+                        converted_args.push(ast::Expr::Fn {
+                            params,
+                            body: Box::new(body),
+                        });
+
+                        Ok(ast::Expr::Call {
+                            f: Box::new(f),
+                            args: converted_args,
+                        })
+                    }
+
+                    _ => Err("Expected a function call in use syntax sugar".to_string()),
+                }
             }
 
             Expr::Fn { params, body } => {

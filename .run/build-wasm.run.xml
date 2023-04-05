@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="build-wasm" type="WasmPackCommandRunConfiguration" factoryName="wasm-pack">
+    <option name="command" value="build" />
+    <option name="workingDirectory" value="file://$PROJECT_DIR$/wasm-bindings" />
+    <option name="emulateTerminal" value="false" />
+    <method v="2">
+      <option name="WASM_PACK.BUILD_TASK_PROVIDER" enabled="true" />
+    </method>
+  </configuration>
+</component>

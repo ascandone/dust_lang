@@ -3,6 +3,11 @@ use core::interpreter::{eval, Interpreter};
 use core::vm::value::Value;
 
 #[test]
+fn empty_expr() {
+    assert_result("", Value::Nil);
+}
+
+#[test]
 fn test_lit() {
     assert_result("42", 42.0);
     assert_result("nil", Value::Nil);

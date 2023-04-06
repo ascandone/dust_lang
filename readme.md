@@ -9,9 +9,35 @@ let fact = fn n {
     if n == 0 || n == 1 {
         1
     } else {
-        fact(n + 1)
+        n * fact(n + 1)
     }
 }
+```
+
+### Language tour
+You can find a complete guide of Dust language on its [wiki](TODO).
+
+TL;DR: [language cheatsheet](TODO)
+
+### Try Online
+> An online playground is in progress
+
+### Install locally
+> For now the CLI has to be built locally using `cargo build --release`
+
+A CLI is included to create and run Dust projects
+```
+Usage: dust <command> [<args>]
+
+Dust lang cli
+
+Options:
+  --help            display usage information
+
+Commands:
+  run               Run a dust script
+  init              Initialize a Dust project
+  repl              Run the Dust repl
 ```
 
  

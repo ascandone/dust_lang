@@ -120,6 +120,11 @@ impl From<&str> for Expr {
     }
 }
 
+fn cst_box_try_into_ast_box(x: Box<Expr>) -> Result<Box<ast::Expr>, String> {
+    let x = (*x).try_into()?;
+    Ok(Box::new(x))
+}
+
 impl TryFrom<Expr> for ast::Expr {
     type Error = String;
 
@@ -129,36 +134,25 @@ impl TryFrom<Expr> for ast::Expr {
 
             Expr::Lit(l) => Ok(ast::Expr::Lit(l)),
 
-            Expr::Do(x, y) => {
-                let x = (*x).try_into()?;
-                let y = (*y).try_into()?;
-                Ok(ast::Expr::Do(Box::new(x), Box::new(y)))
-            }
+            Expr::Do(x, y) => Ok(ast::Expr::Do(
+                cst_box_try_into_ast_box(x)?,
+                cst_box_try_into_ast_box(y)?,
+            )),
 
             Expr::If {
                 condition,
                 if_branch,
                 else_branch,
-            } => {
-                let condition = (*condition).try_into()?;
-                let if_branch = (*if_branch).try_into()?;
-                let else_branch = (*else_branch).try_into()?;
+            } => Ok(ast::Expr::If {
+                condition: cst_box_try_into_ast_box(condition)?,
+                if_branch: cst_box_try_into_ast_box(if_branch)?,
+                else_branch: cst_box_try_into_ast_box(else_branch)?,
+            }),
 
-                Ok(ast::Expr::If {
-                    condition: Box::new(condition),
-                    if_branch: Box::new(if_branch),
-                    else_branch: Box::new(else_branch),
-                })
-            }
-
-            Expr::Prefix(op, expr) => {
-                let expr = (*expr).try_into()?;
-                Ok(ast::Expr::Prefix(op, Box::new(expr)))
-            }
+            Expr::Prefix(op, expr) => Ok(ast::Expr::Prefix(op, cst_box_try_into_ast_box(expr)?)),
 
             Expr::Pipe(left, right) => match *right {
                 Expr::Call { f, args } => {
-                    let f = (*f).try_into()?;
                     let left = (*left).try_into()?;
 
                     let mut new_args: Vec<ast::Expr> = vec![left];
@@ -167,7 +161,7 @@ impl TryFrom<Expr> for ast::Expr {
                     }
 
                     Ok(ast::Expr::Call {
-                        f: Box::new(f),
+                        f: cst_box_try_into_ast_box(f)?,
                         args: new_args,
                     })
                 }
@@ -177,36 +171,29 @@ impl TryFrom<Expr> for ast::Expr {
                 ),
             },
 
-            Expr::Infix(op, e1, e2) => {
-                let e1 = (*e1).try_into()?;
-                let e2 = (*e2).try_into()?;
-                Ok(ast::Expr::Infix(op, Box::new(e1), Box::new(e2)))
-            }
+            Expr::Infix(op, left, right) => Ok(ast::Expr::Infix(
+                op,
+                cst_box_try_into_ast_box(left)?,
+                cst_box_try_into_ast_box(right)?,
+            )),
 
             Expr::Call { f, args } => {
-                let f = (*f).try_into()?;
-
                 let mut mapped_args = vec![];
                 for arg in args {
                     mapped_args.push(arg.try_into()?)
                 }
 
                 Ok(ast::Expr::Call {
-                    f: Box::new(f),
+                    f: cst_box_try_into_ast_box(f)?,
                     args: mapped_args,
                 })
             }
 
-            Expr::Let { name, value, body } => {
-                let value = (*value).try_into()?;
-                let body = (*body).try_into()?;
-
-                Ok(ast::Expr::Let {
-                    name,
-                    value: Box::new(value),
-                    body: Box::new(body),
-                })
-            }
+            Expr::Let { name, value, body } => Ok(ast::Expr::Let {
+                name,
+                value: cst_box_try_into_ast_box(value)?,
+                body: cst_box_try_into_ast_box(body)?,
+            }),
 
             Expr::Use {
                 body,
@@ -216,8 +203,6 @@ impl TryFrom<Expr> for ast::Expr {
                 match *f_call {
                     Expr::Call { f, args } => {
                         // TODO check that f is an identifier
-                        let f = (*f).try_into()?;
-                        let body = (*body).try_into()?;
 
                         let mut converted_args: Vec<ast::Expr> = vec![];
                         for arg in args {
@@ -225,11 +210,11 @@ impl TryFrom<Expr> for ast::Expr {
                         }
                         converted_args.push(ast::Expr::Fn {
                             params,
-                            body: Box::new(body),
+                            body: cst_box_try_into_ast_box(body)?,
                         });
 
                         Ok(ast::Expr::Call {
-                            f: Box::new(f),
+                            f: cst_box_try_into_ast_box(f)?,
                             args: converted_args,
                         })
                     }
@@ -238,14 +223,10 @@ impl TryFrom<Expr> for ast::Expr {
                 }
             }
 
-            Expr::Fn { params, body } => {
-                let body = (*body).try_into()?;
-
-                Ok(ast::Expr::Fn {
-                    params,
-                    body: Box::new(body),
-                })
-            }
+            Expr::Fn { params, body } => Ok(ast::Expr::Fn {
+                params,
+                body: cst_box_try_into_ast_box(body)?,
+            }),
         }
     }
 }

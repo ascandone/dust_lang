@@ -15,12 +15,12 @@ let fact = fn n {
 ```
 
 ### Language tour
-You can find a complete guide of Dust language on its [wiki](TODO).
+You can find a complete guide of Dust language [here](https://ascandone.github.io/dust-lang-book/)
 
-TL;DR: [language cheatsheet](TODO)
+TL;DR: [language cheatsheet](https://ascandone.github.io/dust-lang-book/cheatsheet.html)
 
 ### Try Online
-> An online playground is in progress
+You can try Dust without installing it in the [online playground](https://dust-lang-playground.vercel.app/)
 
 ### Install locally
 > For now the CLI has to be built locally using `cargo build --release`

@@ -81,7 +81,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dust_lang_wasm"
+name = "dust-lang-wasm"
 version = "0.0.1"
 dependencies = [
  "core",

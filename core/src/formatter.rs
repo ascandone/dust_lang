@@ -1,13 +1,11 @@
-use crate::cst;
-use crate::cst::{Expr, Program, Statement};
+use crate::cst::{Expr, Statement};
 use crate::pretty::Doc;
-use std::ptr::write;
 
 impl Into<Doc> for Expr {
     fn into(self) -> Doc {
         match self {
-            Expr::Lit(l) => Doc::Text(format!("{}", l).to_string()),
-            Expr::Ident(id) => todo!(),
+            Expr::Lit(l) => Doc::Text(format!("{l}").to_string()),
+            Expr::Ident(id) => Doc::Text(format!("{id}").to_string()),
             Expr::Do(_, _) => todo!(),
             Expr::If { .. } => todo!(),
             Expr::Prefix(_, _) => todo!(),
@@ -29,8 +27,8 @@ impl Into<Doc> for Statement {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Lit;
-    use crate::cst::{Expr, Ident, NIL};
+    use crate::ast::{Ident, Lit};
+    use crate::cst::{Expr, NIL};
     use crate::pretty::pprint;
 
     #[test]

@@ -1,4 +1,5 @@
 use crate::ast;
+use crate::ast::Ident;
 
 #[derive(PartialEq, Debug)]
 pub struct Program {
@@ -66,9 +67,6 @@ impl TryFrom<Statement> for ast::Statement {
         }
     }
 }
-
-#[derive(PartialEq, Debug)]
-pub struct Ident(pub Option<ast::Namespace>, pub String);
 
 #[derive(PartialEq, Debug)]
 pub enum Expr {

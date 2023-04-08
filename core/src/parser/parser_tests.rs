@@ -1,5 +1,6 @@
 use super::ast::Namespace;
-use crate::cst::{ident, Expr, Ident, Import, Program, Statement, NIL};
+use crate::ast::Ident;
+use crate::cst::{ident, Expr, Import, Program, Statement, NIL};
 use crate::parser::{parse, parse_ast, parse_expr};
 
 #[test]

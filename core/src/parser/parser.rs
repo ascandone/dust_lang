@@ -1,6 +1,6 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Lit, Namespace};
-use crate::cst::{Expr, Ident, Import, Program, Statement, NIL};
+use crate::ast::{Ident, Lit, Namespace};
+use crate::cst::{Expr, Import, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;

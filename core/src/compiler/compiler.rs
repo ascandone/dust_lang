@@ -98,7 +98,7 @@ impl Compiler {
                 let ns = match ns {
                     None => None,
                     Some(ns) => match self.module_context.visible_modules.get(ns) {
-                        None => return Err(format!("Ns not found: {:?}", ns)),
+                        None => return Err(format!("Ns not found: {ns}")),
                         Some(alias) => Some(alias.clone()),
                     },
                 };
@@ -109,7 +109,7 @@ impl Compiler {
 
                 match lookup {
                     Some(scope) => compile_symbol_lookup(f, scope),
-                    None => return Err(format!("Lookup not found for {:?}", ident)),
+                    None => return Err(format!("Lookup not found for {ident}")),
                 }
             }
 
@@ -262,7 +262,7 @@ impl Compiler {
                     Ok(())
                 } else {
                     match self.unimported_modules.remove(&ns) {
-                        None => Err(format!("Module not found: {:?}", ns)),
+                        None => Err(format!("Module not found: {ns}")),
                         Some(program) => {
                             self.imported_modules.insert(ns.clone());
 

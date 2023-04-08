@@ -1,10 +1,24 @@
 use std::fmt;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 pub type Program = Vec<Statement>;
 
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct Namespace(pub Vec<String>);
+
+impl Display for Namespace {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for (index, ident) in (&self).0.iter().enumerate() {
+            if index != 0 {
+                write!(f, ".")?;
+            }
+
+            write!(f, "{ident}")?;
+        }
+
+        Ok(())
+    }
+}
 
 #[derive(PartialEq, Debug)]
 pub struct Import {
@@ -59,6 +73,20 @@ impl fmt::Debug for Lit {
 #[derive(PartialEq, Debug)]
 pub struct Ident(pub Option<Namespace>, pub String);
 
+impl Display for Ident {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let Ident(ns, name) = self;
+
+        match ns {
+            None => (),
+            Some(ns) => write!(f, "{ns}.")?,
+        }
+
+        write!(f, "{name}")?;
+        Ok(())
+    }
+}
+
 #[derive(PartialEq, Debug)]
 pub enum Expr {
     Ident(Ident),
@@ -108,5 +136,40 @@ impl From<f64> for Expr {
 impl From<&str> for Expr {
     fn from(s: &str) -> Self {
         Expr::Lit(Lit::String(s.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ast::{Ident, Namespace};
+
+    #[test]
+    fn display_ns() {
+        assert_eq!("A", format!("{}", Namespace(vec!["A".to_string()])));
+        assert_eq!(
+            "A.B",
+            format!("{}", Namespace(vec!["A".to_string(), "B".to_string(),]))
+        );
+    }
+
+    #[test]
+    fn display_ident() {
+        {
+            let ident = Ident(None, "x".to_string());
+            assert_eq!("x", format!("{ident}",))
+        }
+
+        {
+            let ident = Ident(Some(Namespace(vec!["A".to_string()])), "x".to_string());
+            assert_eq!("A.x", format!("{ident}",))
+        }
+
+        {
+            let ident = Ident(
+                Some(Namespace(vec!["A".to_string(), "B".to_string()])),
+                "x".to_string(),
+            );
+            assert_eq!("A.B.x", format!("{ident}",))
+        }
     }
 }

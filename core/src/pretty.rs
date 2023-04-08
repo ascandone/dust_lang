@@ -11,6 +11,10 @@ pub enum Doc {
 }
 
 impl Doc {
+    pub fn text(t: &str) -> Doc {
+        Doc::Text(t.to_string())
+    }
+
     pub fn nest(self, size: usize) -> Doc {
         Doc::Nest(size as isize, Box::new(self))
     }
@@ -57,10 +61,6 @@ fn fits(mut w: isize, mut vec: VecDeque<(isize, Mode, &Doc)>) -> bool {
             Doc::Group(x) => vec.push_front((i, Mode::Flat, x)),
         };
     }
-}
-
-pub fn str(s: &str) -> Doc {
-    Doc::Text(s.to_string())
 }
 
 fn format(

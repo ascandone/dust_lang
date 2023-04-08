@@ -1,6 +1,6 @@
-use super::cst::{Expr, Ident, Import, Program, Statement, NIL};
 use super::{lexer::Lexer, token::Token};
 use crate::ast::{Lit, Namespace};
+use crate::cst::{Expr, Ident, Import, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -67,7 +67,7 @@ impl<'a> Parser<'a> {
                 }
                 Token::Import => statements.push(self.parse_import_statement()?),
                 Token::Semicolon => self.advance_token(),
-                Token::Eof => return Ok(statements),
+                Token::Eof => return Ok(Program { statements }),
 
                 // Assuming this is an expression otherwise
                 _ => {

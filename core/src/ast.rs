@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::Display;
 
 pub type Program = Vec<Statement>;
 
@@ -37,7 +38,7 @@ pub enum Lit {
     String(String),
 }
 
-impl fmt::Debug for Lit {
+impl Display for Lit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Lit::Nil => write!(f, "nil"),
@@ -46,6 +47,12 @@ impl fmt::Debug for Lit {
             Lit::Num(n) => write!(f, "{n}"),
             Lit::String(str) => write!(f, "\"{str}\""),
         }
+    }
+}
+
+impl fmt::Debug for Lit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{self}")
     }
 }
 

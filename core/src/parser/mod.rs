@@ -1,9 +1,8 @@
 use crate::ast;
-use crate::parser::cst::{try_from_program, Program};
+use crate::cst::{try_from_program, Program};
 use crate::parser::parser::Parser;
 pub use crate::parser::parser::ParsingError;
 
-mod cst;
 mod lexer;
 mod parser;
 #[cfg(test)]
@@ -19,7 +18,7 @@ pub fn parse_ast(input: &str) -> Result<ast::Program, ParsingError> {
 }
 
 #[cfg(test)]
-pub fn parse_expr(input: &str) -> Result<cst::Expr, ParsingError> {
+pub fn parse_expr(input: &str) -> Result<crate::cst::Expr, ParsingError> {
     Parser::new(input).parse_toplevel_expr()
 }
 

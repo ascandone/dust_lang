@@ -1,10 +1,13 @@
 use crate::ast;
 
-pub type Program = Vec<Statement>;
+#[derive(PartialEq, Debug)]
+pub struct Program {
+    pub statements: Vec<Statement>,
+}
 
 pub fn try_from_program(program: Program) -> Result<ast::Program, String> {
     let mut cst_program = vec![];
-    for statement in program {
+    for statement in program.statements {
         cst_program.push(statement.try_into()?)
     }
     Ok(cst_program)

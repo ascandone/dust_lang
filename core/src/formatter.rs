@@ -97,7 +97,21 @@ impl Into<Doc> for Statement {
 
 impl Into<Doc> for Program {
     fn into(self) -> Doc {
-        let v = self.statements.into_iter().map(|s| s.into()).collect();
+        let v = self
+            .statements
+            .into_iter()
+            .enumerate()
+            .map(|(index, s)| {
+                Doc::vec(&[
+                    if index == 0 {
+                        Doc::Nil
+                    } else {
+                        Doc::text(";\n\n")
+                    },
+                    s.into(),
+                ])
+            })
+            .collect();
         Doc::Vec(v)
     }
 }
@@ -188,6 +202,15 @@ mod tests {
 } else {
   2
 }",
+        );
+    }
+
+    #[test]
+    fn multiple_statements() {
+        assert_fmt(
+            "let x = 1;
+
+let y = 2",
         );
     }
 

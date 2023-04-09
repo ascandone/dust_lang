@@ -78,7 +78,17 @@ impl Into<Doc> for Expr {
 impl Into<Doc> for Statement {
     fn into(self) -> Doc {
         match self {
-            Statement::Let { .. } => todo!(),
+            Statement::Let {
+                public,
+                name,
+                value,
+            } => Doc::Vec(vec![
+                if public { Doc::text("pub ") } else { Doc::Nil },
+                Doc::text("let "),
+                Doc::Text(name),
+                Doc::text(" = "),
+                value.into(),
+            ]),
             Statement::Import(_) => todo!(),
             Statement::Expr(e) => e.into(),
         }
@@ -94,10 +104,10 @@ impl Into<Doc> for Program {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Ident, Lit};
+    use crate::ast::Lit;
     use crate::cst::Expr;
     use crate::formatter::PPRINT_W;
-    use crate::parser::parse_expr;
+    use crate::parser::parse;
     use crate::pretty::pprint;
 
     #[test]
@@ -168,10 +178,20 @@ mod tests {
         assert_fmt(expr);
     }
 
-    fn assert_fmt(expr: &str) {
-        assert_eq!(
-            pprint(PPRINT_W, parse_expr(expr).unwrap()),
-            expr.to_string(),
+    #[test]
+    fn let_statement() {
+        assert_fmt("let x = 42");
+        assert_fmt("pub let x = 42");
+        assert_fmt(
+            "let x = if c {
+  1
+} else {
+  2
+}",
         );
+    }
+
+    fn assert_fmt(expr: &str) {
+        assert_eq!(pprint(PPRINT_W, parse(expr).unwrap()), expr.to_string());
     }
 }

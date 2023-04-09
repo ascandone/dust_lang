@@ -64,11 +64,31 @@ impl Into<Doc> for Expr {
                 ])
             }
 
+            Expr::Call { f, args } => Doc::vec(&[
+                (*f).into(),
+                Doc::text("("),
+                Doc::Vec(
+                    args.into_iter()
+                        .enumerate()
+                        .map(|(index, arg)| {
+                            Doc::vec(&[
+                                if index == 0 {
+                                    Doc::Nil
+                                } else {
+                                    Doc::text(", ")
+                                },
+                                arg.into(),
+                            ])
+                        })
+                        .collect(),
+                ),
+                Doc::text(")"),
+            ]),
+
             Expr::Do(_, _) => todo!(),
             Expr::Prefix(_, _) => todo!(),
             Expr::Infix(_, _, _) => todo!(),
             Expr::Pipe(_, _) => todo!(),
-            Expr::Call { .. } => todo!(),
             Expr::Let { .. } => todo!(),
             Expr::Use { .. } => todo!(),
         }
@@ -209,6 +229,20 @@ mod tests {
 } else {
   2
 }
+",
+        );
+    }
+
+    #[test]
+    fn call_expr() {
+        assert_fmt("f()\n");
+        assert_fmt("f(1)\n");
+        assert_fmt("f(1, 2)\n");
+        assert_fmt("f(1, 2, 3)\n");
+        assert_fmt(
+            "f(x, fn {
+  nil
+})
 ",
         );
     }

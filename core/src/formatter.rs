@@ -36,6 +36,16 @@ impl Into<Doc> for Expr {
                 break_(),
                 Doc::text("}"),
             ]),
+            Expr::Fn { params: _, body } => Doc::vec(&[
+                Doc::text("fn"),
+                // (*params).into(),
+                Doc::text(" {"),
+                Doc::vec(&[break_(), Into::<Doc>::into(*body)])
+                    .group()
+                    .nest(TAB_SIZE),
+                break_(),
+                Doc::text("}"),
+            ]),
 
             Expr::Do(_, _) => todo!(),
             Expr::Prefix(_, _) => todo!(),
@@ -44,7 +54,6 @@ impl Into<Doc> for Expr {
             Expr::Call { .. } => todo!(),
             Expr::Let { .. } => todo!(),
             Expr::Use { .. } => todo!(),
-            Expr::Fn { .. } => todo!(),
         }
     }
 }
@@ -70,35 +79,64 @@ impl Into<Doc> for Program {
 mod tests {
     use crate::ast::{Ident, Lit};
     use crate::cst::{Expr, NIL};
+    use crate::formatter::PPRINT_W;
     use crate::parser::parse_expr;
     use crate::pretty::pprint;
 
     #[test]
     fn expr_fmt() {
-        assert_eq!(pprint(10, NIL), "nil");
+        assert_fmt("nil");
+        assert_fmt("42");
+        assert_fmt("true");
+        assert_fmt("false");
+        assert_fmt("\"abc\"");
+
         assert_eq!(pprint(10, Expr::Lit(Lit::Num(42.0))), "42");
-        assert_eq!(
-            pprint(10, Expr::Lit(Lit::String("abc".to_string()))),
-            "\"abc\""
-        );
-        assert_eq!(pprint(10, Expr::Lit(Lit::Bool(true))), "true");
-        assert_eq!(pprint(10, Expr::Lit(Lit::Bool(false))), "false");
     }
 
     #[test]
     fn expr_ident() {
-        assert_eq!(pprint(10, Expr::Ident(Ident(None, "x".to_string()))), "x");
+        assert_eq!(
+            pprint(PPRINT_W, Expr::Ident(Ident(None, "x".to_string()))),
+            "x"
+        );
     }
 
     #[test]
     fn if_ident() {
-        let expr = "if cond { expr_a } else { expr_b }";
-
-        let out = "if cond {
+        let expr = "if cond {
   expr_a
 } else {
   expr_b
 }";
-        assert_eq!(pprint(10, parse_expr(expr).unwrap()), out.to_string());
+
+        assert_fmt(expr);
+    }
+
+    #[test]
+    fn fn_expr() {
+        let expr = "fn { nil }";
+
+        assert_fmt(expr);
+    }
+
+    #[test]
+    fn fn_expr_wrap() {
+        let expr = "fn {
+  if cond {
+    1
+  } else {
+    2
+  }
+}";
+
+        assert_fmt(expr);
+    }
+
+    fn assert_fmt(expr: &str) {
+        assert_eq!(
+            pprint(PPRINT_W, parse_expr(expr).unwrap()),
+            expr.to_string()
+        );
     }
 }

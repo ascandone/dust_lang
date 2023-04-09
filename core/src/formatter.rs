@@ -24,17 +24,16 @@ impl Into<Doc> for Expr {
             } => Doc::vec(&[
                 Doc::text("if "),
                 (*condition).into(),
-                Doc::text(" {"),
-                Doc::vec(&[break_(), Into::<Doc>::into(*if_branch)])
-                    .group()
-                    .nest(TAB_SIZE),
-                break_(),
-                Doc::text("} else {"),
-                Doc::vec(&[break_(), Into::<Doc>::into(*else_branch)])
-                    .group()
-                    .nest(TAB_SIZE),
-                break_(),
-                Doc::text("}"),
+                Doc::vec(&[
+                    Doc::text(" {"),
+                    Doc::vec(&[break_(), Into::<Doc>::into(*if_branch)]).nest(TAB_SIZE),
+                    break_(),
+                    Doc::text("} else {"),
+                    Doc::vec(&[break_(), Into::<Doc>::into(*else_branch)]).nest(TAB_SIZE),
+                    break_(),
+                    Doc::text("}"),
+                ])
+                .group(),
             ]),
             Expr::Fn { params, body } => {
                 let mut params_docs = vec![];
@@ -51,11 +50,17 @@ impl Into<Doc> for Expr {
                     Doc::text("fn"),
                     Doc::Vec(params_docs),
                     Doc::text(" {"),
-                    Doc::vec(&[break_(), Into::<Doc>::into(*body)])
-                        .group()
+                    Doc::vec(&[
+                        Doc::vec(&[
+                            //
+                            break_(),
+                            Into::<Doc>::into(*body).group(),
+                        ])
                         .nest(TAB_SIZE),
-                    break_(),
-                    Doc::text("}"),
+                        break_(),
+                        Doc::text("}"),
+                    ])
+                    .group(),
                 ])
             }
 
@@ -103,15 +108,12 @@ mod tests {
         assert_fmt("false");
         assert_fmt("\"abc\"");
 
-        assert_eq!(pprint(10, Expr::Lit(Lit::Num(42.0))), "42");
+        assert_eq!(pprint(PPRINT_W, Expr::Lit(Lit::Num(42.0))), "42");
     }
 
     #[test]
     fn expr_ident() {
-        assert_eq!(
-            pprint(PPRINT_W, Expr::Ident(Ident(None, "x".to_string()))),
-            "x"
-        );
+        assert_fmt("x");
     }
 
     #[test]
@@ -123,11 +125,23 @@ mod tests {
 }";
 
         assert_fmt(expr);
+
+        let expr = "if a {
+  1
+} else {
+  2
+}";
+        assert_fmt(expr);
     }
 
     #[test]
     fn fn_expr() {
         assert_fmt("fn { nil }");
+        assert_fmt(
+            "fn {
+  1234567
+}",
+        );
         assert_fmt("fn a { nil }");
         assert_fmt(
             "fn a, b {

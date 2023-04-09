@@ -2,7 +2,7 @@ use crate::cst::{Expr, Program, Statement};
 use crate::pretty::{pprint, Doc};
 
 const TAB_SIZE: usize = 2;
-const PPRINT_W: isize = 10;
+const PPRINT_W: isize = 12;
 
 pub fn format(program: Program) -> String {
     pprint(PPRINT_W, program)
@@ -36,16 +36,28 @@ impl Into<Doc> for Expr {
                 break_(),
                 Doc::text("}"),
             ]),
-            Expr::Fn { params: _, body } => Doc::vec(&[
-                Doc::text("fn"),
-                // (*params).into(),
-                Doc::text(" {"),
-                Doc::vec(&[break_(), Into::<Doc>::into(*body)])
-                    .group()
-                    .nest(TAB_SIZE),
-                break_(),
-                Doc::text("}"),
-            ]),
+            Expr::Fn { params, body } => {
+                let mut params_docs = vec![];
+                for (index, param) in params.into_iter().enumerate() {
+                    if index != 0 {
+                        params_docs.push(Doc::text(","));
+                    }
+
+                    params_docs.push(Doc::text(" "));
+                    params_docs.push(Doc::Text(param));
+                }
+
+                Doc::vec(&[
+                    Doc::text("fn"),
+                    Doc::Vec(params_docs),
+                    Doc::text(" {"),
+                    Doc::vec(&[break_(), Into::<Doc>::into(*body)])
+                        .group()
+                        .nest(TAB_SIZE),
+                    break_(),
+                    Doc::text("}"),
+                ])
+            }
 
             Expr::Do(_, _) => todo!(),
             Expr::Prefix(_, _) => todo!(),
@@ -78,7 +90,7 @@ impl Into<Doc> for Program {
 #[cfg(test)]
 mod tests {
     use crate::ast::{Ident, Lit};
-    use crate::cst::{Expr, NIL};
+    use crate::cst::Expr;
     use crate::formatter::PPRINT_W;
     use crate::parser::parse_expr;
     use crate::pretty::pprint;
@@ -115,9 +127,18 @@ mod tests {
 
     #[test]
     fn fn_expr() {
-        let expr = "fn { nil }";
-
-        assert_fmt(expr);
+        assert_fmt("fn { nil }");
+        assert_fmt("fn a { nil }");
+        assert_fmt(
+            "fn a, b {
+  nil
+}",
+        );
+        assert_fmt(
+            "fn a, b, c {
+  nil
+}",
+        );
     }
 
     #[test]
@@ -136,7 +157,7 @@ mod tests {
     fn assert_fmt(expr: &str) {
         assert_eq!(
             pprint(PPRINT_W, parse_expr(expr).unwrap()),
-            expr.to_string()
+            expr.to_string(),
         );
     }
 }

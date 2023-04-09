@@ -112,7 +112,8 @@ impl Into<Doc> for Program {
                 ])
             })
             .collect();
-        Doc::Vec(v)
+
+        Doc::vec(&[Doc::Vec(v), Doc::text("\n")])
     }
 }
 
@@ -126,18 +127,18 @@ mod tests {
 
     #[test]
     fn expr_fmt() {
-        assert_fmt("nil");
-        assert_fmt("42");
-        assert_fmt("true");
-        assert_fmt("false");
-        assert_fmt("\"abc\"");
+        assert_fmt("nil\n");
+        assert_fmt("42\n");
+        assert_fmt("true\n");
+        assert_fmt("false\n");
+        assert_fmt("\"abc\"\n");
 
         assert_eq!(pprint(PPRINT_W, Expr::Lit(Lit::Num(42.0))), "42");
     }
 
     #[test]
     fn expr_ident() {
-        assert_fmt("x");
+        assert_fmt("x\n");
     }
 
     #[test]
@@ -146,7 +147,8 @@ mod tests {
   expr_a
 } else {
   expr_b
-}";
+}
+";
 
         assert_fmt(expr);
 
@@ -154,28 +156,32 @@ mod tests {
   1
 } else {
   2
-}";
+}
+";
         assert_fmt(expr);
     }
 
     #[test]
     fn fn_expr() {
-        assert_fmt("fn { nil }");
+        assert_fmt("fn { nil }\n");
         assert_fmt(
             "fn {
   1234567
-}",
+}
+",
         );
-        assert_fmt("fn a { nil }");
+        assert_fmt("fn a { nil }\n");
         assert_fmt(
             "fn a, b {
   nil
-}",
+}
+",
         );
         assert_fmt(
             "fn a, b, c {
   nil
-}",
+}
+",
         );
     }
 
@@ -187,21 +193,23 @@ mod tests {
   } else {
     2
   }
-}";
+}
+";
 
         assert_fmt(expr);
     }
 
     #[test]
     fn let_statement() {
-        assert_fmt("let x = 42");
-        assert_fmt("pub let x = 42");
+        assert_fmt("let x = 42\n");
+        assert_fmt("pub let x = 42\n");
         assert_fmt(
             "let x = if c {
   1
 } else {
   2
-}",
+}
+",
         );
     }
 
@@ -210,7 +218,8 @@ mod tests {
         assert_fmt(
             "let x = 1;
 
-let y = 2",
+let y = 2
+",
         );
     }
 

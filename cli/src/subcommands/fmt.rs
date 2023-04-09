@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use colored::Colorize;
 use core::formatter::format;
 use core::parser::parse;
 use std::fs;
@@ -10,6 +11,10 @@ pub struct Fmt {
     #[argh(positional)]
     /// file path
     path: String,
+
+    #[argh(switch, short = 'c')]
+    /// only check if input is formatted without editing it
+    check: bool,
 }
 
 impl Fmt {
@@ -29,6 +34,15 @@ impl Fmt {
 
         let fmt = format(program);
 
-        println!("{fmt}")
+        if content == fmt {
+            return;
+        }
+
+        if self.check {
+            std::process::exit(1)
+        } else {
+            fs::write(self.path.clone(), fmt).unwrap();
+            println!("{}", "Done".green())
+        }
     }
 }

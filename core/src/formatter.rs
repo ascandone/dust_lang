@@ -1,9 +1,14 @@
-use crate::cst::{Expr, Statement};
-use crate::pretty::Doc;
+use crate::cst::{Expr, Program, Statement};
+use crate::pretty::{pprint, Doc};
 
 const TAB_SIZE: usize = 2;
+const PPRINT_W: isize = 10;
 
-pub fn break_() -> Doc {
+pub fn format(program: Program) -> String {
+    pprint(PPRINT_W, program)
+}
+
+fn break_() -> Doc {
     Doc::Break(" ".to_string())
 }
 
@@ -46,7 +51,18 @@ impl Into<Doc> for Expr {
 
 impl Into<Doc> for Statement {
     fn into(self) -> Doc {
-        todo!()
+        match self {
+            Statement::Let { .. } => todo!(),
+            Statement::Import(_) => todo!(),
+            Statement::Expr(e) => e.into(),
+        }
+    }
+}
+
+impl Into<Doc> for Program {
+    fn into(self) -> Doc {
+        let v = self.statements.into_iter().map(|s| s.into()).collect();
+        Doc::Vec(v)
     }
 }
 

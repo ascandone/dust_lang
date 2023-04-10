@@ -113,8 +113,8 @@ impl Display for PPrint {
                         k += s.len() as isize;
                     }
                     Mode::Break => {
-                        let prefix = str::repeat(" ", i as usize);
-                        write!(f, "\n{prefix}")?;
+                        let indent = str::repeat(" ", i as usize);
+                        write!(f, "\n{indent}")?;
                     }
                 },
 

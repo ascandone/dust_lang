@@ -145,7 +145,7 @@ impl Into<Doc> for Program {
             })
             .collect();
 
-        Doc::vec(&[Doc::Vec(v), Doc::text("\n")])
+        Doc::vec(&[Doc::Vec(v), Doc::LineBreak { lines: 1 }])
     }
 }
 

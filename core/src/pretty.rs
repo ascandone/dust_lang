@@ -83,7 +83,7 @@ impl Display for PPrint {
         let mut vec = VecDeque::from([(0 as isize, Mode::Flat, &doc)]);
 
         loop {
-            let (i, m, doc) = match vec.pop_front() {
+            let (ident, mode, doc) = match vec.pop_front() {
                 None => return write!(f, ""),
                 Some(t) => t,
             };
@@ -97,34 +97,38 @@ impl Display for PPrint {
 
                 Doc::Vec(docs) => {
                     for doc in docs.into_iter().rev() {
-                        vec.push_front((i, m, doc));
+                        vec.push_front((ident, mode, doc));
                     }
                 }
+
                 Doc::Nest(x) => {
-                    vec.push_front((i + self.nest_size, m, x));
+                    vec.push_front((ident + self.nest_size, mode, x));
                 }
+
                 Doc::Text(s) => {
                     write!(f, "{s}")?;
                     width += s.len() as isize;
                 }
-                Doc::Break(s) => match m {
+
+                Doc::Break(s) => match mode {
                     Mode::Flat => {
                         write!(f, "{s}")?;
                         width += s.len() as isize;
                     }
+
                     Mode::Break => {
-                        write!(f, "\n{}", str::repeat(" ", i as usize))?;
-                        width = i;
+                        write!(f, "\n{}", str::repeat(" ", ident as usize))?;
+                        width = ident;
                     }
                 },
 
                 Doc::Group(x) => {
                     // TODO vec.clone() is O(n)
                     let mut cloned_vec = vec.clone();
-                    cloned_vec.push_front((i, Mode::Flat, x));
+                    cloned_vec.push_front((ident, Mode::Flat, x));
                     let fits = self.fits(self.max_w - width, cloned_vec);
                     let mode = if fits { Mode::Flat } else { Mode::Break };
-                    vec.push_front((i, mode, x));
+                    vec.push_front((ident, mode, x));
                 }
             };
         }

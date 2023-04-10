@@ -1,14 +1,18 @@
 use crate::cst::{Expr, Program, Statement};
-use crate::pretty::{pprint, Doc};
-
-const TAB_SIZE: usize = 2;
-const PPRINT_W: isize = 12;
+use crate::pretty::{Doc, PPrint};
 
 pub fn format(program: Program) -> String {
-    pprint(PPRINT_W, program)
+    format!(
+        "{}",
+        PPrint {
+            max_w: 12,
+            nest_size: 2,
+            doc: program.into(),
+        }
+    )
 }
 
-fn break_() -> Doc {
+fn space_break() -> Doc {
     Doc::Break(" ".to_string())
 }
 
@@ -26,11 +30,11 @@ impl Into<Doc> for Expr {
                 (*condition).into(),
                 Doc::vec(&[
                     Doc::text(" {"),
-                    Doc::vec(&[break_(), Into::<Doc>::into(*if_branch)]).nest(TAB_SIZE),
-                    break_(),
+                    Doc::vec(&[space_break(), Into::<Doc>::into(*if_branch)]).nest(),
+                    space_break(),
                     Doc::text("} else {"),
-                    Doc::vec(&[break_(), Into::<Doc>::into(*else_branch)]).nest(TAB_SIZE),
-                    break_(),
+                    Doc::vec(&[space_break(), Into::<Doc>::into(*else_branch)]).nest(),
+                    space_break(),
                     Doc::text("}"),
                 ])
                 .group(),
@@ -53,11 +57,11 @@ impl Into<Doc> for Expr {
                     Doc::vec(&[
                         Doc::vec(&[
                             //
-                            break_(),
+                            space_break(),
                             Into::<Doc>::into(*body).group(),
                         ])
-                        .nest(TAB_SIZE),
-                        break_(),
+                        .nest(),
+                        space_break(),
                         Doc::text("}"),
                     ])
                     .group(),
@@ -143,21 +147,16 @@ impl Into<Doc> for Program {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Lit;
-    use crate::cst::Expr;
-    use crate::formatter::PPRINT_W;
+    use crate::formatter::format;
     use crate::parser::parse;
-    use crate::pretty::pprint;
 
     #[test]
     fn expr_fmt() {
         assert_fmt("nil\n");
-        assert_fmt("42\n");
+        assert_fmt("42\n"); // TODO fmt float
         assert_fmt("true\n");
         assert_fmt("false\n");
         assert_fmt("\"abc\"\n");
-
-        assert_eq!(pprint(PPRINT_W, Expr::Lit(Lit::Num(42.0))), "42");
     }
 
     #[test]
@@ -262,6 +261,6 @@ let y = 2
     }
 
     fn assert_fmt(expr: &str) {
-        assert_eq!(pprint(PPRINT_W, parse(expr).unwrap()), expr.to_string());
+        assert_eq!(&format(parse(expr).unwrap()), expr);
     }
 }

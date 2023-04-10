@@ -48,7 +48,7 @@ pub struct PPrint {
 impl PPrint {
     fn fits(&self, mut w: isize, mut vec: VecDeque<(isize, Mode, &Doc)>) -> bool {
         loop {
-            let (i, m, doc) = match vec.pop_front() {
+            let (ident, mode, doc) = match vec.pop_front() {
                 None => return true,
                 Some(t) => t,
             };
@@ -61,16 +61,16 @@ impl PPrint {
                 Doc::LineBreak { .. } => return true,
                 Doc::Vec(docs) => {
                     for doc in docs.into_iter().rev() {
-                        vec.push_front((i, m, doc));
+                        vec.push_front((ident, mode, doc));
                     }
                 }
-                Doc::Nest(x) => vec.push_front((i + self.nest_size, m, x)),
+                Doc::Nest(x) => vec.push_front((ident + self.nest_size, mode, x)),
                 Doc::Text(s) => w -= s.len() as isize,
-                Doc::Break(s) => match m {
+                Doc::Break(s) => match mode {
                     Mode::Flat => w -= s.len() as isize,
                     Mode::Break => return true,
                 },
-                Doc::Group(x) => vec.push_front((i, Mode::Flat, x)),
+                Doc::Group(x) => vec.push_front((ident, Mode::Flat, x)),
             };
         }
     }
@@ -114,6 +114,7 @@ impl Display for PPrint {
                     }
                     Mode::Break => {
                         write!(f, "\n{}", str::repeat(" ", i as usize))?;
+                        width = i;
                     }
                 },
 

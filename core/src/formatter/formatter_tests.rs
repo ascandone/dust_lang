@@ -108,6 +108,7 @@ fn infix_expr() {
 #[test]
 fn prefix_expr() {
     assert_fmt("!true\n");
+    assert_fmt("!!true\n");
     assert_fmt("!x\n");
     assert_fmt("!(x + y)\n");
     assert_fmt("!x + !y\n");

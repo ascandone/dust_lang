@@ -18,9 +18,13 @@ fn space_break() -> Doc {
 
 fn ops_prec(str: &str) -> u8 {
     match str {
+        "||" => 3,
+        "&&" => 4,
+        "==" | "!=" => 8,
+        "<" | "<=" | ">" | ">=" => 9,
         "+" | "-" => 11,
         "*" | "/" | "%" => 12,
-        _ => panic!("Invalid tk"),
+        _ => panic!("Invalid op: {str}"),
     }
 }
 

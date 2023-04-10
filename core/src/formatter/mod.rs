@@ -158,15 +158,6 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
                 expr_to_doc(*y, true),
             ])
             .group(),
-            /*
-            Doc::vec(&[
-                space_break(),
-                expr_to_doc(*x, true),
-                Doc::text(";"),
-                space_break(),
-                expr_to_doc(*y, true),
-            ]),
-            */
         )
         .group(),
 

@@ -138,6 +138,28 @@ fn do_block() {
 }
 ",
     );
+
+    assert_fmt(
+        "{
+  a;
+  b;
+  c
+}
+",
+    );
+
+    assert_fmt(
+        "fn {
+  a;
+  b;
+  if c {
+    0
+  } else {
+    1
+  }
+}
+",
+    );
 }
 
 #[test]

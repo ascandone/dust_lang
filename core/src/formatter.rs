@@ -1,4 +1,4 @@
-use crate::cst::{Expr, Program, Statement};
+use crate::cst::{Expr, Import, Program, Statement};
 use crate::pretty::{Doc, PPrint};
 
 pub fn format(program: Program) -> String {
@@ -117,7 +117,14 @@ impl Into<Doc> for Statement {
                 Doc::text(" = "),
                 value.into(),
             ]),
-            Statement::Import(_) => todo!(),
+            Statement::Import(Import { ns, rename }) => Doc::vec(&[
+                Doc::text("import "),
+                Doc::Text(ns.to_string()),
+                match rename {
+                    None => Doc::nil(),
+                    Some(ns) => Doc::vec(&[Doc::text(" as "), Doc::Text(ns.to_string())]),
+                },
+            ]),
             Statement::Expr(e) => e.into(),
         }
     }
@@ -255,9 +262,18 @@ mod tests {
     }
 
     #[test]
+    fn import_statement() {
+        assert_fmt("import A\n");
+        assert_fmt("import A.B\n");
+        assert_fmt("import A.B as C\n");
+    }
+
+    #[test]
     fn multiple_statements() {
         assert_fmt(
             "let x = 1;
+
+import A;
 
 let y = 2
 ",

@@ -134,7 +134,11 @@ impl Into<Doc> for Program {
                     if index == 0 {
                         Doc::nil()
                     } else {
-                        Doc::text(";\n\n")
+                        Doc::vec(&[
+                            //
+                            Doc::text(";"),
+                            Doc::LineBreak { lines: 2 },
+                        ])
                     },
                     s.into(),
                 ])

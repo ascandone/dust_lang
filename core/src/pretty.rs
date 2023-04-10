@@ -5,6 +5,7 @@ pub enum Doc {
     Vec(Vec<Self>),
     Text(String),
     Nest(Box<Self>),
+    LineBreak { lines: usize },
     Break(String),
     Group(Box<Self>),
 }
@@ -57,6 +58,7 @@ impl PPrint {
             }
 
             match doc {
+                Doc::LineBreak { .. } => return true,
                 Doc::Vec(docs) => {
                     for doc in docs.into_iter().rev() {
                         vec.push_front((i, m, doc));
@@ -87,6 +89,12 @@ impl Display for PPrint {
             };
 
             match doc {
+                Doc::LineBreak { lines } => {
+                    let lines = str::repeat("\n", *lines);
+                    // TODO might need to preserve indentation
+                    write!(f, "{lines}")?;
+                }
+
                 Doc::Vec(docs) => {
                     for doc in docs.into_iter().rev() {
                         vec.push_front((i, m, doc));

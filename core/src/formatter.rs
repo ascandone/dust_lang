@@ -82,7 +82,10 @@ impl Into<Doc> for Expr {
             }
 
             Expr::Call { f, args } => Doc::vec(&[
-                (*f).into(),
+                match *f {
+                    Expr::Infix(_, _, _) => parens((*f).into()),
+                    _ => (*f).into(),
+                },
                 Doc::text("("),
                 Doc::Vec(
                     args.into_iter()
@@ -297,8 +300,6 @@ mod tests {
         assert_fmt("1 * (2 + 3)\n");
     }
 
-    // TODO solve
-    #[ignore]
     #[test]
     fn infix_call_nested_prec() {
         assert_fmt("(1 + f)()\n");

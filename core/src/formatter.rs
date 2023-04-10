@@ -5,7 +5,7 @@ pub fn format(program: Program) -> String {
     format!(
         "{}",
         PPrint {
-            max_w: 12,
+            max_w: 80,
             nest_size: 2,
             doc: program.into(),
         }
@@ -37,7 +37,8 @@ impl Into<Doc> for Expr {
                     space_break(),
                     Doc::text("}"),
                 ])
-                .group(),
+                .group()
+                .force_broken(),
             ]),
             Expr::Fn { params, body } => {
                 let mut params_docs = vec![];
@@ -177,6 +178,15 @@ mod tests {
 
     #[test]
     fn if_ident() {
+        assert_fmt(
+            "if x {
+  0
+} else {
+  1
+}
+",
+        );
+
         let expr = "if cond {
   expr_a
 } else {
@@ -198,25 +208,10 @@ mod tests {
     #[test]
     fn fn_expr() {
         assert_fmt("fn { nil }\n");
-        assert_fmt(
-            "fn {
-  1234567
-}
-",
-        );
+        assert_fmt("fn { 123456789 }\n");
         assert_fmt("fn a { nil }\n");
-        assert_fmt(
-            "fn a, b {
-  nil
-}
-",
-        );
-        assert_fmt(
-            "fn a, b, c {
-  nil
-}
-",
-        );
+        assert_fmt("fn a, b { nil }\n");
+        assert_fmt("fn a, b, c { nil }\n");
     }
 
     #[test]
@@ -253,12 +248,7 @@ mod tests {
         assert_fmt("f(1)\n");
         assert_fmt("f(1, 2)\n");
         assert_fmt("f(1, 2, 3)\n");
-        assert_fmt(
-            "f(x, fn {
-  nil
-})
-",
-        );
+        assert_fmt("f(x, fn { nil })\n");
     }
 
     #[test]

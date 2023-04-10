@@ -7,6 +7,7 @@ pub enum Doc {
     Nest(Box<Self>),
     LineBreak { lines: usize },
     Break(String),
+    ForceBroken(Box<Self>),
     Group(Box<Self>),
 }
 
@@ -27,15 +28,19 @@ impl Doc {
         Doc::Group(Box::new(self))
     }
 
+    pub fn force_broken(self) -> Self {
+        Self::ForceBroken(Box::new(self))
+    }
+
     pub fn nil() -> Doc {
         Doc::Vec(vec![])
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Mode {
     Flat,
-    Break,
+    Break { forced: bool },
 }
 
 // TODO make unsigned
@@ -58,6 +63,7 @@ impl PPrint {
             }
 
             match doc {
+                Doc::ForceBroken(_) => return false,
                 Doc::LineBreak { .. } => return true,
                 Doc::Vec(docs) => {
                     for doc in docs.into_iter().rev() {
@@ -68,7 +74,7 @@ impl PPrint {
                 Doc::Text(s) => w -= s.len() as isize,
                 Doc::Break(s) => match mode {
                     Mode::Flat => w -= s.len() as isize,
-                    Mode::Break => return true,
+                    Mode::Break { forced: _ } => return true,
                 },
                 Doc::Group(x) => vec.push_front((ident, Mode::Flat, x)),
             };
@@ -116,19 +122,31 @@ impl Display for PPrint {
                         width += s.len() as isize;
                     }
 
-                    Mode::Break => {
+                    Mode::Break { forced: _ } => {
                         write!(f, "\n{}", str::repeat(" ", ident as usize))?;
                         width = ident;
                     }
                 },
 
-                Doc::Group(x) => {
-                    // TODO vec.clone() is O(n)
-                    let mut cloned_vec = vec.clone();
-                    cloned_vec.push_front((ident, Mode::Flat, x));
-                    let fits = self.fits(self.max_w - width, cloned_vec);
-                    let mode = if fits { Mode::Flat } else { Mode::Break };
-                    vec.push_front((ident, mode, x));
+                Doc::ForceBroken(doc) => vec.push_front((ident, Mode::Break { forced: true }, doc)),
+
+                Doc::Group(doc) if mode == Mode::Break { forced: true } => {
+                    vec.push_front((ident, mode, doc))
+                }
+
+                Doc::Group(doc) => {
+                    let fits = self.fits(self.max_w - width, {
+                        // TODO vec.clone() is O(n)
+                        let mut vec = vec.clone();
+                        vec.push_front((ident, Mode::Flat, doc));
+                        vec
+                    });
+                    let mode = if fits {
+                        Mode::Flat
+                    } else {
+                        Mode::Break { forced: false }
+                    };
+                    vec.push_front((ident, mode, doc));
                 }
             };
         }

@@ -16,6 +16,18 @@ fn space_break() -> Doc {
     Doc::Break(" ".to_string())
 }
 
+fn ops_prec(str: &str) -> u8 {
+    match str {
+        "+" | "-" => 11,
+        "*" | "/" | "%" => 12,
+        _ => panic!("Invalid tk"),
+    }
+}
+
+fn parens(doc: Doc) -> Doc {
+    Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
+}
+
 impl Into<Doc> for Expr {
     fn into(self) -> Doc {
         match self {
@@ -94,9 +106,14 @@ impl Into<Doc> for Expr {
             Expr::Infix(op, left, right) => Doc::vec(&[
                 (*left).into(),
                 Doc::text(" "),
-                Doc::Text(op),
+                Doc::Text(op.clone()),
                 Doc::text(" "),
-                (*right).into(),
+                match *right {
+                    Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) => {
+                        parens((*right).into())
+                    }
+                    _ => (*right).into(),
+                },
             ]),
 
             Expr::Do(_, _) => todo!(),
@@ -275,11 +292,16 @@ mod tests {
         assert_fmt("1 + 2 * 3\n");
     }
 
+    #[test]
+    fn nested_infix_expr_prec() {
+        assert_fmt("1 * (2 + 3)\n");
+    }
+
     // TODO solve
     #[ignore]
     #[test]
-    fn infix_expr_prec() {
-        assert_fmt("1 * (2 + 3)\n");
+    fn infix_call_nested_prec() {
+        assert_fmt("(1 + f)()\n");
     }
 
     #[test]

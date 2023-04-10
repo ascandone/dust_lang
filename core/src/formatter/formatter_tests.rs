@@ -129,7 +129,6 @@ fn call_nested_prec() {
     assert_fmt("(!f)()\n");
 }
 
-#[ignore]
 #[test]
 fn do_block() {
     assert_fmt(

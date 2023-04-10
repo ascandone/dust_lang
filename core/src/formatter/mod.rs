@@ -40,7 +40,22 @@ fn parens_if_needed(needed: bool, doc: Doc) -> Doc {
     }
 }
 
-fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
+fn block_if_needed(needed: bool, doc: Doc) -> Doc {
+    if needed {
+        Doc::vec(&[
+            Doc::text("{"),
+            Doc::vec(&[space_break(), doc]).nest(),
+            space_break(),
+            Doc::text("}"),
+        ])
+        .group()
+        .force_broken()
+    } else {
+        doc
+    }
+}
+
+fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
     match doc {
         Expr::Lit(l) => Doc::Text(format!("{l}").to_string()),
         Expr::Ident(id) => Doc::Text(format!("{id}").to_string()),
@@ -134,7 +149,27 @@ fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
             ),
         ]),
 
-        Expr::Do(_, _) => todo!(),
+        Expr::Do(x, y) => block_if_needed(
+            !inside_block,
+            Doc::vec(&[
+                expr_to_doc(*x, true),
+                Doc::text(";"),
+                space_break(),
+                expr_to_doc(*y, true),
+            ])
+            .group(),
+            /*
+            Doc::vec(&[
+                space_break(),
+                expr_to_doc(*x, true),
+                Doc::text(";"),
+                space_break(),
+                expr_to_doc(*y, true),
+            ]),
+            */
+        )
+        .group(),
+
         Expr::Pipe(_, _) => todo!(),
         Expr::Let { .. } => todo!(),
         Expr::Use { .. } => todo!(),

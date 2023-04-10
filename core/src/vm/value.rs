@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, fmt::Display, rc::Rc};
+use std::{fmt::Display, rc::Rc};
 
 /// A compiled function
 #[derive(Clone, PartialEq, Debug, Default)]
@@ -48,7 +48,6 @@ pub enum Value {
     Nil,
     Bool(bool),
     Num(f64),
-    Cons(Rc<Value>, Rc<Value>),
     String(Rc<String>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
@@ -75,13 +74,6 @@ impl Value {
             Value::Function(f) => f.clone(),
             _ => panic!("Type error: expected a function. Got {self} instead"),
         }
-    }
-}
-
-impl From<Vec<Value>> for Value {
-    fn from(xs: Vec<Value>) -> Self {
-        xs.into_iter()
-            .rfold(Value::Nil, |tl, hd| Value::Cons(Rc::new(hd), Rc::new(tl)))
     }
 }
 
@@ -121,36 +113,6 @@ impl Display for Value {
             Value::Nil => write!(f, "nil"),
             Value::Bool(true) => write!(f, "true"),
             Value::Bool(false) => write!(f, "false"),
-
-            Value::Cons(hd, tl) => {
-                write!(f, "(")?;
-
-                hd.fmt(f)?;
-
-                let mut tl = tl;
-
-                loop {
-                    match tl.borrow() {
-                        Value::Nil => {
-                            write!(f, ")")?;
-                            return Ok(());
-                        }
-
-                        Value::Cons(hd, tl2) => {
-                            write!(f, " ")?;
-                            hd.fmt(f)?;
-                            tl = tl2;
-                        }
-
-                        el => {
-                            el.fmt(f)?;
-                            write!(f, ")")?;
-                            return Ok(());
-                        }
-                    }
-                }
-            }
-
             Value::Num(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
             Value::Function(r) => {
@@ -191,28 +153,6 @@ mod test {
         assert_eq!(
             format!("{}", Value::String(Rc::new("abc".to_string()))),
             "\"abc\"".to_string()
-        );
-
-        assert_eq!(
-            format!(
-                "{}",
-                Value::Cons(Rc::new(Value::Num(42.0)), Rc::new(Value::Nil),)
-            ),
-            "(42)".to_string()
-        );
-
-        assert_eq!(
-            format!(
-                "{}",
-                Value::Cons(
-                    Rc::new(Value::Num(1.0)),
-                    Rc::new(Value::Cons(
-                        Rc::new(Value::Num(2.0)),
-                        Rc::new(Value::Cons(Rc::new(Value::Num(3.0)), Rc::new(Value::Nil)))
-                    )),
-                )
-            ),
-            "(1 2 3)".to_string()
         );
     }
 }

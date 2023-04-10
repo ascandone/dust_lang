@@ -271,6 +271,15 @@ mod tests {
     fn infix_expr() {
         assert_fmt("1 + 2\n");
         assert_fmt("1 + 2 + 3\n");
+        assert_fmt("1 * 2 + 3\n");
+        assert_fmt("1 + 2 * 3\n");
+    }
+
+    // TODO solve
+    #[ignore]
+    #[test]
+    fn infix_expr_prec() {
+        assert_fmt("1 * (2 + 3)\n");
     }
 
     #[test]

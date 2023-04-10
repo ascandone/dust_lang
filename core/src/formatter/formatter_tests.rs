@@ -106,13 +106,26 @@ fn infix_expr() {
 }
 
 #[test]
+fn prefix_expr() {
+    assert_fmt("!true\n");
+    assert_fmt("!x\n");
+    assert_fmt("!(x + y)\n");
+    assert_fmt("!x + !y\n");
+    assert_fmt("!x + !y\n");
+    assert_fmt("!f()\n");
+    assert_fmt("-2\n");
+    assert_fmt("-(1 + 2)\n");
+}
+
+#[test]
 fn nested_infix_expr_prec() {
     assert_fmt("1 * (2 + 3)\n");
 }
 
 #[test]
-fn infix_call_nested_prec() {
+fn call_nested_prec() {
     assert_fmt("(1 + f)()\n");
+    assert_fmt("(!f)()\n");
 }
 
 #[test]

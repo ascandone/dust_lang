@@ -91,7 +91,7 @@ impl Into<Doc> for Expr {
 
             Expr::Call { f, args } => Doc::vec(&[
                 match *f {
-                    Expr::Infix(_, _, _) => parens((*f).into()),
+                    Expr::Infix { .. } | Expr::Prefix { .. } => parens((*f).into()),
                     _ => (*f).into(),
                 },
                 Doc::text("("),
@@ -113,7 +113,6 @@ impl Into<Doc> for Expr {
                 Doc::text(")"),
             ]),
 
-            // TODO !IMPORTANT handle precedence
             Expr::Infix(op, left, right) => Doc::vec(&[
                 (*left).into(),
                 Doc::text(" "),
@@ -127,9 +126,15 @@ impl Into<Doc> for Expr {
                 },
             ]),
 
-            Expr::Do(_, _) => todo!(),
-            Expr::Prefix(_, _) => todo!(),
+            Expr::Prefix(op, expr) => Doc::vec(&[
+                Doc::Text(op),
+                match *expr {
+                    Expr::Infix { .. } => parens((*expr).into()),
+                    _ => (*expr).into(),
+                },
+            ]),
 
+            Expr::Do(_, _) => todo!(),
             Expr::Pipe(_, _) => todo!(),
             Expr::Let { .. } => todo!(),
             Expr::Use { .. } => todo!(),

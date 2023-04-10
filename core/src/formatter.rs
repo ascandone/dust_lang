@@ -90,9 +90,18 @@ impl Into<Doc> for Expr {
                 Doc::text(")"),
             ]),
 
+            // TODO !IMPORTANT handle precedence
+            Expr::Infix(op, left, right) => Doc::vec(&[
+                (*left).into(),
+                Doc::text(" "),
+                Doc::Text(op),
+                Doc::text(" "),
+                (*right).into(),
+            ]),
+
             Expr::Do(_, _) => todo!(),
             Expr::Prefix(_, _) => todo!(),
-            Expr::Infix(_, _, _) => todo!(),
+
             Expr::Pipe(_, _) => todo!(),
             Expr::Let { .. } => todo!(),
             Expr::Use { .. } => todo!(),
@@ -256,6 +265,12 @@ mod tests {
         assert_fmt("import A\n");
         assert_fmt("import A.B\n");
         assert_fmt("import A.B as C\n");
+    }
+
+    #[test]
+    fn infix_expr() {
+        assert_fmt("1 + 2\n");
+        assert_fmt("1 + 2 + 3\n");
     }
 
     #[test]

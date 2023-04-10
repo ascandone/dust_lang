@@ -36,7 +36,7 @@ fn parens(doc: Doc) -> Doc {
     Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
 }
 
-fn expr_to_doc(doc: Expr) -> Doc {
+fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
     match doc {
         Expr::Lit(l) => Doc::Text(format!("{l}").to_string()),
         Expr::Ident(id) => Doc::Text(format!("{id}").to_string()),
@@ -46,13 +46,13 @@ fn expr_to_doc(doc: Expr) -> Doc {
             else_branch,
         } => Doc::vec(&[
             Doc::text("if "),
-            (*condition).into(),
+            expr_to_doc(*condition, false),
             Doc::vec(&[
                 Doc::text(" {"),
-                Doc::vec(&[space_break(), Into::<Doc>::into(*if_branch)]).nest(),
+                Doc::vec(&[space_break(), expr_to_doc(*if_branch, true)]).nest(),
                 space_break(),
                 Doc::text("} else {"),
-                Doc::vec(&[space_break(), Into::<Doc>::into(*else_branch)]).nest(),
+                Doc::vec(&[space_break(), expr_to_doc(*else_branch, true)]).nest(),
                 space_break(),
                 Doc::text("}"),
             ])
@@ -90,8 +90,8 @@ fn expr_to_doc(doc: Expr) -> Doc {
 
         Expr::Call { f, args } => Doc::vec(&[
             match *f {
-                Expr::Infix { .. } | Expr::Prefix { .. } => parens((*f).into()),
-                _ => (*f).into(),
+                Expr::Infix { .. } | Expr::Prefix { .. } => parens(expr_to_doc(*f, false)),
+                _ => expr_to_doc(*f, false),
             },
             Doc::text("("),
             Doc::Vec(
@@ -113,23 +113,23 @@ fn expr_to_doc(doc: Expr) -> Doc {
         ]),
 
         Expr::Infix(op, left, right) => Doc::vec(&[
-            (*left).into(),
+            expr_to_doc(*left, false),
             Doc::text(" "),
             Doc::Text(op.clone()),
             Doc::text(" "),
             match *right {
                 Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) => {
-                    parens((*right).into())
+                    parens(expr_to_doc(*right, false))
                 }
-                _ => (*right).into(),
+                _ => expr_to_doc(*right, false),
             },
         ]),
 
         Expr::Prefix(op, expr) => Doc::vec(&[
             Doc::Text(op),
             match *expr {
-                Expr::Infix { .. } => parens((*expr).into()),
-                _ => (*expr).into(),
+                Expr::Infix { .. } => parens(expr_to_doc(*expr, false)),
+                _ => expr_to_doc(*expr, false),
             },
         ]),
 
@@ -142,7 +142,7 @@ fn expr_to_doc(doc: Expr) -> Doc {
 
 impl Into<Doc> for Expr {
     fn into(self) -> Doc {
-        expr_to_doc(self)
+        expr_to_doc(self, false)
     }
 }
 

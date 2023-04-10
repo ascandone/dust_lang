@@ -36,109 +36,113 @@ fn parens(doc: Doc) -> Doc {
     Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
 }
 
-impl Into<Doc> for Expr {
-    fn into(self) -> Doc {
-        match self {
-            Expr::Lit(l) => Doc::Text(format!("{l}").to_string()),
-            Expr::Ident(id) => Doc::Text(format!("{id}").to_string()),
-            Expr::If {
-                condition,
-                if_branch,
-                else_branch,
-            } => Doc::vec(&[
-                Doc::text("if "),
-                (*condition).into(),
+fn expr_to_doc(doc: Expr) -> Doc {
+    match doc {
+        Expr::Lit(l) => Doc::Text(format!("{l}").to_string()),
+        Expr::Ident(id) => Doc::Text(format!("{id}").to_string()),
+        Expr::If {
+            condition,
+            if_branch,
+            else_branch,
+        } => Doc::vec(&[
+            Doc::text("if "),
+            (*condition).into(),
+            Doc::vec(&[
+                Doc::text(" {"),
+                Doc::vec(&[space_break(), Into::<Doc>::into(*if_branch)]).nest(),
+                space_break(),
+                Doc::text("} else {"),
+                Doc::vec(&[space_break(), Into::<Doc>::into(*else_branch)]).nest(),
+                space_break(),
+                Doc::text("}"),
+            ])
+            .group()
+            .force_broken(),
+        ]),
+        Expr::Fn { params, body } => {
+            let mut params_docs = vec![];
+            for (index, param) in params.into_iter().enumerate() {
+                if index != 0 {
+                    params_docs.push(Doc::text(","));
+                }
+
+                params_docs.push(Doc::text(" "));
+                params_docs.push(Doc::Text(param));
+            }
+
+            Doc::vec(&[
+                Doc::text("fn"),
+                Doc::Vec(params_docs),
+                Doc::text(" {"),
                 Doc::vec(&[
-                    Doc::text(" {"),
-                    Doc::vec(&[space_break(), Into::<Doc>::into(*if_branch)]).nest(),
-                    space_break(),
-                    Doc::text("} else {"),
-                    Doc::vec(&[space_break(), Into::<Doc>::into(*else_branch)]).nest(),
+                    Doc::vec(&[
+                        //
+                        space_break(),
+                        Into::<Doc>::into(*body).group(),
+                    ])
+                    .nest(),
                     space_break(),
                     Doc::text("}"),
                 ])
-                .group()
-                .force_broken(),
-            ]),
-            Expr::Fn { params, body } => {
-                let mut params_docs = vec![];
-                for (index, param) in params.into_iter().enumerate() {
-                    if index != 0 {
-                        params_docs.push(Doc::text(","));
-                    }
-
-                    params_docs.push(Doc::text(" "));
-                    params_docs.push(Doc::Text(param));
-                }
-
-                Doc::vec(&[
-                    Doc::text("fn"),
-                    Doc::Vec(params_docs),
-                    Doc::text(" {"),
-                    Doc::vec(&[
-                        Doc::vec(&[
-                            //
-                            space_break(),
-                            Into::<Doc>::into(*body).group(),
-                        ])
-                        .nest(),
-                        space_break(),
-                        Doc::text("}"),
-                    ])
-                    .group(),
-                ])
-            }
-
-            Expr::Call { f, args } => Doc::vec(&[
-                match *f {
-                    Expr::Infix { .. } | Expr::Prefix { .. } => parens((*f).into()),
-                    _ => (*f).into(),
-                },
-                Doc::text("("),
-                Doc::Vec(
-                    args.into_iter()
-                        .enumerate()
-                        .map(|(index, arg)| {
-                            Doc::vec(&[
-                                if index == 0 {
-                                    Doc::nil()
-                                } else {
-                                    Doc::text(", ")
-                                },
-                                arg.into(),
-                            ])
-                        })
-                        .collect(),
-                ),
-                Doc::text(")"),
-            ]),
-
-            Expr::Infix(op, left, right) => Doc::vec(&[
-                (*left).into(),
-                Doc::text(" "),
-                Doc::Text(op.clone()),
-                Doc::text(" "),
-                match *right {
-                    Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) => {
-                        parens((*right).into())
-                    }
-                    _ => (*right).into(),
-                },
-            ]),
-
-            Expr::Prefix(op, expr) => Doc::vec(&[
-                Doc::Text(op),
-                match *expr {
-                    Expr::Infix { .. } => parens((*expr).into()),
-                    _ => (*expr).into(),
-                },
-            ]),
-
-            Expr::Do(_, _) => todo!(),
-            Expr::Pipe(_, _) => todo!(),
-            Expr::Let { .. } => todo!(),
-            Expr::Use { .. } => todo!(),
+                .group(),
+            ])
         }
+
+        Expr::Call { f, args } => Doc::vec(&[
+            match *f {
+                Expr::Infix { .. } | Expr::Prefix { .. } => parens((*f).into()),
+                _ => (*f).into(),
+            },
+            Doc::text("("),
+            Doc::Vec(
+                args.into_iter()
+                    .enumerate()
+                    .map(|(index, arg)| {
+                        Doc::vec(&[
+                            if index == 0 {
+                                Doc::nil()
+                            } else {
+                                Doc::text(", ")
+                            },
+                            arg.into(),
+                        ])
+                    })
+                    .collect(),
+            ),
+            Doc::text(")"),
+        ]),
+
+        Expr::Infix(op, left, right) => Doc::vec(&[
+            (*left).into(),
+            Doc::text(" "),
+            Doc::Text(op.clone()),
+            Doc::text(" "),
+            match *right {
+                Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) => {
+                    parens((*right).into())
+                }
+                _ => (*right).into(),
+            },
+        ]),
+
+        Expr::Prefix(op, expr) => Doc::vec(&[
+            Doc::Text(op),
+            match *expr {
+                Expr::Infix { .. } => parens((*expr).into()),
+                _ => (*expr).into(),
+            },
+        ]),
+
+        Expr::Do(_, _) => todo!(),
+        Expr::Pipe(_, _) => todo!(),
+        Expr::Let { .. } => todo!(),
+        Expr::Use { .. } => todo!(),
+    }
+}
+
+impl Into<Doc> for Expr {
+    fn into(self) -> Doc {
+        expr_to_doc(self)
     }
 }
 

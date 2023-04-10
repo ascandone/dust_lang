@@ -32,8 +32,12 @@ fn ops_prec(str: &str) -> u8 {
     }
 }
 
-fn parens(doc: Doc) -> Doc {
-    Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
+fn parens_if_needed(needed: bool, doc: Doc) -> Doc {
+    if needed {
+        Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
+    } else {
+        doc
+    }
 }
 
 fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
@@ -65,7 +69,6 @@ fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
                 if index != 0 {
                     params_docs.push(Doc::text(","));
                 }
-
                 params_docs.push(Doc::text(" "));
                 params_docs.push(Doc::Text(param));
             }
@@ -89,10 +92,10 @@ fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
         }
 
         Expr::Call { f, args } => Doc::vec(&[
-            match *f {
-                Expr::Infix { .. } | Expr::Prefix { .. } => parens(expr_to_doc(*f, false)),
-                _ => expr_to_doc(*f, false),
-            },
+            parens_if_needed(
+                matches!(*f, Expr::Infix { .. } | Expr::Prefix { .. }),
+                expr_to_doc(*f, false),
+            ),
             Doc::text("("),
             Doc::Vec(
                 args.into_iter()
@@ -117,20 +120,18 @@ fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
             Doc::text(" "),
             Doc::Text(op.clone()),
             Doc::text(" "),
-            match *right {
-                Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) => {
-                    parens(expr_to_doc(*right, false))
-                }
-                _ => expr_to_doc(*right, false),
-            },
+            parens_if_needed(
+                matches!(*right, Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) ),
+                expr_to_doc(*right, false),
+            ),
         ]),
 
         Expr::Prefix(op, expr) => Doc::vec(&[
             Doc::Text(op),
-            match *expr {
-                Expr::Infix { .. } => parens(expr_to_doc(*expr, false)),
-                _ => expr_to_doc(*expr, false),
-            },
+            parens_if_needed(
+                matches!(*expr, Expr::Infix { .. }),
+                expr_to_doc(*expr, false),
+            ),
         ]),
 
         Expr::Do(_, _) => todo!(),

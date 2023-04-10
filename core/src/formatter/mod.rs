@@ -78,7 +78,7 @@ fn expr_to_doc(doc: Expr, _inside_block: bool) -> Doc {
                     Doc::vec(&[
                         //
                         space_break(),
-                        Into::<Doc>::into(*body).group(),
+                        expr_to_doc(*body, true),
                     ])
                     .nest(),
                     space_break(),

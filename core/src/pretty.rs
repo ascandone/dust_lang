@@ -2,7 +2,6 @@ use std::{collections::VecDeque, fmt::Display};
 
 #[derive(Clone, Debug)]
 pub enum Doc {
-    Nil,
     Vec(Vec<Self>),
     Text(String),
     Nest(isize, Box<Self>),
@@ -26,6 +25,10 @@ impl Doc {
     pub fn group(self) -> Doc {
         Doc::Group(Box::new(self))
     }
+
+    pub fn nil() -> Doc {
+        Doc::Vec(vec![])
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -46,7 +49,6 @@ fn fits(mut w: isize, mut vec: VecDeque<(isize, Mode, &Doc)>) -> bool {
         }
 
         match doc {
-            Doc::Nil => (),
             Doc::Vec(docs) => {
                 for doc in docs.into_iter().rev() {
                     vec.push_front((i, m, doc));
@@ -76,7 +78,6 @@ fn format(
         };
 
         match doc {
-            Doc::Nil => (),
             Doc::Vec(docs) => {
                 for doc in docs.into_iter().rev() {
                     vec.push_front((i, m, doc));

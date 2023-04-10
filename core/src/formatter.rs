@@ -73,7 +73,7 @@ impl Into<Doc> for Expr {
                         .map(|(index, arg)| {
                             Doc::vec(&[
                                 if index == 0 {
-                                    Doc::Nil
+                                    Doc::nil()
                                 } else {
                                     Doc::text(", ")
                                 },
@@ -103,7 +103,11 @@ impl Into<Doc> for Statement {
                 name,
                 value,
             } => Doc::Vec(vec![
-                if public { Doc::text("pub ") } else { Doc::Nil },
+                if public {
+                    Doc::text("pub ")
+                } else {
+                    Doc::nil()
+                },
                 Doc::text("let "),
                 Doc::Text(name),
                 Doc::text(" = "),
@@ -124,7 +128,7 @@ impl Into<Doc> for Program {
             .map(|(index, s)| {
                 Doc::vec(&[
                     if index == 0 {
-                        Doc::Nil
+                        Doc::nil()
                     } else {
                         Doc::text(";\n\n")
                     },

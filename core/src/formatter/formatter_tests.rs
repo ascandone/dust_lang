@@ -72,11 +72,12 @@ fn let_statement() {
     assert_fmt("let x = 42\n");
     assert_fmt("pub let x = 42\n");
     assert_fmt(
-        "let x = if c {
-  1
-} else {
-  2
-}
+        "let x =
+  if c {
+    1
+  } else {
+    2
+  }
 ",
     );
 }
@@ -264,6 +265,17 @@ fn pipe_expr_prec() {
   2
   |> f(1, 2)
 }
+",
+    );
+}
+
+#[test]
+fn pipe_inside_let() {
+    assert_fmt(
+        "let x =
+  x
+  |> f()
+  |> g()
 ",
     );
 }

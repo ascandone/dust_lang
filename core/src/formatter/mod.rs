@@ -56,6 +56,14 @@ fn block_if_needed(needed: bool, doc: Doc) -> Doc {
     }
 }
 
+fn nested_if_needed(needed: bool, doc: Doc) -> Doc {
+    if needed {
+        nested_group(doc)
+    } else {
+        Doc::vec(&[Doc::text(" "), doc])
+    }
+}
+
 fn block(doc: Doc) -> Doc {
     Doc::vec(&[
         Doc::text("{"),
@@ -178,8 +186,8 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
             Doc::vec(&[
                 Doc::text("let "),
                 Doc::Text(name),
-                Doc::text(" = "),
-                expr_to_doc(*value, true),
+                Doc::text(" ="),
+                format_let_value(*value),
                 Doc::text(";"),
                 space_break(),
                 expr_to_doc(*body, true),
@@ -243,6 +251,13 @@ impl Into<Doc> for Expr {
     }
 }
 
+fn format_let_value(value: Expr) -> Doc {
+    nested_if_needed(
+        matches!(value, Expr::Pipe { .. } | Expr::If { .. }),
+        expr_to_doc(value, false),
+    )
+}
+
 impl Into<Doc> for Statement {
     fn into(self) -> Doc {
         match self {
@@ -258,8 +273,8 @@ impl Into<Doc> for Statement {
                 },
                 Doc::text("let "),
                 Doc::Text(name),
-                Doc::text(" = "),
-                value.into(),
+                Doc::text(" ="),
+                format_let_value(value),
             ]),
             Statement::Import(Import { ns, rename }) => Doc::vec(&[
                 Doc::text("import "),

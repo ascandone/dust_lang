@@ -1,7 +1,8 @@
 use crate::project_interpreter::project_interpreter;
 use argh::FromArgs;
-use colored::Colorize;
+use colored::{ColoredString, Colorize};
 use core::interpreter;
+use core::vm::value::Value;
 use std::io;
 use std::io::Write;
 
@@ -9,6 +10,18 @@ use std::io::Write;
 /// Run the Dust repl
 #[argh(subcommand, name = "repl")]
 pub struct Repl {}
+
+fn colored_value(value: Value) -> ColoredString {
+    match value {
+        Value::Nil => value.to_string().white().dimmed(),
+        Value::Bool(_) => value.to_string().yellow().bold(),
+        Value::Num(_) => value.to_string().blue(),
+        Value::String(_) => value.to_string().bright_green(),
+        Value::NativeFunction(_) | Value::Closure(_) | Value::Function(_) => {
+            value.to_string().cyan()
+        }
+    }
+}
 
 impl Repl {
     pub fn run(&self) {
@@ -18,7 +31,7 @@ impl Repl {
         });
 
         loop {
-            print!("{} ", ">".green());
+            print!("> ");
             let () = io::stdout().flush().unwrap();
 
             let stdin = io::stdin();
@@ -30,7 +43,7 @@ impl Repl {
 
             match interpreter.run(&input) {
                 Err(e) => print_interpreter_err(e),
-                Ok(value) => println!("{}", value),
+                Ok(value) => println!("{}", colored_value(value)),
             };
         }
     }

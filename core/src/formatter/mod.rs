@@ -176,8 +176,43 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
         )
         .group(),
 
+        Expr::Use {
+            params,
+            body,
+            f_call,
+        } => block_if_needed(
+            !inside_block,
+            Doc::vec(&[
+                Doc::text("use"),
+                Doc::Vec(
+                    params
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, param)| {
+                            Doc::vec(&[
+                                if index != 0 {
+                                    Doc::text(",")
+                                } else {
+                                    Doc::nil()
+                                },
+                                Doc::text(" "),
+                                Doc::Text(param),
+                            ])
+                        })
+                        .collect(),
+                ),
+                Doc::text(" <- "),
+                expr_to_doc(*f_call, true),
+                Doc::text(";"),
+                space_break(),
+                expr_to_doc(*body, true),
+            ])
+            .group()
+            .force_broken(),
+        )
+        .group(),
+
         Expr::Pipe(_, _) => todo!(),
-        Expr::Use { .. } => todo!(),
     }
 }
 

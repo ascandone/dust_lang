@@ -196,6 +196,43 @@ fn let_expr() {
 }
 
 #[test]
+fn use_expr() {
+    assert_fmt(
+        "{
+  use <- expr();
+  x
+}
+",
+    );
+
+    assert_fmt(
+        "{
+  use x <- expr(1, 2);
+  x
+}
+",
+    );
+
+    assert_fmt(
+        "{
+  use x, y, z <- expr();
+  x
+}
+",
+    );
+
+    assert_fmt(
+        "fn {
+  use x <- f();
+  use y <- g();
+  use z <- h();
+  x + y + z
+}
+",
+    );
+}
+
+#[test]
 fn multiple_statements() {
     assert_fmt(
         "let x = 1;

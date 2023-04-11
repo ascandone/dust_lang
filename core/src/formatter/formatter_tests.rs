@@ -233,6 +233,23 @@ fn use_expr() {
 }
 
 #[test]
+fn pipe_expr() {
+    assert_fmt(
+        "x
+  |> f(1, 2)
+",
+    );
+
+    assert_fmt(
+        "x
+  |> f(1, 2)
+  |> g()
+  |> h()
+",
+    );
+}
+
+#[test]
 fn multiple_statements() {
     assert_fmt(
         "let x = 1;

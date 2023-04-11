@@ -212,7 +212,14 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
         )
         .group(),
 
-        Expr::Pipe(_, _) => todo!(),
+        Expr::Pipe(x, f) => {
+            Doc::vec(&[
+                //
+                expr_to_doc(*x, false),
+                nested_group(Doc::vec(&[Doc::text("|> "), expr_to_doc(*f, false)])),
+            ])
+            .force_broken()
+        }
     }
 }
 

@@ -5,7 +5,7 @@ use core::parser::parse;
 use std::fs;
 
 #[derive(FromArgs, PartialEq)]
-/// Run a dust script
+/// Format a Dust script
 #[argh(subcommand, name = "fmt")]
 pub struct Fmt {
     #[argh(positional)]

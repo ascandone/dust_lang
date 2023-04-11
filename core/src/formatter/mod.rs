@@ -38,24 +38,31 @@ fn ops_prec(str: &str) -> u8 {
 
 fn parens_if_needed(needed: bool, doc: Doc) -> Doc {
     if needed {
-        Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
+        parens(doc)
     } else {
         doc
     }
 }
 
+fn parens(doc: Doc) -> Doc {
+    Doc::vec(&[Doc::text("("), doc, Doc::text(")")])
+}
+
 fn block_if_needed(needed: bool, doc: Doc) -> Doc {
     if needed {
-        Doc::vec(&[
-            Doc::text("{"),
-            nested_group(doc),
-            space_break(),
-            Doc::text("}"),
-        ])
-        .group()
+        block(doc)
     } else {
         doc
     }
+}
+
+fn block(doc: Doc) -> Doc {
+    Doc::vec(&[
+        Doc::text("{"),
+        nested_group(doc).group(),
+        space_break(),
+        Doc::text("}"),
+    ])
 }
 
 fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
@@ -133,18 +140,24 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
             Doc::text(" "),
             Doc::Text(op.clone()),
             Doc::text(" "),
-            parens_if_needed(
-                matches!(*right, Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) ),
-                expr_to_doc(*right, false),
-            ),
+            match *right {
+                Expr::Infix(ref nested_op, _, _) if ops_prec(&op) > ops_prec(nested_op) => {
+                    parens(expr_to_doc(*right, false))
+                }
+
+                Expr::Pipe { .. } => block(expr_to_doc(*right, true)),
+
+                _ => expr_to_doc(*right, false),
+            },
         ]),
 
         Expr::Prefix(op, expr) => Doc::vec(&[
             Doc::Text(op),
-            parens_if_needed(
-                matches!(*expr, Expr::Infix { .. }),
-                expr_to_doc(*expr, false),
-            ),
+            match *expr {
+                Expr::Infix { .. } => parens(expr_to_doc(*expr, false)),
+                Expr::Pipe { .. } => block(expr_to_doc(*expr, true)),
+                _ => expr_to_doc(*expr, false),
+            },
         ]),
 
         Expr::Do(x, y) => block_if_needed(
@@ -215,8 +228,9 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
         Expr::Pipe(x, f) => {
             Doc::vec(&[
                 //
-                expr_to_doc(*x, false),
-                nested_group(Doc::vec(&[Doc::text("|> "), expr_to_doc(*f, false)])),
+                expr_to_doc(*x, inside_block),
+                space_break(),
+                Doc::vec(&[Doc::text("|> "), expr_to_doc(*f, false)]),
             ])
             .force_broken()
         }

@@ -236,15 +236,34 @@ fn use_expr() {
 fn pipe_expr() {
     assert_fmt(
         "x
-  |> f(1, 2)
+|> f(1, 2)
 ",
     );
 
     assert_fmt(
         "x
+|> f(1, 2)
+|> g()
+|> h()
+",
+    );
+}
+
+#[test]
+fn pipe_expr_prec() {
+    assert_fmt(
+        "1 + {
+  2
   |> f(1, 2)
-  |> g()
-  |> h()
+}
+",
+    );
+
+    assert_fmt(
+        "!{
+  2
+  |> f(1, 2)
+}
 ",
     );
 }

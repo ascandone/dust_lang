@@ -1,5 +1,6 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement, NIL};
+use crate::ast::{Ident, Lit, Namespace};
+use crate::cst::{Expr, Import, Program, Statement, NIL};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -66,7 +67,7 @@ impl<'a> Parser<'a> {
                 }
                 Token::Import => statements.push(self.parse_import_statement()?),
                 Token::Semicolon => self.advance_token(),
-                Token::Eof => return Ok(statements),
+                Token::Eof => return Ok(Program { statements }),
 
                 // Assuming this is an expression otherwise
                 _ => {
@@ -121,7 +122,7 @@ impl<'a> Parser<'a> {
             }
 
             left = match self.current_token {
-                Token::PipeRight => self.parse_infix(left, pred, "|>")?,
+                Token::PipeRight => self.parse_pipe_right(left, pred)?,
                 Token::Plus => self.parse_infix(left, pred, "+")?,
                 Token::Minus => self.parse_infix(left, pred, "-")?,
                 Token::Slash => self.parse_infix(left, pred, "/")?,
@@ -151,6 +152,12 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left)
+    }
+
+    fn parse_pipe_right(&mut self, left: Expr, precedence: u8) -> Result<Expr, ParsingError> {
+        self.advance_token();
+        let right = self.parse_expr(precedence, false)?;
+        Ok(Expr::Pipe(Box::new(left), Box::new(right)))
     }
 
     fn parse_infix(
@@ -210,7 +217,6 @@ impl<'a> Parser<'a> {
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
-        // TODO add `pub` parsing
         Ok(Statement::Let {
             public,
             name: name.clone(),
@@ -278,7 +284,11 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
-        Ok(desugar_let_star(bindings, value, body))
+        Ok(Expr::Use {
+            f_call: Box::new(value),
+            params: bindings,
+            body: Box::new(body),
+        })
     }
 
     fn parse_let_expr(&mut self) -> Result<Expr, ParsingError> {
@@ -421,26 +431,5 @@ impl<'a> Parser<'a> {
         }
 
         Ok(args)
-    }
-}
-
-// TODO move to a cst->ast function
-// TODO refactor as result
-fn desugar_let_star(bindings: Vec<String>, f_call: Expr, body: Expr) -> Expr {
-    match f_call {
-        Expr::Call { f, args } => {
-            // TODO check that f is an identifier
-
-            let mut args = args;
-
-            args.push(Expr::Fn {
-                params: bindings,
-                body: Box::new(body),
-            });
-
-            Expr::Call { f, args }
-        }
-
-        _ => panic!("Expected a function call in use syntax sugar"),
     }
 }

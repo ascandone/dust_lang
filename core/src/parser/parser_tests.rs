@@ -1,8 +1,7 @@
-use crate::ast::{ident, Ident, Import, Namespace};
-use crate::{
-    ast::{Expr, Statement, NIL},
-    parser::{parse, parse_expr},
-};
+use super::ast::Namespace;
+use crate::ast::Ident;
+use crate::cst::{ident, Expr, Import, Program, Statement, NIL};
+use crate::parser::{parse, parse_ast, parse_expr};
 
 #[test]
 fn parse_nil() {
@@ -60,17 +59,24 @@ fn parse_qualified_ident() {
 fn parse_let_decl() {
     assert_eq!(
         parse("let x = nil").unwrap(),
-        vec![Statement::Let {
-            public: false,
-            name: "x".to_string(),
-            value: NIL
-        }]
+        Program {
+            statements: vec![Statement::Let {
+                public: false,
+                name: "x".to_string(),
+                value: NIL
+            }]
+        },
     )
 }
 
 #[test]
 fn parse_expr_program() {
-    assert_eq!(parse("42").unwrap(), vec![Statement::Expr(42.0.into(),)])
+    assert_eq!(
+        parse("42").unwrap(),
+        Program {
+            statements: vec![Statement::Expr(42.0.into())]
+        }
+    )
 }
 
 #[test]
@@ -384,15 +390,17 @@ fn parse_let_and_semicolon() {
 fn parse_let_statement_and_semicolon() {
     assert_eq!(
         parse("let x = 0; 1; 2").unwrap(),
-        vec![
-            Statement::Let {
-                public: false,
-                name: "x".to_string(),
-                value: 0.0.into(),
-            },
-            Statement::Expr(1.0.into()),
-            Statement::Expr(2.0.into()),
-        ]
+        Program {
+            statements: vec![
+                Statement::Let {
+                    public: false,
+                    name: "x".to_string(),
+                    value: 0.0.into(),
+                },
+                Statement::Expr(1.0.into()),
+                Statement::Expr(2.0.into()),
+            ]
+        }
     );
 }
 
@@ -400,19 +408,21 @@ fn parse_let_statement_and_semicolon() {
 fn parse_let_statement_and_semicolon_with_infix() {
     assert_eq!(
         parse("let x = 0; 1 + 2; 3").unwrap(),
-        vec![
-            Statement::Let {
-                public: false,
-                name: "x".to_string(),
-                value: 0.0.into(),
-            },
-            Statement::Expr(Expr::Infix(
-                "+".to_string(),
-                Box::new(1.0.into()),
-                Box::new(2.0.into()),
-            )),
-            Statement::Expr(3.0.into()),
-        ]
+        Program {
+            statements: vec![
+                Statement::Let {
+                    public: false,
+                    name: "x".to_string(),
+                    value: 0.0.into(),
+                },
+                Statement::Expr(Expr::Infix(
+                    "+".to_string(),
+                    Box::new(1.0.into()),
+                    Box::new(2.0.into()),
+                )),
+                Statement::Expr(3.0.into()),
+            ]
+        }
     );
 }
 
@@ -431,7 +441,7 @@ fn parse_let_star_sugar() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
@@ -449,7 +459,7 @@ fn parse_let_star_sugar_no_args() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
@@ -467,7 +477,7 @@ fn parse_let_star_sugar_many_args() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
@@ -490,18 +500,20 @@ fn parse_nested_let_star_sugar() {
         })
     ";
 
-    assert_eq!(parse(sugar).unwrap(), parse(desugared).unwrap());
+    assert_eq!(parse_ast(sugar).unwrap(), parse_ast(desugared).unwrap());
 }
 
 #[test]
 fn parse_pub_let() {
     assert_eq!(
         parse("pub let x = nil").unwrap(),
-        vec![Statement::Let {
-            public: true,
-            name: "x".to_string(),
-            value: NIL
-        }]
+        Program {
+            statements: vec![Statement::Let {
+                public: true,
+                name: "x".to_string(),
+                value: NIL
+            }]
+        }
     );
 }
 
@@ -509,18 +521,22 @@ fn parse_pub_let() {
 fn parse_import_statement() {
     assert_eq!(
         parse("import A").unwrap(),
-        vec![Statement::Import(Import {
-            ns: Namespace(vec!["A".to_string()]),
-            rename: None
-        })]
+        Program {
+            statements: vec![Statement::Import(Import {
+                ns: Namespace(vec!["A".to_string()]),
+                rename: None
+            })]
+        }
     );
 
     assert_eq!(
         parse("import A.B").unwrap(),
-        vec![Statement::Import(Import {
-            ns: Namespace(vec!["A".to_string(), "B".to_string()]),
-            rename: None
-        })]
+        Program {
+            statements: vec![Statement::Import(Import {
+                ns: Namespace(vec!["A".to_string(), "B".to_string()]),
+                rename: None
+            })]
+        }
     );
 }
 
@@ -528,9 +544,11 @@ fn parse_import_statement() {
 fn parse_import_statement_rename() {
     assert_eq!(
         parse("import A as B").unwrap(),
-        vec![Statement::Import(Import {
-            ns: Namespace(vec!["A".to_string()]),
-            rename: Some(Namespace(vec!["B".to_string()]))
-        })]
+        Program {
+            statements: vec![Statement::Import(Import {
+                ns: Namespace(vec!["A".to_string()]),
+                rename: Some(Namespace(vec!["B".to_string()]))
+            })]
+        }
     );
 }

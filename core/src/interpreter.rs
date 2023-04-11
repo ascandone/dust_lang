@@ -1,6 +1,6 @@
 use crate::ast::Namespace;
 use crate::compiler::compiler::Compiler;
-use crate::parser::{parse, ParsingError};
+use crate::parser::{parse_ast, ParsingError};
 use crate::vm::value::{NativeFunction, Value};
 use crate::vm::vm::Vm;
 use std::rc::Rc;
@@ -32,7 +32,7 @@ impl Interpreter {
     }
 
     pub fn add_module(&mut self, ns: Namespace, src: &str) -> Result<(), Error> {
-        let program = parse(src).map_err(Error::Parsing)?;
+        let program = parse_ast(src).map_err(Error::Parsing)?;
         self.compiler.add_module(ns, program);
         Ok(())
     }
@@ -53,7 +53,7 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, src: &str) -> Result<Value, Error> {
-        let program = parse(src).map_err(Error::Parsing)?;
+        let program = parse_ast(src).map_err(Error::Parsing)?;
         let main = self
             .compiler
             .compile_program(program)

@@ -53,7 +53,6 @@ fn block_if_needed(needed: bool, doc: Doc) -> Doc {
             Doc::text("}"),
         ])
         .group()
-        .force_broken()
     } else {
         doc
     }
@@ -156,7 +155,8 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
                 space_break(),
                 expr_to_doc(*y, true),
             ])
-            .group(),
+            .group()
+            .force_broken(),
         )
         .group(),
 

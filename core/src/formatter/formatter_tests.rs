@@ -142,6 +142,14 @@ fn do_block() {
     assert_fmt(
         "{
   a;
+  b
+}
+",
+    );
+
+    assert_fmt(
+        "{
+  a;
   b;
   c
 }
@@ -152,11 +160,7 @@ fn do_block() {
         "fn {
   a;
   b;
-  if c {
-    0
-  } else {
-    1
-  }
+  c
 }
 ",
     );

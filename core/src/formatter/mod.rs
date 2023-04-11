@@ -160,8 +160,23 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
         )
         .group(),
 
+        Expr::Let { name, value, body } => block_if_needed(
+            !inside_block,
+            Doc::vec(&[
+                Doc::text("let "),
+                Doc::Text(name),
+                Doc::text(" = "),
+                expr_to_doc(*value, true),
+                Doc::text(";"),
+                space_break(),
+                expr_to_doc(*body, true),
+            ])
+            .group()
+            .force_broken(),
+        )
+        .group(),
+
         Expr::Pipe(_, _) => todo!(),
-        Expr::Let { .. } => todo!(),
         Expr::Use { .. } => todo!(),
     }
 }

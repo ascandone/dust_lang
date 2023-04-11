@@ -167,6 +167,35 @@ fn do_block() {
 }
 
 #[test]
+fn let_expr() {
+    assert_fmt(
+        "{
+  let x = nil;
+  x
+}
+",
+    );
+
+    assert_fmt(
+        "{
+  let x = 0;
+  let y = 1;
+  f(x + y)
+}
+",
+    );
+
+    assert_fmt(
+        "fn {
+  let x = 0;
+  let y = 1;
+  f(x + y)
+}
+",
+    );
+}
+
+#[test]
 fn multiple_statements() {
     assert_fmt(
         "let x = 1;

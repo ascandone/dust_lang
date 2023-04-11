@@ -35,6 +35,7 @@ impl Fmt {
         let fmt = format(program);
 
         if content == fmt {
+            println!("{}", "Already formatted".green());
             return;
         }
 

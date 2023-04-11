@@ -6,12 +6,12 @@ Dust is a small functional (everything is an expression), untyped language  with
 
 ```
 let fact = fn n {
-    if n == 0 || n == 1 {
-        1
-    } else {
-        n * fact(n + 1)
-    }
-}
+  if n == 0 || n == 1 {
+    1
+  } else {
+    n * fact(n + 1)
+  }
+};
 ```
 
 ### Language tour

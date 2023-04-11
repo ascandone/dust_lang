@@ -6,7 +6,7 @@ use std::io;
 use std::io::Write;
 
 #[derive(FromArgs, PartialEq)]
-/// Run the dust repl
+/// Run the Dust repl
 #[argh(subcommand, name = "repl")]
 pub struct Repl {}
 

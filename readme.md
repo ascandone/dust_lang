@@ -38,11 +38,12 @@ Commands:
   run               Run a dust script
   init              Initialize a Dust project
   repl              Run the Dust repl
+  fmt               Format a Dust script
 ```
 
  
 
 ### Roadmap
 Dust is still missing basic functionality, such as a variety of data structures, nicer error messages,
-or developer tools such as a formatter, a test runner, or even a LSP.
+or developer tools such as a test runner or a LSP.
 I'm tracking the missing features in this [notion page](https://ascandone.notion.site/7534c8c846414e0c9ad2906540af5bc4?v=1685e0defdde4b768a2fe071e4ffd056).

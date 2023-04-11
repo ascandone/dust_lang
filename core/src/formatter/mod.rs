@@ -20,6 +20,10 @@ fn space_break() -> Doc {
     Doc::Break(" ".to_string())
 }
 
+fn nested_group(doc: Doc) -> Doc {
+    Doc::vec(&[space_break(), doc.group()]).nest()
+}
+
 fn ops_prec(str: &str) -> u8 {
     match str {
         "||" => 3,
@@ -44,7 +48,7 @@ fn block_if_needed(needed: bool, doc: Doc) -> Doc {
     if needed {
         Doc::vec(&[
             Doc::text("{"),
-            Doc::vec(&[space_break(), doc]).nest(),
+            nested_group(doc),
             space_break(),
             Doc::text("}"),
         ])
@@ -68,10 +72,10 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
             expr_to_doc(*condition, false),
             Doc::vec(&[
                 Doc::text(" {"),
-                Doc::vec(&[space_break(), expr_to_doc(*if_branch, true)]).nest(),
+                nested_group(expr_to_doc(*if_branch, true)),
                 space_break(),
                 Doc::text("} else {"),
-                Doc::vec(&[space_break(), expr_to_doc(*else_branch, true)]).nest(),
+                nested_group(expr_to_doc(*else_branch, true)),
                 space_break(),
                 Doc::text("}"),
             ])
@@ -93,12 +97,7 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
                 Doc::Vec(params_docs),
                 Doc::text(" {"),
                 Doc::vec(&[
-                    Doc::vec(&[
-                        //
-                        space_break(),
-                        expr_to_doc(*body, true),
-                    ])
-                    .nest(),
+                    nested_group(expr_to_doc(*body, true)),
                     space_break(),
                     Doc::text("}"),
                 ])

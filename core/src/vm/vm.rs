@@ -94,7 +94,7 @@ impl Vm {
                 }
 
                 OpCode::JumpIfFalse => {
-                    let cond = stack.pop().as_bool();
+                    let cond: bool = (&stack.pop()).try_into()?;
                     let index = frame.next_opcode_u16() as usize;
 
                     if !cond {
@@ -103,7 +103,7 @@ impl Vm {
                 }
 
                 OpCode::JumpIfFalseElsePop => {
-                    let cond = stack.peek().as_bool();
+                    let cond: bool = stack.peek().try_into()?;
                     let index = frame.next_opcode_u16() as usize;
 
                     if !cond {
@@ -114,7 +114,7 @@ impl Vm {
                 }
 
                 OpCode::JumpIfTrueElsePop => {
-                    let cond = stack.peek().as_bool();
+                    let cond: bool = stack.peek().try_into()?;
                     let index = frame.next_opcode_u16() as usize;
 
                     if cond {
@@ -308,7 +308,7 @@ impl Vm {
 fn validate_args_number(passed_args_number: u8, function_arity: u8) -> Result<(), String> {
     if passed_args_number != function_arity {
         Err(format!(
-            "Invalid args number passed: expected at {:?}, got {:?} instead",
+            "Invalid args number passed: expected {}, got {} instead",
             function_arity, passed_args_number
         ))
     } else {
@@ -328,7 +328,7 @@ where
             stack.push(result.into());
             Ok(())
         }
-        None => Err(format!("Type error for {:?} {:?}", opcode, a)),
+        None => Err(format!("Type error for {:?}: got {}", opcode, a)),
     }
 }
 
@@ -355,6 +355,6 @@ where
             stack.push(result.into());
             Ok(())
         }
-        None => Err(format!("Type error for {:?} {:?} {:?}", opcode, a, b)),
+        None => Err(format!("Type error for {:?}: got {}, {}", opcode, a, b)),
     }
 }

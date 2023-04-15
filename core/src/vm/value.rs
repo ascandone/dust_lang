@@ -54,25 +54,29 @@ pub enum Value {
     NativeFunction(Rc<NativeFunction>),
 }
 
-impl Value {
-    pub fn as_str(&self) -> &String {
-        match self {
-            Value::String(str) => str,
-            _ => panic!("Type error: expected a String. Got {self} instead"),
+impl TryInto<bool> for &Value {
+    type Error = String;
+
+    fn try_into(self) -> Result<bool, Self::Error> {
+        match &self {
+            Value::Bool(b) => Ok(*b),
+            _ => Err(format!("Type error: expected a bool, got {self} instead")),
         }
     }
+}
 
-    pub fn as_bool(&self) -> bool {
+impl Value {
+    pub fn as_bool(&self) -> Result<bool, String> {
         match self {
-            Value::Bool(b) => *b,
-            _ => panic!("Type error: expected a bool. Got {self} instead"),
+            Value::Bool(b) => Ok(*b),
+            _ => Err(format!("Type error: expected a bool, got {self} instead")),
         }
     }
 
     pub fn as_fn(&self) -> Rc<Function> {
         match self {
             Value::Function(f) => f.clone(),
-            _ => panic!("Type error: expected a function. Got {self} instead"),
+            _ => panic!("Type error: expected a function, got {self} instead"),
         }
     }
 }

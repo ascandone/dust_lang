@@ -312,8 +312,12 @@ impl Compiler {
     }
 
     /// Compile an AST expression into a zero-arity function containing it's chunk of bytecode.
-    pub fn compile_program(&mut self, program: Program) -> Result<Function, String> {
-        let mut f = Function::default();
+    pub fn compile_program(&mut self, program: Program, name: &str) -> Result<Function, String> {
+        let mut f = Function {
+            name: Some(name.to_string()),
+            ..Default::default()
+        };
+
         if program.is_empty() {
             self.compile_program_chunk(&mut f, vec![Statement::Expr(NIL)])?;
         } else {
@@ -325,8 +329,9 @@ impl Compiler {
         Ok(f)
     }
 
+    #[cfg(test)]
     pub fn compile_expr(&mut self, expr: Expr) -> Result<Function, String> {
-        self.compile_program(vec![Statement::Expr(expr)])
+        self.compile_program(vec![Statement::Expr(expr)], "main")
     }
 
     fn check_is_recursive_call(&mut self, caller: &Expr) -> bool {

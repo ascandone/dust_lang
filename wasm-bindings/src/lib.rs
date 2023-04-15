@@ -16,7 +16,7 @@ pub struct EvalOutput {
 
 #[wasm_bindgen(js_name = evalSrc)]
 pub fn eval_src(src: &str) -> JsValue {
-    let result = match interpreter::eval(src) {
+    let result = match interpreter::eval("Main.ds", src) {
         Ok(value) => Ok(value.to_string()),
         Err(e) => Err(format!("{:?}", e)),
     };

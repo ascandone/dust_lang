@@ -3,6 +3,7 @@ use super::{
     stack::Stack,
     value::{Closure, Function, Value},
 };
+use std::fmt::{Display, Formatter};
 use std::mem::transmute;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -39,12 +40,41 @@ pub struct Vm {
     globals: Vec<Value>,
 }
 
+#[derive(Debug)]
+pub struct RuntimeErr {
+    pub reason: String,
+    pub current_function: Rc<Function>,
+    pub call_stack: Vec<Rc<Function>>,
+}
+
+impl Display for RuntimeErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.reason)?;
+        write!(f, "\n    at {}", self.current_function.display_name())?;
+        for s in self.call_stack.iter().rev() {
+            write!(f, "\n    at {}", s.display_name())?;
+        }
+        Ok(())
+    }
+}
+
+fn make_runtime_err(reason: String, frame: &Frame, frames: &Vec<Frame>) -> RuntimeErr {
+    RuntimeErr {
+        reason,
+        current_function: Rc::clone(&frame.closure.function),
+        call_stack: frames
+            .iter()
+            .map(|frame| Rc::clone(&frame.closure.function))
+            .collect(),
+    }
+}
+
 impl Vm {
     pub fn define_global(&mut self, id: u16, value: Value) {
         self.globals.resize(id as usize + 1, value);
     }
 
-    pub fn run_main(&mut self, f: Rc<Function>) -> Result<Value, String> {
+    pub fn run_main(&mut self, f: Rc<Function>) -> Result<Value, RuntimeErr> {
         self.run_function(f, &[])
     }
 
@@ -52,7 +82,7 @@ impl Vm {
         &mut self,
         function: Rc<Function>,
         _args: &[Value],
-    ) -> Result<Value, String> {
+    ) -> Result<Value, RuntimeErr> {
         let mut frames: Vec<Frame> = vec![];
 
         let mut frame = Frame {
@@ -94,7 +124,9 @@ impl Vm {
                 }
 
                 OpCode::JumpIfFalse => {
-                    let cond: bool = (&stack.pop()).try_into()?;
+                    let cond: bool = (&stack.pop())
+                        .try_into()
+                        .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
                     let index = frame.next_opcode_u16() as usize;
 
                     if !cond {
@@ -103,7 +135,10 @@ impl Vm {
                 }
 
                 OpCode::JumpIfFalseElsePop => {
-                    let cond: bool = stack.peek().try_into()?;
+                    let cond: bool = stack
+                        .peek()
+                        .try_into()
+                        .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
                     let index = frame.next_opcode_u16() as usize;
 
                     if !cond {
@@ -114,7 +149,10 @@ impl Vm {
                 }
 
                 OpCode::JumpIfTrueElsePop => {
-                    let cond: bool = stack.peek().try_into()?;
+                    let cond: bool = stack
+                        .peek()
+                        .try_into()
+                        .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
                     let index = frame.next_opcode_u16() as usize;
 
                     if cond {
@@ -204,20 +242,30 @@ impl Vm {
                         }),
                         Value::Closure(clo) => clo,
                         Value::NativeFunction(nf) => {
-                            validate_args_number(passed_args_number, nf.args_number)?;
+                            validate_args_number(passed_args_number, nf.args_number)
+                                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
+
                             let nf = &(nf.deref()).body;
                             let args = &stack.as_slice()[frame.base_pointer..];
-                            let res = nf(args)?;
+                            let res = nf(args)
+                                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                             stack.push(res.clone());
                             continue;
                         }
-                        x => return Err(format!("Expected a callable object (got {x} instead)")),
+                        x => {
+                            return Err(make_runtime_err(
+                                format!("Expected a callable object (got {x} instead)"),
+                                &frame,
+                                &frames,
+                            ))
+                        }
                     };
 
                     let function = &closure.function;
 
-                    validate_args_number(passed_args_number, function.arity)?;
+                    validate_args_number(passed_args_number, function.arity)
+                        .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                     let base_pointer = stack.len() - passed_args_number as usize;
 
@@ -242,27 +290,32 @@ impl Vm {
                         Some(Value::String(Rc::new(s)))
                     }
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Mult => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a * b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Div => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a / b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Modulo => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a % b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Sub => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a - b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Eq => op_2(&mut stack, |a, b| a == b),
                 OpCode::NotEq => op_2(&mut stack, |a, b| a != b),
@@ -271,35 +324,41 @@ impl Vm {
                     (Value::Num(a), Value::Num(b)) => Some(a > b),
                     (Value::String(a), Value::String(b)) => Some(a > b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::GtEq => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a >= b),
                     (Value::String(a), Value::String(b)) => Some(a >= b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Lt => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a < b),
                     (Value::String(a), Value::String(b)) => Some(a < b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::LtEq => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(a <= b),
                     (Value::String(a), Value::String(b)) => Some(a <= b),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Not => op_1_partial(&mut stack, opcode, |a| match a {
                     Value::Bool(a) => Some(!a),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
 
                 OpCode::Negate => op_1_partial(&mut stack, opcode, |a| match a {
                     Value::Num(a) => Some(-a),
                     _ => None,
-                })?,
+                })
+                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?,
             }
         }
     }

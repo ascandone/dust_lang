@@ -41,7 +41,7 @@ impl Repl {
                 user_input
             };
 
-            match interpreter.run(&input) {
+            match interpreter.run("<repl>", &input) {
                 Err(e) => print_interpreter_err(e),
                 Ok(value) => println!("{}", colored_value(value)),
             };

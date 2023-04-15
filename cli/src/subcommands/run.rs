@@ -26,7 +26,7 @@ impl Run {
             handle_interpreter_err(e);
         });
 
-        let value = interpreter.run(&content).unwrap_or_else(|e| {
+        let value = interpreter.run(&self.path, &content).unwrap_or_else(|e| {
             handle_interpreter_err(e);
         });
 

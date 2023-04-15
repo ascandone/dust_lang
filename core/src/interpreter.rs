@@ -2,7 +2,7 @@ use crate::ast::Namespace;
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse_ast, ParsingError};
 use crate::vm::value::{NativeFunction, Value};
-use crate::vm::vm::Vm;
+use crate::vm::vm::{RuntimeErr, Vm};
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -14,11 +14,11 @@ pub struct Interpreter {
 pub enum Error {
     Parsing(ParsingError),
     Compilation(String),
-    Runtime(String),
+    Runtime(RuntimeErr),
 }
 
-pub fn eval(src: &str) -> Result<Value, Error> {
-    Interpreter::new().run(src)
+pub fn eval(name: &str, src: &str) -> Result<Value, Error> {
+    Interpreter::new().run(name, src)
 }
 
 impl Interpreter {
@@ -52,11 +52,11 @@ impl Interpreter {
         self.vm.define_global(id, Value::NativeFunction(native_f));
     }
 
-    pub fn run(&mut self, src: &str) -> Result<Value, Error> {
+    pub fn run(&mut self, name: &str, src: &str) -> Result<Value, Error> {
         let program = parse_ast(src).map_err(Error::Parsing)?;
         let main = self
             .compiler
-            .compile_program(program)
+            .compile_program(program, name)
             .map_err(Error::Compilation)?;
 
         let value = self.vm.run_main(Rc::new(main)).map_err(Error::Runtime)?;

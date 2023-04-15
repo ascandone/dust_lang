@@ -216,7 +216,7 @@ fn modules_import() {
         .add_module(Namespace(vec!["B".to_string(), "C".to_string()]), mod_b_c)
         .unwrap();
 
-    let result = interpreter.run(src).unwrap();
+    let result = interpreter.run("test", src).unwrap();
 
     assert_eq!(result, (42.0 + 42.0 + 100.0 + 1.0).into())
 }
@@ -233,7 +233,7 @@ fn native_fn() {
     let mut interpreter = Interpreter::new();
     interpreter.define_native("sum", 2, sum);
 
-    let value = interpreter.run("sum(10, 20)").unwrap();
+    let value = interpreter.run("test", "sum(10, 20)").unwrap();
 
     assert_eq!(value, Value::Num(30.0))
 }
@@ -242,11 +242,11 @@ fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,
 {
-    let value_result = eval(src).unwrap();
+    let value_result = eval("test", src).unwrap();
     assert_eq!(value_result, expected_value.into(), "{:?}", src);
 }
 
 fn assert_err(src: &str) {
-    let res = eval(src);
+    let res = eval("test", src);
     assert!(res.is_err(), "{:?}", src);
 }

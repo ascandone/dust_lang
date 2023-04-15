@@ -102,7 +102,7 @@ fn def_test() {
         public: false,
     }];
 
-    let f = new_compiler().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast, "main").unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -131,7 +131,7 @@ fn def_twice_test() {
         },
     ];
 
-    let f = new_compiler().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast, "main").unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -161,7 +161,7 @@ fn global_scope_test() {
         Statement::Expr(ident("x")),
     ];
 
-    let f = new_compiler().compile_program(ast).unwrap();
+    let f = new_compiler().compile_program(ast, "main").unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -318,7 +318,7 @@ fn infer_lambda_name_from_let_statement() {
         },
     };
 
-    let main = new_compiler().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast], "main").unwrap();
 
     let f = &main.constant_pool[0].as_fn();
 
@@ -670,7 +670,7 @@ fn get_current_closure_test() {
         public: false,
     };
 
-    let main = new_compiler().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast], "main").unwrap();
     let f = &main.constant_pool[0].as_fn();
 
     assert_eq!(
@@ -694,7 +694,7 @@ fn error_on_rec_invalid_params() {
         },
     };
 
-    let result = new_compiler().compile_program(vec![ast]);
+    let result = new_compiler().compile_program(vec![ast], "main");
     assert!(result.is_err());
 }
 
@@ -717,7 +717,7 @@ fn tailcall_test() {
         },
     };
 
-    let main = new_compiler().compile_program(vec![ast]).unwrap();
+    let main = new_compiler().compile_program(vec![ast], "main").unwrap();
     let f = &main.constant_pool[0].as_fn();
 
     assert_eq!(
@@ -787,7 +787,7 @@ fn modules_import_test() {
         rename: None,
     })];
 
-    let main = compiler.compile_program(program).unwrap();
+    let main = compiler.compile_program(program, "main").unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -825,7 +825,7 @@ fn modules_import_twice_test() {
         }),
     ];
 
-    let main = compiler.compile_program(program).unwrap();
+    let main = compiler.compile_program(program, "main").unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -872,7 +872,7 @@ fn modules_import_value() {
         Statement::Expr(Expr::Ident(Ident(Some(a_ns), "x".to_string()))),
     ];
 
-    let main = compiler.compile_program(program).unwrap();
+    let main = compiler.compile_program(program, "main").unwrap();
 
     assert_eq!(
         main.bytecode,
@@ -920,7 +920,7 @@ fn module_not_imported_err() {
         "x".to_string(),
     )))];
 
-    let result = compiler.compile_program(program);
+    let result = compiler.compile_program(program, "main");
     assert!(matches!(result, Err(_)));
 }
 
@@ -966,7 +966,7 @@ fn modules_imports_are_scoped() {
         Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
     ];
 
-    assert!(matches!(compiler.compile_program(program), Err(_)));
+    assert!(matches!(compiler.compile_program(program, "main"), Err(_)));
 }
 
 #[test]
@@ -1004,7 +1004,7 @@ fn modules_renamed_imports() {
         Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
     ];
 
-    let main = compiler.compile_program(program).unwrap();
+    let main = compiler.compile_program(program, "main").unwrap();
 
     assert_eq!(
         main.bytecode,

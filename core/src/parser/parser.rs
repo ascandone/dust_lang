@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
         self.peek_token = self.lexer.next_token();
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn parse_toplevel_expr(&mut self) -> Result<Expr, ParsingError> {
         self.parse_expr(LOWEST_PREC, false)
     }

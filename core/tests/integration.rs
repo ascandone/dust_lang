@@ -1,5 +1,6 @@
 use core::ast::Namespace;
-use core::interpreter::{eval, Interpreter};
+use core::interpreter::eval;
+use core::interpreter::Interpreter;
 use core::vm::value::Value;
 
 #[test]
@@ -231,14 +232,21 @@ fn native_fn() {
     }
 
     let mut interpreter = Interpreter::new();
-    interpreter.define_native("sum", 2, sum);
+    interpreter.define_native(&Namespace(vec!["Basics".to_string()]), "sum", 2, sum);
 
-    let value = interpreter.run("test", "sum(10, 20)").unwrap();
+    let value = interpreter
+        .run("test", "import Basics; Basics.sum(10, 20)")
+        .unwrap();
 
     assert_eq!(value, Value::Num(30.0))
 }
 
-fn assert_result<A>(src: &str, expected_value: A)
+#[test]
+fn stdlib_test() {
+    assert_result("import String; String.length(\"abc\")", 3.0);
+}
+
+pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,
 {
@@ -246,7 +254,7 @@ where
     assert_eq!(value_result, expected_value.into(), "{:?}", src);
 }
 
-fn assert_err(src: &str) {
+pub fn assert_err(src: &str) {
     let res = eval("test", src);
     assert!(res.is_err(), "{:?}", src);
 }

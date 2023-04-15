@@ -1,6 +1,7 @@
 use crate::ast::Namespace;
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse_ast, ParsingError};
+use crate::std_lib;
 use crate::vm::value::{NativeFunction, Value};
 use crate::vm::vm::{RuntimeErr, Vm};
 use std::rc::Rc;
@@ -25,10 +26,14 @@ impl Interpreter {
     pub fn new() -> Self {
         let ns = Namespace(vec!["User".to_string()]);
 
-        Self {
+        let mut instance = Self {
             compiler: Compiler::new(ns),
             vm: Vm::default(),
-        }
+        };
+
+        std_lib::load(&mut instance);
+
+        instance
     }
 
     pub fn add_module(&mut self, ns: Namespace, src: &str) -> Result<(), Error> {
@@ -37,11 +42,11 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn define_native<F>(&mut self, name: &str, args_number: u8, body: F)
+    pub fn define_native<F>(&mut self, ns: &Namespace, name: &str, args_number: u8, body: F)
     where
         F: Fn(&[Value]) -> Result<Value, String> + 'static,
     {
-        let id = self.compiler.define_global(name);
+        let id = self.compiler.define_global(&ns, name);
 
         let native_f = Rc::new(NativeFunction {
             name: name.to_string(),

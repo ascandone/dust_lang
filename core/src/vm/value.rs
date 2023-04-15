@@ -54,6 +54,13 @@ pub enum Value {
     NativeFunction(Rc<NativeFunction>),
 }
 
+impl Value {
+    #[cfg(test)]
+    pub fn str(str: &str) -> Value {
+        Value::String(Rc::new(str.to_string()))
+    }
+}
+
 impl TryInto<bool> for &Value {
     type Error = String;
 
@@ -70,6 +77,13 @@ impl Value {
         match self {
             Value::Bool(b) => Ok(*b),
             _ => Err(format!("Type error: expected a bool, got {self} instead")),
+        }
+    }
+
+    pub fn as_string(&self) -> Result<Rc<String>, String> {
+        match self {
+            Value::String(s) => Ok(Rc::clone(s)),
+            _ => Err(format!("Type error: expected a string, got {self} instead")),
         }
     }
 

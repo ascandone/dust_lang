@@ -6,6 +6,13 @@ pub type Program = Vec<Statement>;
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub struct Namespace(pub Vec<String>);
 
+impl Namespace {
+    pub fn from(ns: &[&str]) -> Self {
+        let ns = ns.into_iter().map(|c| c.to_string()).collect();
+        Namespace(ns)
+    }
+}
+
 impl Display for Namespace {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for (index, ident) in (&self).0.iter().enumerate() {

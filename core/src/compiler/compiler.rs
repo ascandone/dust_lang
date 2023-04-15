@@ -75,9 +75,12 @@ impl Compiler {
         self.unimported_modules.insert(ns, program);
     }
 
-    pub fn define_global(&mut self, name: &str) -> u16 {
-        self.symbol_table
-            .define_global(false, &self.module_context.ns, name)
+    pub fn define_global(&mut self, ns: &Namespace, name: &str) -> u16 {
+        let ident = self.symbol_table.define_global(true, &ns, name);
+        if !self.imported_modules.contains(ns) {
+            self.imported_modules.insert(ns.clone());
+        }
+        ident
     }
 
     fn compile_expr_chunk(

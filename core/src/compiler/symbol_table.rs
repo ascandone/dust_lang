@@ -319,33 +319,32 @@ mod tests {
 
     #[test]
     fn test_remove_local_top_level() {
-        let x = "x".to_string();
-        let y = "y".to_string();
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_local(&x);
-        symbol_table.define_local(&y);
-        symbol_table.remove_local(&x);
+        symbol_table.define_local("x");
+        symbol_table.define_local("y");
+        symbol_table.remove_local("x");
 
-        assert_eq!(symbol_table.resolve(&main_ns(), &Ident(None, x)), None);
         assert_eq!(
-            symbol_table.resolve(&main_ns(), &Ident(None, y)),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
+            None
+        );
+        assert_eq!(
+            symbol_table.resolve(&main_ns(), &Ident(None, "y".to_string())),
             Some(Scope::Local(1))
         );
     }
 
     #[test]
     fn test_remove_shadowed() {
-        let x = "x".to_string();
-
         let symbol_table = &mut SymbolTable::new();
 
-        symbol_table.define_local(&x);
-        symbol_table.define_local(&x);
-        symbol_table.remove_local(&x);
+        symbol_table.define_local("x");
+        symbol_table.define_local("x");
+        symbol_table.remove_local("x");
 
         assert_eq!(
-            symbol_table.resolve(&main_ns(), &Ident(None, x)),
+            symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(0))
         );
     }

@@ -1,7 +1,8 @@
 use crate::vm::bytecode::OpCode;
-use crate::vm::value::Function;
+use crate::vm::value::{Function, Value};
 use std::fmt::{Display, Formatter};
 use std::mem::transmute;
+use std::rc::Rc;
 
 enum Arity {
     Zero,
@@ -32,6 +33,7 @@ fn opcode_arity(opcode: OpCode) -> Arity {
 impl Display for Function {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut index = 0;
+        let mut queue = vec![];
 
         loop {
             let opcode: OpCode = unsafe { transmute(self.bytecode[index]) };
@@ -49,6 +51,10 @@ impl Display for Function {
                     match opcode {
                         OpCode::Const => {
                             let value = &self.constant_pool[arg as usize];
+                            if let Value::Function(f) = value {
+                                queue.push(Rc::clone(&f))
+                            }
+
                             write!(f, " ({value})")?;
                         }
                         _ => {}
@@ -66,6 +72,17 @@ impl Display for Function {
                 Arity::Two8And8 => {
                     let arg_1 = self.bytecode[index];
                     let arg_2 = self.bytecode[index + 1];
+
+                    match opcode {
+                        OpCode::MakeClosure => {
+                            let value = &self.constant_pool[arg_2 as usize];
+                            if let Value::Function(f) = value {
+                                queue.push(Rc::clone(&f))
+                            }
+                        }
+                        _ => {}
+                    };
+
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
                     index += 2;
                 }
@@ -74,6 +91,21 @@ impl Display for Function {
             write!(f, "\n")?;
 
             if opcode == OpCode::Return {
+                loop {
+                    let item = queue.pop();
+                    match item {
+                        None => break,
+                        Some(to_process) => {
+                            write!(
+                                f,
+                                "\nDisassembly of '{}':\n",
+                                Value::Function(Rc::clone(&to_process))
+                            )?;
+                            write!(f, "{}", &to_process)?;
+                        }
+                    }
+                }
+
                 return Ok(());
             }
         }
@@ -84,11 +116,11 @@ impl Display for Function {
 mod tests {
     use crate::vm::bytecode::OpCode;
     use crate::vm::value::{Function, Value};
+    use std::rc::Rc;
 
     #[test]
     fn add_test() {
-        let add_2 = Function {
-            name: Some("example".to_string()),
+        let main = Function {
             arity: 1,
             constant_pool: vec![Value::Num(42.0)],
             bytecode: vec![
@@ -103,7 +135,7 @@ mod tests {
         };
 
         assert_eq!(
-            add_2.to_string(),
+            main.to_string(),
             "0000 GetLocal 0x00
 0002 Const 0x00 (42)
 0004 Add
@@ -114,8 +146,7 @@ mod tests {
 
     #[test]
     fn get_global_test() {
-        let add_2 = Function {
-            name: Some("example".to_string()),
+        let main = Function {
             arity: 1,
             constant_pool: vec![Value::Num(42.0)],
             bytecode: vec![
@@ -128,7 +159,7 @@ mod tests {
         };
 
         assert_eq!(
-            add_2.to_string(),
+            main.to_string(),
             "0000 GetGlobal 0x1ff
 0003 Return
 "
@@ -138,7 +169,6 @@ mod tests {
     #[test]
     fn make_closure_test() {
         let add_2 = Function {
-            name: Some("example".to_string()),
             arity: 1,
             constant_pool: vec![Value::Num(42.0)],
             bytecode: vec![
@@ -158,6 +188,43 @@ mod tests {
 0002 MakeClosure 0x01, 0x00
 0005 Return
 "
+        )
+    }
+
+    #[test]
+    fn nested_dis_test() {
+        let nested_f = Rc::new(Function {
+            name: Some("nested".to_string()),
+            bytecode: vec![
+                /* 00 */ OpCode::ConstNil as u8,
+                /* 01 */ OpCode::Return as u8,
+            ],
+            ..Default::default()
+        });
+
+        let nested_f_addr = Rc::as_ptr(&nested_f);
+
+        let main = Function {
+            constant_pool: vec![Value::Function(nested_f)],
+            bytecode: vec![
+                /* 00 */ OpCode::Const as u8,
+                /* 01 */ 0,
+                /* 02 */ OpCode::Return as u8,
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            main.to_string(),
+            format!(
+                "0000 Const 0x00 (#[function nested at {nested_f_addr:?}])
+0002 Return
+
+Disassembly of '#[function nested at {nested_f_addr:?}]':
+0000 ConstNil
+0001 Return
+"
+            )
         )
     }
 }

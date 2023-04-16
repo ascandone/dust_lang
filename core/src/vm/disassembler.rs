@@ -104,8 +104,8 @@ mod tests {
 
         assert_eq!(
             add_2.to_string(),
-            "0000 GetLocal 0
-0002 Const 0 (42)
+            "0000 GetLocal 0x00
+0002 Const 0x00 (42)
 0004 Add
 0005 Return
 "
@@ -129,7 +129,7 @@ mod tests {
 
         assert_eq!(
             add_2.to_string(),
-            "0000 GetGlobal 511
+            "0000 GetGlobal 0x1ff
 0003 Return
 "
         )
@@ -154,8 +154,8 @@ mod tests {
 
         assert_eq!(
             add_2.to_string(),
-            "0000 GetLocal 0
-0002 MakeClosure 1, 0
+            "0000 GetLocal 0x00
+0002 MakeClosure 0x01, 0x00
 0005 Return
 "
         )

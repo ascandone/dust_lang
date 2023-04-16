@@ -31,7 +31,7 @@ fn arity_1(values: &[Value]) -> &Value {
 
 fn arity_2(values: &[Value]) -> (&Value, &Value) {
     match &values {
-        &[a, b] => (a, b),
+        &[a, b, ..] => (a, b),
         _ => panic!("Arity error"),
     }
 }

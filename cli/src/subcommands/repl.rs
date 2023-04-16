@@ -9,7 +9,11 @@ use std::io::Write;
 #[derive(FromArgs, PartialEq)]
 /// Run the Dust repl
 #[argh(subcommand, name = "repl")]
-pub struct Repl {}
+pub struct Repl {
+    /// show bytecode of interpreted code before evaluating it
+    #[argh(switch)]
+    debug_bytecode: bool,
+}
 
 fn colored_value(value: Value) -> ColoredString {
     match value {
@@ -41,9 +45,14 @@ impl Repl {
                 user_input
             };
 
-            match interpreter.run("<repl>", &input) {
+            match interpreter.run_debug_fn("<repl>", &input) {
                 Err(e) => print_interpreter_err(e),
-                Ok(value) => println!("{}", colored_value(value)),
+                Ok((value, f)) => {
+                    if self.debug_bytecode {
+                        println!("{f}");
+                    };
+                    println!("{}", colored_value(value))
+                }
             };
         }
     }

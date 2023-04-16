@@ -2,7 +2,7 @@ use crate::ast::Namespace;
 use crate::compiler::compiler::Compiler;
 use crate::parser::{parse_ast, ParsingError};
 use crate::std_lib;
-use crate::vm::value::{NativeFunction, Value};
+use crate::vm::value::{Function, NativeFunction, Value};
 use crate::vm::vm::{RuntimeErr, Vm};
 use std::rc::Rc;
 
@@ -58,14 +58,21 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, name: &str, src: &str) -> Result<Value, Error> {
+        let (value, _) = self.run_debug_fn(name, src)?;
+        Ok(value)
+    }
+
+    pub fn run_debug_fn(&mut self, name: &str, src: &str) -> Result<(Value, Rc<Function>), Error> {
         let program = parse_ast(src).map_err(Error::Parsing)?;
         let main = self
             .compiler
             .compile_program(program, name)
             .map_err(Error::Compilation)?;
 
-        let value = self.vm.run_main(Rc::new(main)).map_err(Error::Runtime)?;
+        let main = Rc::new(main);
 
-        Ok(value)
+        let value = self.vm.run_main(Rc::clone(&main)).map_err(Error::Runtime)?;
+
+        Ok((value, main))
     }
 }

@@ -385,9 +385,20 @@ fn compile_symbol_lookup(f: &mut Function, scope: Scope) {
 }
 
 fn alloc_const(f: &mut Function, value: Value) -> u8 {
-    let current_index = f.constant_pool.len();
-    f.constant_pool.push(value);
-    current_index as u8
+    let cached = f.constant_pool.iter().enumerate().find(|(_, v)| match v {
+        Value::String(_) | Value::Num(_) => v == &&value,
+        _ => false,
+    });
+
+    match cached {
+        None => {
+            let current_index = f.constant_pool.len();
+            f.constant_pool.push(value);
+            current_index as u8
+        }
+
+        Some((cached_index, _)) => cached_index as u8,
+    }
 }
 
 fn push_const(f: &mut Function, value: Value) {

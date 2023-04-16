@@ -63,6 +63,48 @@ fn int_const_test() {
 }
 
 #[test]
+fn int_const_are_cached_test() {
+    let ast = Expr::Do(Box::new(42.0.into()), Box::new(42.0.into()));
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec![42.0.into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            OpCode::Const as u8,
+            0,
+            OpCode::Pop as u8,
+            OpCode::Const as u8,
+            0,
+            OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn str_const_are_cached_test() {
+    let ast = Expr::Do(Box::new("abc".into()), Box::new("abc".into()));
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec!["abc".into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            OpCode::Const as u8,
+            0,
+            OpCode::Pop as u8,
+            OpCode::Const as u8,
+            0,
+            OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
 fn string_const_test() {
     let ast = "abc".into();
     let f = new_compiler().compile_expr(ast).unwrap();

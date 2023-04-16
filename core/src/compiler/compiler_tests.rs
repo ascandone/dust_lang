@@ -763,6 +763,44 @@ fn let1_does_not_leak_test() {
 }
 
 #[test]
+fn let_only_allocates_needed() {
+    // { let x = true; nil }
+    // { let y = true; nil }
+    let ast = Expr::Do(
+        Box::new(Expr::Let {
+            name: "x".to_string(),
+            value: Box::new(true.into()),
+            body: Box::new(NIL),
+        }),
+        Box::new(Expr::Let {
+            name: "y".to_string(),
+            value: Box::new(true.into()),
+            body: Box::new(NIL),
+        }),
+    );
+
+    let main = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        main.bytecode,
+        vec![
+            // x
+            OpCode::ConstTrue as u8,
+            OpCode::SetLocal as u8,
+            0,
+            OpCode::ConstNil as u8,
+            OpCode::Pop as u8,
+            // y
+            OpCode::ConstTrue as u8,
+            OpCode::SetLocal as u8,
+            0,
+            OpCode::ConstNil as u8,
+            OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
 fn modules_import_test() {
     /*
     A.ds

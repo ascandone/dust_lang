@@ -12,7 +12,7 @@ pub enum Scope {
 #[derive(Debug)]
 struct LocalScope {
     pub idents: HashMap<String, Vec<u8>>,
-    pub next_local: u8,
+    pub total_locals: u8,
     pub free: Vec<Scope>,
     pub name: Option<String>,
 }
@@ -22,13 +22,22 @@ impl LocalScope {
         let v_opt = self.idents.get(name);
         v_opt.map(|v| v.last().unwrap())
     }
+
+    pub fn next_local(&self) -> u8 {
+        let max_ident = self.idents.values().map(|c| c.last().unwrap()).max();
+
+        match max_ident {
+            None => 0,
+            Some(i) => i + 1,
+        }
+    }
 }
 
 impl LocalScope {
     fn new(name: Option<String>) -> Self {
         Self {
             idents: HashMap::new(),
-            next_local: 0,
+            total_locals: 0,
             free: vec![],
             name,
         }
@@ -75,7 +84,7 @@ impl SymbolTable {
     }
 
     pub fn count_locals(&self) -> u8 {
-        self.current_local().next_local
+        self.current_local().total_locals
     }
 
     pub fn enter_scope(&mut self, name: Option<String>) {
@@ -106,7 +115,7 @@ impl SymbolTable {
 
     pub fn define_local(&mut self, name: &str) -> u8 {
         let loc = self.current_local_mut();
-        let ident = loc.next_local;
+        let ident = loc.next_local();
 
         let v = match loc.idents.get_mut(name) {
             None => {
@@ -118,7 +127,7 @@ impl SymbolTable {
 
         v.push(ident);
 
-        loc.next_local += 1;
+        loc.total_locals += 1;
         ident
     }
 
@@ -360,6 +369,51 @@ mod tests {
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
             Some(Scope::Local(1))
         )
+    }
+
+    #[test]
+    fn test_defined_shadowed_local() {
+        let symbol_table = &mut SymbolTable::new();
+
+        symbol_table.define_local("x");
+        assert_eq!(symbol_table.define_local("x"), 1);
+    }
+
+    #[test]
+    fn test_only_allocate_needed_local() {
+        let symbol_table = &mut SymbolTable::new();
+
+        assert_eq!(symbol_table.define_local("x"), 0,);
+        symbol_table.remove_local("x");
+
+        assert_eq!(symbol_table.define_local("y"), 0);
+        symbol_table.remove_local("y");
+
+        assert_eq!(symbol_table.count_locals(), 2)
+    }
+
+    #[test]
+    fn test_nested_let_count() {
+        let symbol_table = &mut SymbolTable::new();
+
+        symbol_table.define_local("x");
+
+        assert_eq!(symbol_table.define_local("y"), 1);
+        symbol_table.remove_local("y");
+
+        assert_eq!(symbol_table.define_local("y"), 1);
+        symbol_table.remove_local("y");
+
+        assert_eq!(symbol_table.define_local("x"), 1);
+        symbol_table.remove_local("x");
+    }
+
+    #[test]
+    fn test_nested_shadowed() {
+        let symbol_table = &mut SymbolTable::new();
+        symbol_table.define_local("x");
+        symbol_table.define_local("y");
+        assert_eq!(symbol_table.define_local("x"), 2);
     }
 
     #[test]

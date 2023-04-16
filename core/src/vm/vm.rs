@@ -249,7 +249,8 @@ impl Vm {
                                 .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                             let nf = &(nf.deref()).body;
-                            let args = &stack.as_slice()[frame.base_pointer..];
+                            let args = &stack.as_slice()
+                                [frame.base_pointer + frame.closure.function.locals as usize..];
                             let res = nf(args)
                                 .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 

@@ -246,6 +246,14 @@ fn stdlib_test() {
     assert_result("import String; String.length(\"abc\")", 3.0);
 }
 
+#[test]
+fn let_bug() {
+    assert_result(
+        "{let x = 0; x };  import String; String.length(\"abc\")",
+        3.0,
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

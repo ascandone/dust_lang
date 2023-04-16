@@ -1,5 +1,6 @@
 use crate::ast::Namespace;
 use crate::interpreter::Interpreter;
+use crate::std_lib::utils::{arity_1, arity_2};
 use crate::vm::value::Value;
 use std::rc::Rc;
 
@@ -20,20 +21,6 @@ fn concat(values: &[Value]) -> Result<Value, String> {
     let mut s = left.as_string()?.to_string();
     s.push_str(&right.as_string()?);
     Ok(Value::String(Rc::new(s)))
-}
-
-fn arity_1(values: &[Value]) -> &Value {
-    match &values {
-        &[value] => value,
-        _ => panic!("Arity error"),
-    }
-}
-
-fn arity_2(values: &[Value]) -> (&Value, &Value) {
-    match &values {
-        &[a, b, ..] => (a, b),
-        _ => panic!("Arity error"),
-    }
 }
 
 pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {

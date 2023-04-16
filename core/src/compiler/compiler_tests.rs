@@ -301,7 +301,7 @@ fn infer_lambda_name_from_let_expr() {
 
     let main = new_compiler().compile_expr(ast).unwrap();
 
-    let f = &main.constant_pool[0].as_fn();
+    let f = &main.constant_pool[0].as_fn().unwrap();
 
     assert_eq!(f.name, Some("f".to_string()));
 }
@@ -320,7 +320,7 @@ fn infer_lambda_name_from_let_statement() {
 
     let main = new_compiler().compile_program(vec![ast], "main").unwrap();
 
-    let f = &main.constant_pool[0].as_fn();
+    let f = &main.constant_pool[0].as_fn().unwrap();
 
     assert_eq!(f.name, Some("f".to_string()));
 }
@@ -669,7 +669,7 @@ fn get_current_closure_test() {
     };
 
     let main = new_compiler().compile_program(vec![ast], "main").unwrap();
-    let f = &main.constant_pool[0].as_fn();
+    let f = &main.constant_pool[0].as_fn().unwrap();
 
     assert_eq!(
         f.bytecode,
@@ -716,7 +716,7 @@ fn tailcall_test() {
     };
 
     let main = new_compiler().compile_program(vec![ast], "main").unwrap();
-    let f = &main.constant_pool[0].as_fn();
+    let f = &main.constant_pool[0].as_fn().unwrap();
 
     assert_eq!(
         f.bytecode,

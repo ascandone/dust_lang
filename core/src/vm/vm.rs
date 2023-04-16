@@ -210,7 +210,9 @@ impl Vm {
                     let free_count = frame.next_opcode();
                     let function_index = frame.next_opcode() as usize;
 
-                    let function = (&frame.closure.function.constant_pool[function_index]).as_fn();
+                    let function = (&frame.closure.function.constant_pool[function_index])
+                        .as_fn()
+                        .unwrap();
 
                     let free_values = {
                         let mut free_values = vec![];

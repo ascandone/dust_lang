@@ -44,7 +44,7 @@ impl Display for Function {
                 Arity::Zero => {}
                 Arity::One8 => {
                     let arg = self.bytecode[index];
-                    write!(f, " {arg}")?;
+                    write!(f, " 0x{arg:0>2x}")?;
 
                     match opcode {
                         OpCode::Const => {
@@ -59,14 +59,14 @@ impl Display for Function {
 
                 Arity::One16 => {
                     let arg = u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
-                    write!(f, " {arg}")?;
+                    write!(f, " 0x{arg:0>2x}")?;
                     index += 2;
                 }
 
                 Arity::Two8And8 => {
                     let arg_1 = self.bytecode[index];
                     let arg_2 = self.bytecode[index + 1];
-                    write!(f, " {arg_1}, {arg_2}")?;
+                    write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
                     index += 2;
                 }
             };

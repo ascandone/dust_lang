@@ -87,10 +87,12 @@ impl Value {
         }
     }
 
-    pub fn as_fn(&self) -> Rc<Function> {
+    pub fn as_fn(&self) -> Result<Rc<Function>, String> {
         match self {
-            Value::Function(f) => f.clone(),
-            _ => panic!("Type error: expected a function, got {self} instead"),
+            Value::Function(f) => Ok(Rc::clone(f)),
+            _ => Err(format!(
+                "Type error: expected a function, got {self} instead"
+            )),
         }
     }
 }

@@ -208,8 +208,9 @@ impl Vm {
 
                 OpCode::MakeClosure => {
                     let free_count = frame.next_opcode();
-                    // TODO why not fetch directly from constant pool?
-                    let function = stack.pop().as_fn();
+                    let function_index = frame.next_opcode() as usize;
+
+                    let function = (&frame.closure.function.constant_pool[function_index]).as_fn();
 
                     let free_values = {
                         let mut free_values = vec![];

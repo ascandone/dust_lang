@@ -589,10 +589,9 @@ fn make_closure_test() {
         vec![
             OpCode::GetLocal as u8,
             0,
-            OpCode::Const as u8,
-            0,
             OpCode::MakeClosure as u8,
             1,
+            0,
             OpCode::Return as u8
         ],
         "function opcodes"
@@ -640,10 +639,9 @@ fn make_let_closure_test() {
             // lambda:
             OpCode::GetLocal as u8,
             0,
-            OpCode::Const as u8,
-            0,
             OpCode::MakeClosure as u8,
             1,
+            0,
             OpCode::Return as u8
         ]
     );

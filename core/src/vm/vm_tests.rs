@@ -625,10 +625,9 @@ fn make_closure_test() {
         bytecode: vec![
             OpCode::ConstTrue as u8,
             OpCode::ConstFalse as u8,
-            OpCode::Const as u8,
-            0,
             OpCode::MakeClosure as u8,
             2,
+            0,
             OpCode::Return as u8,
         ],
         ..Default::default()

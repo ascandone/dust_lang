@@ -93,8 +93,8 @@ impl Compiler {
             Expr::Lit(Lit::Nil) => f.bytecode.push(OpCode::ConstNil as u8),
             Expr::Lit(Lit::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
             Expr::Lit(Lit::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
-            Expr::Lit(Lit::String(s)) => alloc_const(f, Value::String(Rc::new(s))),
-            Expr::Lit(Lit::Num(n)) => alloc_const(f, Value::Num(n)),
+            Expr::Lit(Lit::String(s)) => push_const(f, Value::String(Rc::new(s))),
+            Expr::Lit(Lit::Num(n)) => push_const(f, Value::Num(n)),
 
             Expr::Ident(ident) => {
                 let Ident(ref ns, ref name) = ident;
@@ -153,14 +153,15 @@ impl Compiler {
                 self.symbol_table.exit_scope();
 
                 if free_vars.is_empty() {
-                    alloc_const(f, Value::Function(Rc::new(inner_f)));
+                    push_const(f, Value::Function(Rc::new(inner_f)));
                 } else {
                     for scope in free_vars {
                         compile_symbol_lookup(f, *scope);
                     }
-                    alloc_const(f, Value::Function(Rc::new(inner_f)));
+                    let ident = alloc_const(f, Value::Function(Rc::new(inner_f)));
                     f.bytecode.push(OpCode::MakeClosure as u8);
                     f.bytecode.push(free_vars.len() as u8);
+                    f.bytecode.push(ident as u8);
                 }
                 self.current_function_arity = None;
             }
@@ -383,12 +384,16 @@ fn compile_symbol_lookup(f: &mut Function, scope: Scope) {
     }
 }
 
-fn alloc_const(f: &mut Function, value: Value) {
+fn alloc_const(f: &mut Function, value: Value) -> u8 {
     let current_index = f.constant_pool.len();
     f.constant_pool.push(value);
+    current_index as u8
+}
 
+fn push_const(f: &mut Function, value: Value) {
+    let index = alloc_const(f, value);
     f.bytecode.push(OpCode::Const as u8);
-    f.bytecode.push(current_index as u8);
+    f.bytecode.push(index);
 }
 
 fn set_jump_placeholder(f: &mut Function, opcode: OpCode) -> usize {

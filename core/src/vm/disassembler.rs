@@ -58,7 +58,7 @@ impl Display for Function {
                 }
 
                 Arity::One16 => {
-                    let arg = u16::from_le_bytes([self.bytecode[index], self.bytecode[index + 1]]);
+                    let arg = u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
                     write!(f, " {arg}")?;
                     index += 2;
                 }
@@ -108,6 +108,29 @@ mod tests {
 0002 Const 0 (42)
 0004 Add
 0005 Return
+"
+        )
+    }
+
+    #[test]
+    fn get_global_test() {
+        let add_2 = Function {
+            name: Some("example".to_string()),
+            arity: 1,
+            constant_pool: vec![Value::Num(42.0)],
+            bytecode: vec![
+                /* 00 */ OpCode::GetGlobal as u8,
+                /* 01 */ 0x01,
+                /* 02 */ 0xff,
+                /* 03 */ OpCode::Return as u8,
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            add_2.to_string(),
+            "0000 GetGlobal 511
+0003 Return
 "
         )
     }

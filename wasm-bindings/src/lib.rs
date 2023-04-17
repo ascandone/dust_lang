@@ -44,7 +44,10 @@ pub fn eval_src_dis(src: &str) -> JsValue {
             value: value.to_string(),
             disassembled: f.to_string(),
         }),
-        Err(e) => Err(format!("{:?}", e)),
+        Err(error) => Err({
+            let err_fmt = interpreter::ErrorFmt { error };
+            err_fmt.to_string()
+        }),
     };
 
     let ev = EvalDisassembledOutput { result };

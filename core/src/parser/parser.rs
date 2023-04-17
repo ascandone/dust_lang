@@ -1,6 +1,7 @@
 use super::{lexer::Lexer, token::Token};
 use crate::ast::{Ident, Lit, Namespace};
 use crate::cst::{Expr, Import, Program, Statement, NIL};
+use std::fmt::{Display, Formatter};
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -8,6 +9,16 @@ const HIGHEST_PREC: u8 = 17;
 #[derive(Debug)]
 pub enum ParsingError {
     UnexpectedToken(Token, String),
+}
+
+impl Display for ParsingError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParsingError::UnexpectedToken(got, expected) => {
+                write!(f, "{expected} (got {got:?} instead)")
+            }
+        }
+    }
 }
 
 pub struct Parser<'a> {

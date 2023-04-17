@@ -4,6 +4,7 @@ use crate::parser::{parse_ast, ParsingError};
 use crate::std_lib;
 use crate::vm::value::{Function, NativeFunction, Value};
 use crate::vm::vm::{RuntimeErr, Vm};
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -18,8 +19,33 @@ pub enum Error {
     Runtime(RuntimeErr),
 }
 
+pub struct ErrorFmt {
+    // TODO add context info (like src, ns, ...)
+    pub error: Error,
+}
+
+impl Display for ErrorFmt {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self.error {
+            Error::Parsing(e) => {
+                write!(f, "Parsing error:\n{e}")
+            }
+            Error::Compilation(e) => {
+                write!(f, "Compilation error:\n{e}")
+            }
+            Error::Runtime(e) => {
+                write!(f, "Execution error:\n{e}")
+            }
+        }
+    }
+}
+
 pub fn eval(name: &str, src: &str) -> Result<Value, Error> {
     Interpreter::new().run(name, src)
+}
+
+pub fn eval_dis(name: &str, src: &str) -> Result<(Value, Rc<Function>), Error> {
+    Interpreter::new().run_debug_fn(name, src)
 }
 
 impl Interpreter {

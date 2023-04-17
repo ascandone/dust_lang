@@ -2,6 +2,7 @@ use crate::project_interpreter::project_interpreter;
 use argh::FromArgs;
 use colored::{ColoredString, Colorize};
 use core::interpreter;
+use core::interpreter::ErrorFmt;
 use core::vm::value::Value;
 use std::io;
 use std::io::Write;
@@ -29,8 +30,9 @@ fn colored_value(value: Value) -> ColoredString {
 
 impl Repl {
     pub fn run(&self) {
-        let mut interpreter = project_interpreter().unwrap_or_else(|e| {
-            print_interpreter_err(e);
+        let mut interpreter = project_interpreter().unwrap_or_else(|error| {
+            let err_fmt = ErrorFmt { error };
+            eprintln!("{}", err_fmt.to_string().red());
             std::process::exit(1);
         });
 
@@ -46,7 +48,10 @@ impl Repl {
             };
 
             match interpreter.run_debug_fn("<repl>", &input) {
-                Err(e) => print_interpreter_err(e),
+                Err(error) => {
+                    let err_fmt = ErrorFmt { error };
+                    eprintln!("{}", err_fmt.to_string().red())
+                }
                 Ok((value, f)) => {
                     if self.debug_bytecode {
                         println!("{f}");
@@ -56,14 +61,4 @@ impl Repl {
             };
         }
     }
-}
-
-fn print_interpreter_err(err: interpreter::Error) {
-    let e = match err {
-        interpreter::Error::Parsing(e) => format!("Parsing error: {:?}", e),
-        interpreter::Error::Compilation(e) => format!("Compilation error: {e}"),
-        interpreter::Error::Runtime(e) => format!("{e}"),
-    };
-
-    eprintln!("{}", e.red());
 }

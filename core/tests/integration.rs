@@ -1,7 +1,9 @@
 use core::ast::Namespace;
 use core::interpreter::eval;
 use core::interpreter::Interpreter;
+use core::vm::list::List;
 use core::vm::value::Value;
+use std::rc::Rc;
 
 #[test]
 fn empty_expr() {
@@ -259,6 +261,14 @@ fn let_bug() {
     assert_result(
         "{let x = 0; x };  import String; String.length(\"abc\")",
         3.0,
+    );
+}
+
+#[test]
+fn list_empty() {
+    assert_result(
+        "import List; List.empty()",
+        Value::List(Rc::new(List::Empty)),
     );
 }
 

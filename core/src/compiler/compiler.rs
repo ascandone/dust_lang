@@ -1,5 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement, NIL};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement};
 use crate::vm::{
     bytecode::OpCode,
     value::{Function, Value},
@@ -76,11 +76,7 @@ impl Compiler {
     }
 
     pub fn define_global(&mut self, ns: &Namespace, name: &str) -> u16 {
-        let ident = self.symbol_table.define_global(true, &ns, name);
-        if !self.imported_modules.contains(ns) {
-            self.imported_modules.insert(ns.clone());
-        }
-        ident
+        self.symbol_table.define_global(true, &ns, name)
     }
 
     fn compile_expr_chunk(
@@ -101,7 +97,7 @@ impl Compiler {
                 let ns = match ns {
                     None => None,
                     Some(ns) => match self.module_context.visible_modules.get(ns) {
-                        None => return Err(format!("Ns not found: {ns}")),
+                        None => return Err(format!("Namespace was not imported: {ns}")),
                         Some(alias) => Some(alias.clone()),
                     },
                 };
@@ -305,6 +301,11 @@ impl Compiler {
     }
 
     fn compile_program_chunk(&mut self, f: &mut Function, program: Program) -> Result<(), String> {
+        if program.is_empty() {
+            f.bytecode.push(OpCode::ConstNil as u8);
+            return Ok(());
+        }
+
         for (i, statement) in program.into_iter().enumerate() {
             if i != 0 {
                 f.bytecode.push(OpCode::Pop as u8)
@@ -322,11 +323,7 @@ impl Compiler {
             ..Default::default()
         };
 
-        if program.is_empty() {
-            self.compile_program_chunk(&mut f, vec![Statement::Expr(NIL)])?;
-        } else {
-            self.compile_program_chunk(&mut f, program)?;
-        }
+        self.compile_program_chunk(&mut f, program)?;
 
         f.bytecode.push(OpCode::Return as u8);
         f.locals = self.symbol_table.count_locals();

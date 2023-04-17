@@ -23,10 +23,14 @@ fn concat(values: &[Value]) -> Result<Value, String> {
     Ok(Value::String(Rc::new(s)))
 }
 
+const MOD: &'static str = include_str!("String.ds");
+
 pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "length", 1, length);
     interpreter.define_native(ns, "show", 1, show);
     interpreter.define_native(ns, "concat", 2, concat);
+
+    interpreter.add_module(ns.clone(), MOD).unwrap();
 }
 
 #[cfg(test)]

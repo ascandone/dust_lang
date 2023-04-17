@@ -1,0 +1,3 @@
+pub let is_empty = fn str {
+  length(str) == 0
+}

@@ -232,7 +232,10 @@ fn native_fn() {
     }
 
     let mut interpreter = Interpreter::new();
-    interpreter.define_native(&Namespace(vec!["Basics".to_string()]), "sum", 2, sum);
+
+    let ns = Namespace(vec!["Basics".to_string()]);
+    interpreter.define_native(&ns, "sum", 2, sum);
+    interpreter.add_module(ns, "").unwrap();
 
     let value = interpreter
         .run("test", "import Basics; Basics.sum(10, 20)")
@@ -244,6 +247,11 @@ fn native_fn() {
 #[test]
 fn stdlib_test() {
     assert_result("import String; String.length(\"abc\")", 3.0);
+}
+
+#[test]
+fn stdlib_test_handles_ds_file() {
+    assert_result("import String; String.is_empty(\"\")", true);
 }
 
 #[test]

@@ -1,6 +1,7 @@
 use super::{lexer::Lexer, token::Token};
 use crate::ast::{Ident, Lit, Namespace};
 use crate::cst::{Expr, Import, Program, Statement, NIL};
+use crate::parser::lexer::LexerError;
 use std::fmt::{Display, Formatter};
 
 const LOWEST_PREC: u8 = 0;
@@ -9,11 +10,16 @@ const HIGHEST_PREC: u8 = 17;
 #[derive(Debug)]
 pub enum ParsingError {
     UnexpectedToken(Token, String),
+    LexerError(LexerError),
 }
 
 impl Display for ParsingError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            ParsingError::LexerError(e) => {
+                write!(f, "{e}")
+            }
+
             ParsingError::UnexpectedToken(got, expected) => {
                 write!(f, "{expected} (got {got:?} instead)")
             }
@@ -50,15 +56,17 @@ impl<'a> Parser<'a> {
             peek_token: Token::Eof,
         };
 
-        parser.advance_token();
-        parser.advance_token();
+        // TODO remove unwrap
+        parser.advance_token().unwrap();
+        parser.advance_token().unwrap();
 
         parser
     }
 
-    fn advance_token(&mut self) {
+    fn advance_token(&mut self) -> Result<(), ParsingError> {
         self.current_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
+        self.peek_token = self.lexer.next_token().map_err(ParsingError::LexerError)?;
+        Ok(())
     }
 
     #[cfg(test)]
@@ -77,7 +85,7 @@ impl<'a> Parser<'a> {
                     statements.push(self.parse_let_decl(true)?)
                 }
                 Token::Import => statements.push(self.parse_import_statement()?),
-                Token::Semicolon => self.advance_token(),
+                Token::Semicolon => self.advance_token()?,
                 Token::Eof => return Ok(Program { statements }),
 
                 // Assuming this is an expression otherwise
@@ -90,7 +98,7 @@ impl<'a> Parser<'a> {
     }
 
     fn consume_expr(&mut self, expr: Expr) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.advance_token()?;
         Ok(expr)
     }
 
@@ -166,7 +174,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_pipe_right(&mut self, left: Expr, precedence: u8) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.advance_token()?;
         let right = self.parse_expr(precedence, false)?;
         Ok(Expr::Pipe(Box::new(left), Box::new(right)))
     }
@@ -177,7 +185,7 @@ impl<'a> Parser<'a> {
         precedence: u8,
         operator: &str,
     ) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.advance_token()?;
 
         let right = self.parse_expr(precedence, false)?;
 
@@ -189,7 +197,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix(&mut self, operator: &str) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.advance_token()?;
 
         let expr = self.parse_expr(15, false)?;
 
@@ -197,7 +205,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expr(&mut self, left: Expr) -> Result<Expr, ParsingError> {
-        self.advance_token();
+        self.advance_token()?;
 
         let args = self.sep_by_zero_or_more(Token::Comma, Token::RParen, |p| {
             p.parse_expr(LOWEST_PREC, false)
@@ -223,7 +231,7 @@ impl<'a> Parser<'a> {
           return Err(ParsingError::UnexpectedToken(self.current_token.clone(), "Expected a Ident token".to_string()))
         };
 
-        self.advance_token();
+        self.advance_token()?;
         let () = self.expect_token(Token::Assign)?;
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
@@ -261,7 +269,7 @@ impl<'a> Parser<'a> {
         match &self.current_token {
             Token::Ident(name) => {
                 let name = name.clone();
-                self.advance_token();
+                self.advance_token()?;
                 Ok(name)
             }
             _ => Err(ParsingError::UnexpectedToken(
@@ -275,7 +283,7 @@ impl<'a> Parser<'a> {
         match &self.current_token {
             Token::NsIndent(name) => {
                 let name = name.clone();
-                self.advance_token();
+                self.advance_token()?;
                 Ok(name)
             }
             _ => Err(ParsingError::UnexpectedToken(
@@ -329,7 +337,7 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::RBrace)?;
         self.expect_token(Token::Else)?;
 
-        if self.maybe_token(Token::LBrace) {
+        if self.maybe_token(Token::LBrace)? {
             let else_branch = self.parse_expr(LOWEST_PREC, true)?;
 
             self.expect_token(Token::RBrace)?;
@@ -364,7 +372,7 @@ impl<'a> Parser<'a> {
 
     fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {
         if &self.current_token == &expected_token {
-            self.advance_token();
+            self.advance_token()?;
             Ok(())
         } else {
             Err(ParsingError::UnexpectedToken(
@@ -374,12 +382,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn maybe_token(&mut self, expected_token: Token) -> bool {
+    fn maybe_token(&mut self, expected_token: Token) -> Result<bool, ParsingError> {
         if &self.current_token == &expected_token {
-            self.advance_token();
-            true
+            self.advance_token()?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
@@ -387,7 +395,7 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::Import)?;
         let ns = self.parse_namespace()?;
 
-        let rename = if self.maybe_token(Token::As) {
+        let rename = if self.maybe_token(Token::As)? {
             // only a single-ident ns is allowed
             let ident = self.expect_ns_ident()?;
             Some(Namespace(vec![ident]))
@@ -410,7 +418,7 @@ impl<'a> Parser<'a> {
                 _ => break,
             }
 
-            self.advance_token();
+            self.advance_token()?;
         }
 
         Ok(Namespace(ns))
@@ -429,12 +437,12 @@ impl<'a> Parser<'a> {
 
         loop {
             if self.current_token == end {
-                self.advance_token();
+                self.advance_token()?;
                 break;
             }
 
             if self.current_token == separator {
-                self.advance_token();
+                self.advance_token()?;
             }
 
             let expr = f(self)?;

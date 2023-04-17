@@ -1,4 +1,6 @@
 use super::token::Token;
+use crate::parser::lexer::LexerError::InvalidToken;
+use std::fmt::{Display, Formatter};
 
 pub struct Lexer<'a> {
     input: &'a str,
@@ -76,11 +78,7 @@ impl<'a> Lexer<'a> {
         str.to_string()
     }
 
-    fn panic_invalid_token(&self) -> ! {
-        panic!("Invalid token: `{:?}`", self.peek_char())
-    }
-
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Result<Token, LexerError> {
         self.skip_whitespace();
 
         if let Some(tk) = self.try_consume_many(&[
@@ -98,13 +96,13 @@ impl<'a> Lexer<'a> {
             ("true", Token::True),
             ("use", Token::Use),
         ]) {
-            return tk;
+            return Ok(tk);
         };
 
-        let Some(ch) = self.peek_char() else { return Token::Eof };
+        let Some(ch) = self.peek_char() else { return Ok(Token::Eof) };
         self.next_char();
 
-        match ch {
+        Ok(match ch {
             '=' => match self.peek_char() {
                 Some('=') => {
                     self.next_char();
@@ -146,7 +144,7 @@ impl<'a> Lexer<'a> {
                 Some('/') => {
                     self.next_char();
                     self.consume_while(|c| c != '\n');
-                    self.next_token()
+                    self.next_token()?
                 }
                 _ => Token::Slash,
             },
@@ -156,7 +154,7 @@ impl<'a> Lexer<'a> {
                     self.next_char();
                     Token::DoubleAnd
                 }
-                _ => self.panic_invalid_token(),
+                ch => return Err(InvalidToken(ch)),
             },
             '|' => match self.peek_char() {
                 Some('|') => {
@@ -168,7 +166,7 @@ impl<'a> Lexer<'a> {
                     self.next_char();
                     Token::PipeRight
                 }
-                _ => self.panic_invalid_token(),
+                ch => return Err(InvalidToken(ch)),
             },
 
             '"' => Token::String(self.read_string_lit()),
@@ -179,20 +177,24 @@ impl<'a> Lexer<'a> {
                 let ch = self.peek_char().unwrap();
 
                 if is_ident_starting_letter(ch) {
-                    return self.expect_ident();
+                    return Ok(self.expect_ident());
                 }
 
                 if is_ns_ident_starting_letter(ch) {
-                    return self.expect_ns_ident();
+                    return Ok(self.expect_ns_ident());
                 }
 
                 if let Some(n) = self.consume_while(is_number) {
-                    return Token::Num(n.parse().expect(format!("Invalid parse: `{n}`").as_str()));
+                    // TODO properly handle err
+                    // TODO token parsing should belong to parser
+                    return Ok(Token::Num(
+                        n.parse().expect(format!("Invalid parse: `{n}`").as_str()),
+                    ));
                 }
 
-                self.panic_invalid_token()
+                return Err(InvalidToken(self.peek_char()));
             }
-        }
+        })
     }
 
     fn expect_ident(&mut self) -> Token {
@@ -268,13 +270,34 @@ fn is_number(ch: char) -> bool {
     }
 }
 
+#[derive(Debug)]
+pub enum LexerError {
+    InvalidToken(Option<char>),
+}
+
+impl Display for LexerError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InvalidToken(ch) => write!(
+                f,
+                "Invalid token (encountered {})",
+                match ch {
+                    Some(ch) => ch.to_string(),
+                    None => "EOF".to_string(),
+                }
+            ),
+        }
+    }
+}
+
 impl<'a> Iterator for Lexer<'a> {
-    type Item = Token;
+    type Item = Result<Token, LexerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.next_token() {
-            Token::Eof => None,
-            tk => Some(tk),
+            Ok(Token::Eof) => None,
+            Ok(tk) => Some(Ok(tk)),
+            Err(e) => Some(Err(e)),
         }
     }
 }
@@ -444,6 +467,9 @@ mod tests {
 
     fn assert_tokens(src: &str, tokens: &[Token]) {
         let lexer = Lexer::new(src);
-        assert_eq!(lexer.into_iter().collect::<Vec<_>>(), tokens,)
+        assert_eq!(
+            lexer.into_iter().map(|c| c.unwrap()).collect::<Vec<_>>(),
+            tokens,
+        )
     }
 }

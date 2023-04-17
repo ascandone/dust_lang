@@ -1,6 +1,5 @@
 use crate::project_interpreter::project_interpreter;
 use argh::FromArgs;
-use core::interpreter;
 use core::interpreter::ErrorFmt;
 use std::fs;
 

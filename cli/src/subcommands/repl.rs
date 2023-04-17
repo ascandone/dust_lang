@@ -1,7 +1,6 @@
 use crate::project_interpreter::project_interpreter;
 use argh::FromArgs;
 use colored::{ColoredString, Colorize};
-use core::interpreter;
 use core::interpreter::ErrorFmt;
 use core::vm::value::Value;
 use std::io;

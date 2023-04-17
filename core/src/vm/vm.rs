@@ -250,15 +250,14 @@ impl Vm {
                                 .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                             let nf = &(nf.deref()).body;
-                            let args = &stack.as_slice()
-                                [frame.base_pointer + frame.closure.function.locals as usize..];
-                            let res = nf(args)
-                                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
-                            // deallocate args
+                            let mut args = vec![];
                             for _ in 0..passed_args_number {
-                                stack.pop();
+                                args.push(stack.pop())
                             }
+
+                            let res = nf(args.as_slice())
+                                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                             stack.push(res.clone());
                             continue;

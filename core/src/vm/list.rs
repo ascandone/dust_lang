@@ -9,7 +9,6 @@ pub enum List<T> {
 }
 
 impl<T> List<T> {
-    #[cfg(test)]
     pub fn from_vec(v: Vec<T>) -> List<T> {
         let mut lst = List::Empty;
         for x in v.into_iter().rev() {

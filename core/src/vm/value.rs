@@ -1,3 +1,4 @@
+use crate::vm::list::List;
 use std::{fmt::Display, rc::Rc};
 
 /// A compiled function
@@ -49,6 +50,7 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     String(Rc<String>),
+    List(List<Rc<Value>>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
     NativeFunction(Rc<NativeFunction>),
@@ -135,6 +137,7 @@ impl Display for Value {
             Value::Bool(false) => write!(f, "false"),
             Value::Num(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
+            Value::List(l) => write!(f, "{l}"),
             Value::Function(r) => {
                 write!(f, "#[function {} at {:?}]", r.display_name(), Rc::as_ptr(r))
             }
@@ -173,6 +176,17 @@ mod test {
         assert_eq!(
             format!("{}", Value::String(Rc::new("abc".to_string()))),
             "\"abc\"".to_string()
+        );
+        assert_eq!(
+            format!(
+                "{}",
+                Value::List(List::from_vec(vec![
+                    Rc::new(Value::Nil),
+                    Rc::new(Value::Num(42.0)),
+                    Rc::new(Value::List(List::Empty))
+                ]))
+            ),
+            "[nil, 42, []]".to_string()
         );
     }
 }

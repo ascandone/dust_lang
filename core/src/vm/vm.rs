@@ -254,6 +254,11 @@ impl Vm {
                             let res = nf(args)
                                 .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
+                            // deallocate args
+                            for _ in 0..passed_args_number {
+                                stack.pop();
+                            }
+
                             stack.push(res.clone());
                             continue;
                         }

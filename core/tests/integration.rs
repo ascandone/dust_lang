@@ -262,6 +262,14 @@ fn let_bug() {
     );
 }
 
+#[test]
+fn concat_native_calls() {
+    assert_result(
+        "import String; \"a\" |> String.concat(\"b\") |> String.concat(\"c\")",
+        "abc",
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

@@ -27,6 +27,32 @@ pub fn eval_src(src: &str) -> JsValue {
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct DebugValue {
+    pub value: String,
+    pub disassembled: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct EvalDisassembledOutput {
+    result: Result<DebugValue, String>,
+}
+
+#[wasm_bindgen(js_name = evalSrcDis)]
+pub fn eval_src_dis(src: &str) -> JsValue {
+    let result = match interpreter::eval_dis("Main.ds", src) {
+        Ok((value, f)) => Ok(DebugValue {
+            value: value.to_string(),
+            disassembled: f.to_string(),
+        }),
+        Err(e) => Err(format!("{:?}", e)),
+    };
+
+    let ev = EvalDisassembledOutput { result };
+
+    serde_wasm_bindgen::to_value(&ev).unwrap()
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct FormatOutput {
     result: Result<String, String>,
 }

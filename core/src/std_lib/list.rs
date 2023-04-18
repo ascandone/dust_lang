@@ -33,6 +33,11 @@ fn tail(values: &[Value]) -> Result<Value, String> {
     })
 }
 
+fn is_empty(values: &[Value]) -> Result<Value, String> {
+    let lst = arity_1(values).as_list()?;
+    Ok(matches!(lst.deref(), List::Empty).into())
+}
+
 const MOD: &'static str = include_str!("List.ds");
 
 pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
@@ -40,5 +45,6 @@ pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "cons", 2, cons);
     interpreter.define_native(ns, "head", 1, head);
     interpreter.define_native(ns, "tail", 1, tail);
+    interpreter.define_native(ns, "is_empty", 1, is_empty);
     interpreter.add_module(ns.clone(), MOD).unwrap();
 }

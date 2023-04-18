@@ -292,6 +292,18 @@ fn concat_native_calls_list() {
     );
 }
 
+#[test]
+fn list_range() {
+    assert_result(
+        "import List; List.range(1, 4)",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(1.0),
+            Value::Num(2.0),
+            Value::Num(3.0),
+        ]))),
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

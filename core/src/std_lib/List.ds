@@ -1,0 +1,12 @@
+pub let range = fn start, end {
+  let recur = fn end, acc {
+    if start > end {
+      acc
+    } else {
+      recur(end - 1, cons(end, acc))
+    }
+  };
+
+  recur(end - 1, empty())
+}
+

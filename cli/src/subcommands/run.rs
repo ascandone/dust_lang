@@ -24,7 +24,7 @@ impl Run {
 
         let mut interpreter = project_interpreter().unwrap_or_else(|error| {
             let err_fmt = ErrorFmt { error };
-            eprintln!("{}", err_fmt.to_string());
+            eprintln!("{err_fmt}");
             std::process::exit(1)
         });
 
@@ -32,7 +32,7 @@ impl Run {
             .run(&self.path, &content)
             .unwrap_or_else(|error| {
                 let err_fmt = ErrorFmt { error };
-                eprintln!("{}", err_fmt.to_string());
+                eprintln!("{err_fmt}");
                 std::process::exit(1)
             });
 

@@ -19,7 +19,7 @@ pub fn project_interpreter() -> Result<Interpreter, interpreter::Error> {
                     std::process::exit(1)
                 });
 
-                let split: Vec<_> = path.split("/").collect();
+                let split: Vec<_> = path.split('/').collect();
                 let (index, _) = split
                     .iter()
                     .enumerate()
@@ -28,7 +28,7 @@ pub fn project_interpreter() -> Result<Interpreter, interpreter::Error> {
 
                 let ns = &split[index + 1..]
                     .iter()
-                    .map(|c| c.split(".").nth(0).unwrap().to_string())
+                    .map(|c| c.split('.').next().unwrap().to_string())
                     .collect::<Vec<_>>();
 
                 interpreter.add_module(Namespace(ns.clone()), &content)?;

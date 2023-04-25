@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-const DUST_JSON_NAME: &'static str = "dust.json";
+const DUST_JSON_NAME: &str = "dust.json";
 
 #[derive(Serialize, Deserialize)]
 pub struct DustJson {
@@ -18,7 +18,7 @@ impl DustJson {
 
     pub fn write(&self) -> Result<(), ()> {
         let serialized = serde_json::to_string_pretty(self).unwrap();
-        let () = fs::write(DUST_JSON_NAME, serialized).map_err(|_| ())?;
+        fs::write(DUST_JSON_NAME, serialized).map_err(|_| ())?;
         Ok(())
     }
 }

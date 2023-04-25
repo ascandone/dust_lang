@@ -235,7 +235,7 @@ impl<'a> Parser<'a> {
         };
 
         self.advance_token()?;
-        let () = self.expect_token(Token::Assign)?;
+        self.expect_token(Token::Assign)?;
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
@@ -247,13 +247,13 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_fn_expr(&mut self) -> Result<Expr, ParsingError> {
-        let () = self.expect_token(Token::Fn)?;
+        self.expect_token(Token::Fn)?;
 
         let params = self.sep_by_zero_or_more(Token::Comma, Token::LBrace, Parser::expect_ident)?;
 
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
-        let () = self.expect_token(Token::RBrace)?;
+        self.expect_token(Token::RBrace)?;
 
         Ok(Expr::Fn {
             params,
@@ -322,7 +322,7 @@ impl<'a> Parser<'a> {
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
         Ok(Expr::Let {
-            name: name.clone(),
+            name,
             value: Box::new(value),
             body: Box::new(body),
         })
@@ -402,7 +402,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {
-        if &self.current_token == &expected_token {
+        if self.current_token == expected_token {
             self.advance_token()?;
             Ok(())
         } else {
@@ -414,7 +414,7 @@ impl<'a> Parser<'a> {
     }
 
     fn maybe_token(&mut self, expected_token: Token) -> Result<bool, ParsingError> {
-        if &self.current_token == &expected_token {
+        if self.current_token == expected_token {
             self.advance_token()?;
             Ok(true)
         } else {

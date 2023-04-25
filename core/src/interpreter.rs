@@ -48,6 +48,12 @@ pub fn eval_dis(name: &str, src: &str) -> Result<(Value, Rc<Function>), Error> {
     Interpreter::new().run_debug_fn(name, src)
 }
 
+impl Default for Interpreter {
+    fn default() -> Self {
+        Interpreter::new()
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Self {
         let ns = Namespace(vec!["User".to_string()]);
@@ -72,7 +78,7 @@ impl Interpreter {
     where
         F: Fn(&[Value]) -> Result<Value, String> + 'static,
     {
-        let id = self.compiler.define_global(&ns, name);
+        let id = self.compiler.define_global(ns, name);
 
         let native_f = Rc::new(NativeFunction {
             name: name.to_string(),

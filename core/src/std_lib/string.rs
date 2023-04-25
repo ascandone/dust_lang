@@ -23,7 +23,7 @@ fn concat(values: &[Value]) -> Result<Value, String> {
     Ok(Value::String(Rc::new(s)))
 }
 
-const MOD: &'static str = include_str!("String.ds");
+const MOD: &str = include_str!("String.ds");
 
 pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "length", 1, length);

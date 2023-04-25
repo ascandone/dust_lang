@@ -191,7 +191,7 @@ impl<'a> Lexer<'a> {
                     // TODO properly handle err
                     // TODO token parsing should belong to parser
                     return Ok(Token::Num(
-                        n.parse().expect(format!("Invalid parse: `{n}`").as_str()),
+                        n.parse().unwrap_or_else(|_| panic!("Invalid parse: `{n}`")),
                     ));
                 }
 
@@ -234,7 +234,7 @@ impl<'a> Lexer<'a> {
 
     fn try_consume_many(&mut self, pairs: &[(&str, Token)]) -> Option<Token> {
         for (kw, tk) in pairs {
-            if self.try_consume(*kw) {
+            if self.try_consume(kw) {
                 return Some(tk.clone());
             }
         }
@@ -252,25 +252,19 @@ fn is_ident_tail_letter(ch: char) -> bool {
 }
 
 fn is_ns_ident_starting_letter(ch: char) -> bool {
-    matches!(ch, 'A'..='Z')
+    ch.is_ascii_uppercase()
 }
 
 fn is_ns_ident_tail_letter(ch: char) -> bool {
-    matches!(ch, 'A'..='Z' | 'a'..='z')
+    ch.is_ascii_alphabetic()
 }
 
 fn is_whitespace(ch: char) -> bool {
-    match ch {
-        ' ' | '\t' | '\n' | '\r' => true,
-        _ => false,
-    }
+    matches!(ch, ' ' | '\t' | '\n' | '\r')
 }
 
 fn is_number(ch: char) -> bool {
-    match ch {
-        '0'..='9' => true,
-        _ => false,
-    }
+    ch.is_ascii_digit()
 }
 
 #[derive(Debug)]

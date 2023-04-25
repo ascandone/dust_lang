@@ -76,7 +76,7 @@ impl Compiler {
     }
 
     pub fn define_global(&mut self, ns: &Namespace, name: &str) -> u16 {
-        self.symbol_table.define_global(true, &ns, name)
+        self.symbol_table.define_global(true, ns, name)
     }
 
     fn compile_expr_chunk(
@@ -145,7 +145,7 @@ impl Compiler {
                 self.binding_name = None;
                 self.compile_expr_chunk(&mut inner_f, *body, true)?;
                 inner_f.bytecode.push(OpCode::Return as u8);
-                inner_f.locals = self.symbol_table.count_locals() - &inner_f.arity;
+                inner_f.locals = self.symbol_table.count_locals() - inner_f.arity;
                 let free_vars = &self.symbol_table.free();
                 self.symbol_table.exit_scope();
 
@@ -158,7 +158,7 @@ impl Compiler {
                     let ident = alloc_const(f, Value::Function(Rc::new(inner_f)));
                     f.bytecode.push(OpCode::MakeClosure as u8);
                     f.bytecode.push(free_vars.len() as u8);
-                    f.bytecode.push(ident as u8);
+                    f.bytecode.push(ident);
                 }
                 self.current_function_arity = None;
             }
@@ -255,7 +255,7 @@ impl Compiler {
                     Some(renamed_ns) => self
                         .module_context
                         .visible_modules
-                        .insert(renamed_ns.clone(), ns.clone()),
+                        .insert(renamed_ns, ns.clone()),
                 };
 
                 if self.imported_modules.contains(&ns) {

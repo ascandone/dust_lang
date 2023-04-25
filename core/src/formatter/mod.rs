@@ -76,8 +76,8 @@ fn block(doc: Doc) -> Doc {
 
 fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
     match doc {
-        Expr::Lit(l) => Doc::Text(format!("{l}").to_string()),
-        Expr::Ident(id) => Doc::Text(format!("{id}").to_string()),
+        Expr::Lit(l) => Doc::Text(format!("{l}")),
+        Expr::Ident(id) => Doc::Text(format!("{id}")),
         Expr::If {
             condition,
             if_branch,
@@ -332,9 +332,9 @@ impl Into<Doc> for Statement {
     }
 }
 
-impl Into<Doc> for Program {
-    fn into(self) -> Doc {
-        let v = self
+impl From<Program> for Doc {
+    fn from(program: Program) -> Self {
+        let v = program
             .statements
             .into_iter()
             .enumerate()

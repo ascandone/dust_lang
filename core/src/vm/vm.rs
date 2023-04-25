@@ -58,7 +58,7 @@ impl Display for RuntimeErr {
     }
 }
 
-fn make_runtime_err(reason: String, frame: &Frame, frames: &Vec<Frame>) -> RuntimeErr {
+fn make_runtime_err(reason: String, frame: &Frame, frames: &[Frame]) -> RuntimeErr {
     RuntimeErr {
         reason,
         current_function: Rc::clone(&frame.closure.function),
@@ -211,7 +211,7 @@ impl Vm {
                     let free_count = frame.next_opcode();
                     let function_index = frame.next_opcode() as usize;
 
-                    let function = (&frame.closure.function.constant_pool[function_index])
+                    let function = frame.closure.function.constant_pool[function_index]
                         .as_fn()
                         .unwrap();
 

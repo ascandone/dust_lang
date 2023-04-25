@@ -38,7 +38,7 @@ fn is_empty(values: &[Value]) -> Result<Value, String> {
     Ok(matches!(lst.deref(), List::Empty).into())
 }
 
-const MOD: &'static str = include_str!("List.ds");
+const MOD: &str = include_str!("List.ds");
 
 pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "empty", 0, empty);

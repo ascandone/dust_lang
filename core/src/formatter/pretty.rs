@@ -66,7 +66,7 @@ impl PPrint {
                 Doc::ForceBroken(_) => return false,
                 Doc::LineBreak { .. } => return true,
                 Doc::Vec(docs) => {
-                    for doc in docs.into_iter().rev() {
+                    for doc in docs.iter().rev() {
                         vec.push_front((ident, mode, doc));
                     }
                 }
@@ -86,7 +86,7 @@ impl Display for PPrint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let doc = Doc::Group(Box::new(self.doc.clone()));
         let mut width = 0;
-        let mut vec = VecDeque::from([(0 as isize, Mode::Flat, &doc)]);
+        let mut vec = VecDeque::from([(0_isize, Mode::Flat, &doc)]);
 
         loop {
             let (ident, mode, doc) = match vec.pop_front() {
@@ -102,7 +102,7 @@ impl Display for PPrint {
                 }
 
                 Doc::Vec(docs) => {
-                    for doc in docs.into_iter().rev() {
+                    for doc in docs.iter().rev() {
                         vec.push_front((ident, mode, doc));
                     }
                 }

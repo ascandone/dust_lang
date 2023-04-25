@@ -48,16 +48,13 @@ impl Display for Function {
                     let arg = self.bytecode[index];
                     write!(f, " 0x{arg:0>2x}")?;
 
-                    match opcode {
-                        OpCode::Const => {
-                            let value = &self.constant_pool[arg as usize];
-                            if let Value::Function(f) = value {
-                                queue.push(Rc::clone(&f))
-                            }
-
-                            write!(f, " ({value})")?;
+                    if opcode == OpCode::Const {
+                        let value = &self.constant_pool[arg as usize];
+                        if let Value::Function(f) = value {
+                            queue.push(Rc::clone(f))
                         }
-                        _ => {}
+
+                        write!(f, " ({value})")?;
                     };
 
                     index += 1;
@@ -73,14 +70,11 @@ impl Display for Function {
                     let arg_1 = self.bytecode[index];
                     let arg_2 = self.bytecode[index + 1];
 
-                    match opcode {
-                        OpCode::MakeClosure => {
-                            let value = &self.constant_pool[arg_2 as usize];
-                            if let Value::Function(f) = value {
-                                queue.push(Rc::clone(&f))
-                            }
+                    if opcode == OpCode::MakeClosure {
+                        let value = &self.constant_pool[arg_2 as usize];
+                        if let Value::Function(f) = value {
+                            queue.push(Rc::clone(f))
                         }
-                        _ => {}
                     };
 
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
@@ -88,7 +82,7 @@ impl Display for Function {
                 }
             };
 
-            write!(f, "\n")?;
+            writeln!(f)?;
 
             if opcode == OpCode::Return {
                 loop {

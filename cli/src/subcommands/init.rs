@@ -8,7 +8,7 @@ use std::fs;
 #[argh(subcommand, name = "init")]
 pub struct Init {}
 
-const SRC_FOLDER: &'static str = "src";
+const SRC_FOLDER: &str = "src";
 
 impl Init {
     pub fn run(&self) {

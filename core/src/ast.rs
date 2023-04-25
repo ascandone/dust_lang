@@ -1,3 +1,5 @@
+mod visitor;
+
 use std::fmt;
 use std::fmt::{Display, Formatter};
 

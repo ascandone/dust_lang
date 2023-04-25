@@ -21,6 +21,8 @@ fn colored_value(value: Value) -> ColoredString {
         Value::Bool(_) => value.to_string().yellow().bold(),
         Value::Num(_) => value.to_string().blue(),
         Value::String(_) => value.to_string().bright_green(),
+        // TODO colored list
+        Value::List(_) => value.to_string().white(),
         Value::NativeFunction(_) | Value::Closure(_) | Value::Function(_) => {
             value.to_string().cyan()
         }

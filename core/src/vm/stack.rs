@@ -43,10 +43,6 @@ impl<T> Stack<T> {
     pub fn len(&self) -> usize {
         self.items.len()
     }
-
-    pub fn as_slice(&self) -> &[T] {
-        self.items.as_slice()
-    }
 }
 
 #[cfg(test)]

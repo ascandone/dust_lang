@@ -9,7 +9,7 @@ pub fn arity_1(values: &[Value]) -> &Value {
 
 pub fn arity_2(values: &[Value]) -> (&Value, &Value) {
     match &values {
-        &[a, b, ..] => (a, b),
+        &[a, b, ..] => (b, a),
         _ => panic!("Arity error"),
     }
 }

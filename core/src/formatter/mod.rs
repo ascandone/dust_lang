@@ -3,6 +3,7 @@ mod formatter_tests;
 mod pretty;
 
 use crate::cst::{Expr, Import, Program, Statement};
+use crate::formatter::pretty::Doc::Vec;
 use crate::formatter::pretty::{Doc, PPrint};
 
 pub fn format(program: Program) -> String {
@@ -241,6 +242,48 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
                 Doc::vec(&[Doc::text("|> "), expr_to_doc(*f, false)]),
             ])
             .force_broken()
+        }
+
+        Expr::EmptyList => Doc::text("[]"),
+        Expr::Cons(hd, tl) => {
+            let mut values = vec![*hd];
+
+            let mut tl = *tl;
+            let mut rest = None;
+
+            loop {
+                match tl {
+                    Expr::Cons(hd, next) => {
+                        values.push(*hd);
+                        tl = *next;
+                    }
+                    Expr::EmptyList => break,
+                    e => {
+                        rest = Some(e);
+                        break;
+                    }
+                };
+            }
+
+            let mut docs = vec![Doc::text("[")];
+            for (i, e) in values.into_iter().enumerate() {
+                if i != 0 {
+                    docs.push(Doc::text(", "))
+                }
+
+                let d = expr_to_doc(e, false);
+
+                docs.push(d)
+            }
+
+            if let Some(e) = rest {
+                docs.push(Doc::text(", .."));
+                docs.push(expr_to_doc(e, false));
+            }
+
+            docs.push(Doc::text("]"));
+
+            Vec(docs)
         }
     }
 }

@@ -56,6 +56,12 @@ pub enum Token {
     /// `)`
     RParen,
 
+    /// `[`
+    LBracket,
+
+    /// `]`
+    RBracket,
+
     /// `{`
     LBrace,
 
@@ -106,6 +112,9 @@ pub enum Token {
 
     /// `.`
     Dot,
+
+    /// `..`
+    Dots,
 
     Ident(String),
     NsIndent(String),

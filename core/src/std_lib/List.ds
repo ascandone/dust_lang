@@ -1,0 +1,42 @@
+pub let range = fn start, end {
+  let recur = fn end, acc {
+    if start > end {
+      acc
+    } else {
+      recur(end - 1, cons(end, acc))
+    }
+  };
+  recur(end - 1, empty())
+};
+
+pub let foldl = fn lst, z, f {
+  if is_empty(lst) {
+    z
+  } else {
+    let hd = head(lst);
+    let tl = tail(lst);
+    foldl(tl, f(z, hd), f)
+  }
+};
+
+pub let foldr = fn lst, z, f {
+  if is_empty(lst) {
+    z
+  } else {
+    let hd = head(lst);
+    let tl = tail(lst);
+    f(hd, foldr(tl, z, f))
+  }
+};
+
+pub let map = fn lst, f { foldr(lst, [], fn x, acc { [f(x), ..acc] }) };
+
+pub let filter = fn lst, pred {
+  foldr(lst, empty(), fn x, acc {
+    if pred(x) {
+      [x, ..acc]
+    } else {
+      acc
+    }
+  })
+}

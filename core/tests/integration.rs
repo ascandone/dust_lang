@@ -1,7 +1,9 @@
 use core::ast::Namespace;
 use core::interpreter::eval;
 use core::interpreter::Interpreter;
+use core::vm::list::List;
 use core::vm::value::Value;
+use std::rc::Rc;
 
 #[test]
 fn empty_expr() {
@@ -223,6 +225,20 @@ fn modules_import() {
 }
 
 #[test]
+fn modules_import_self() {
+    let mod_a = "
+    pub let x = 42;
+User.x
+    ";
+
+    let mut interpreter = Interpreter::new();
+
+    let result = interpreter.run("test", mod_a).unwrap();
+
+    assert_eq!(result, 42.0.into())
+}
+
+#[test]
 fn native_fn() {
     fn sum(body: &[Value]) -> Result<Value, String> {
         match body {
@@ -263,10 +279,116 @@ fn let_bug() {
 }
 
 #[test]
+fn list_empty() {
+    assert_result(
+        "import List; List.empty()",
+        Value::List(Rc::new(List::Empty)),
+    );
+}
+
+#[test]
 fn concat_native_calls() {
     assert_result(
         "import String; \"a\" |> String.concat(\"b\") |> String.concat(\"c\")",
         "abc",
+    );
+}
+
+#[test]
+fn concat_native_calls_list() {
+    assert_result(
+        "import List; List.cons(1, List.cons(2, List.cons(3, List.empty())))",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(1.0),
+            Value::Num(2.0),
+            Value::Num(3.0),
+        ]))),
+    );
+}
+
+#[test]
+fn list_lit() {
+    assert_result(
+        "
+import List;
+[1, 2, 3]
+",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(1.0),
+            Value::Num(2.0),
+            Value::Num(3.0),
+        ]))),
+    );
+}
+
+#[test]
+fn list_range() {
+    assert_result(
+        "import List; List.range(1, 4)",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(1.0),
+            Value::Num(2.0),
+            Value::Num(3.0),
+        ]))),
+    );
+}
+
+#[test]
+fn list_map() {
+    assert_result(
+        "import List;
+let lst = List.cons(1, List.cons(2, List.cons(3, List.empty())));
+List.map(lst, fn x { x * 10 })
+",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(10.0),
+            Value::Num(20.0),
+            Value::Num(30.0),
+        ]))),
+    );
+}
+
+#[test]
+fn list_filter() {
+    assert_result(
+        "import List;
+let lst = List.cons(1, List.cons(0, List.cons(3, List.empty())));
+List.filter(lst, fn x { x != 0 })
+",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(1.0),
+            Value::Num(3.0),
+        ]))),
+    );
+}
+
+#[test]
+fn list_foldr() {
+    assert_result(
+        "
+import String;
+import List;
+let lst = List.cons(\"a\", List.cons(\"b\", List.cons(\"c\", List.empty())));
+List.foldr(lst, \"Z\", String.concat)
+",
+        "abcZ",
+    );
+}
+
+#[test]
+fn list_foldl() {
+    assert_result(
+        "
+import String;
+import List;
+let lst = List.cons(1, List.cons(2, List.cons(3, List.empty())));
+List.foldl(lst, List.empty(), fn acc, x { List.cons(x, acc) })
+",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(3.0),
+            Value::Num(2.0),
+            Value::Num(1.0),
+        ]))),
     );
 }
 

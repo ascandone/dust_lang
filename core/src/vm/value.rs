@@ -1,3 +1,4 @@
+use crate::vm::list::List;
 use std::{fmt::Display, rc::Rc};
 
 /// A compiled function
@@ -49,6 +50,7 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     String(Rc<String>),
+    List(Rc<List<Value>>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
     NativeFunction(Rc<NativeFunction>),
@@ -59,16 +61,11 @@ impl Value {
     pub fn str(str: &str) -> Value {
         Value::String(Rc::new(str.to_string()))
     }
-}
 
-impl TryInto<bool> for &Value {
-    type Error = String;
-
-    fn try_into(self) -> Result<bool, Self::Error> {
-        match &self {
-            Value::Bool(b) => Ok(*b),
-            _ => Err(format!("Type error: expected a bool, got {self} instead")),
-        }
+    fn type_err<T>(&self, expected: &str) -> Result<T, String> {
+        Err(format!(
+            "Type error: expected {expected}, got {self} instead"
+        ))
     }
 }
 
@@ -76,23 +73,28 @@ impl Value {
     pub fn as_bool(&self) -> Result<bool, String> {
         match self {
             Value::Bool(b) => Ok(*b),
-            _ => Err(format!("Type error: expected a bool, got {self} instead")),
+            _ => self.type_err("a bool"),
         }
     }
 
     pub fn as_string(&self) -> Result<Rc<String>, String> {
         match self {
             Value::String(s) => Ok(Rc::clone(s)),
-            _ => Err(format!("Type error: expected a string, got {self} instead")),
+            _ => self.type_err("a string"),
         }
     }
 
     pub fn as_fn(&self) -> Result<Rc<Function>, String> {
         match self {
             Value::Function(f) => Ok(Rc::clone(f)),
-            _ => Err(format!(
-                "Type error: expected a function, got {self} instead"
-            )),
+            _ => self.type_err("a function"),
+        }
+    }
+
+    pub fn as_list(&self) -> Result<Rc<List<Value>>, String> {
+        match self {
+            Value::List(l) => Ok(Rc::clone(l)),
+            _ => self.type_err("a list"),
         }
     }
 }
@@ -135,6 +137,7 @@ impl Display for Value {
             Value::Bool(false) => write!(f, "false"),
             Value::Num(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
+            Value::List(l) => write!(f, "{l}"),
             Value::Function(r) => {
                 write!(f, "#[function {} at {:?}]", r.display_name(), Rc::as_ptr(r))
             }
@@ -173,6 +176,18 @@ mod test {
         assert_eq!(
             format!("{}", Value::String(Rc::new("abc".to_string()))),
             "\"abc\"".to_string()
+        );
+
+        assert_eq!(
+            format!(
+                "{}",
+                Value::List(Rc::new(List::from_vec(vec![
+                    Value::Nil,
+                    Value::Num(42.0),
+                    Value::List(Rc::new(List::Empty))
+                ])))
+            ),
+            "[nil, 42, []]".to_string()
         );
     }
 }

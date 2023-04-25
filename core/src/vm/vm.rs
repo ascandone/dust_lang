@@ -124,8 +124,9 @@ impl Vm {
                 }
 
                 OpCode::JumpIfFalse => {
-                    let cond: bool = (&stack.pop())
-                        .try_into()
+                    let cond: bool = stack
+                        .pop()
+                        .as_bool()
                         .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
                     let index = frame.next_opcode_u16() as usize;
 
@@ -137,7 +138,7 @@ impl Vm {
                 OpCode::JumpIfFalseElsePop => {
                     let cond: bool = stack
                         .peek()
-                        .try_into()
+                        .as_bool()
                         .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
                     let index = frame.next_opcode_u16() as usize;
 
@@ -151,7 +152,7 @@ impl Vm {
                 OpCode::JumpIfTrueElsePop => {
                     let cond: bool = stack
                         .peek()
-                        .try_into()
+                        .as_bool()
                         .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
                     let index = frame.next_opcode_u16() as usize;
 
@@ -249,15 +250,14 @@ impl Vm {
                                 .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                             let nf = &(nf.deref()).body;
-                            let args = &stack.as_slice()
-                                [frame.base_pointer + frame.closure.function.locals as usize..];
-                            let res = nf(args)
-                                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
-                            // deallocate args
+                            let mut args = vec![];
                             for _ in 0..passed_args_number {
-                                stack.pop();
+                                args.push(stack.pop())
                             }
+
+                            let res = nf(args.as_slice())
+                                .map_err(|reason| make_runtime_err(reason, &frame, &frames))?;
 
                             stack.push(res.clone());
                             continue;

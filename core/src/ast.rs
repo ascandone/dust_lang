@@ -60,7 +60,7 @@ pub enum Lit {
 }
 
 impl Display for Lit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Lit::Nil => write!(f, "nil"),
             Lit::Bool(true) => write!(f, "true"),
@@ -72,7 +72,7 @@ impl Display for Lit {
 }
 
 impl fmt::Debug for Lit {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{self}")
     }
 }

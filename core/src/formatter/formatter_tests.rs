@@ -292,6 +292,37 @@ let y = 2
     );
 }
 
+#[test]
+fn list_lit() {
+    assert_fmt(
+        "[]
+",
+    );
+
+    assert_fmt(
+        "[1]
+",
+    );
+
+    assert_fmt(
+        "[1, 2, 3]
+",
+    );
+}
+
+#[test]
+fn list_lit_cons() {
+    assert_fmt(
+        "[1, ..tl]
+",
+    );
+
+    assert_fmt(
+        "[1, 2, ..tl]
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

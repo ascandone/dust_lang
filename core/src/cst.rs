@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::ast::Ident;
+use crate::ast::{Ident, Namespace};
 
 #[derive(PartialEq, Debug)]
 pub struct Program {
@@ -99,6 +99,10 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<Expr>,
     },
+
+    // data structures
+    EmptyList,
+    Cons(Box<Expr>, Box<Expr>),
 }
 
 pub const NIL: Expr = Expr::Lit(ast::Lit::Nil);
@@ -227,6 +231,23 @@ impl TryFrom<Expr> for ast::Expr {
             Expr::Fn { params, body } => Ok(ast::Expr::Fn {
                 params,
                 body: cst_box_try_into_ast_box(body)?,
+            }),
+
+            Expr::EmptyList => Ok(ast::Expr::Call {
+                f: Box::new(ast::Expr::Ident(Ident(
+                    Some(Namespace(vec!["List".to_string()])),
+                    "empty".to_string(),
+                ))),
+                args: vec![],
+            }),
+
+            Expr::Cons(hd, tl) => Ok(ast::Expr::Call {
+                f: Box::new(ast::Expr::Ident(Ident(
+                    Some(Namespace(vec!["List".to_string()])),
+                    "cons".to_string(),
+                ))),
+
+                args: vec![(*hd).try_into()?, (*tl).try_into()?],
             }),
         }
     }

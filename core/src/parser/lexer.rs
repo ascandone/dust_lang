@@ -82,6 +82,7 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
 
         if let Some(tk) = self.try_consume_many(&[
+            ("..", Token::Dots),
             (".", Token::Dot),
             ("<-", Token::ArrowLeft),
             ("as", Token::As),
@@ -103,6 +104,8 @@ impl<'a> Lexer<'a> {
         self.next_char();
 
         Ok(match ch {
+            '[' => Token::LBracket,
+            ']' => Token::RBracket,
             '=' => match self.peek_char() {
                 Some('=') => {
                     self.next_char();

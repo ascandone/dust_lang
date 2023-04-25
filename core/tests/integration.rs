@@ -225,6 +225,20 @@ fn modules_import() {
 }
 
 #[test]
+fn modules_import_self() {
+    let mod_a = "
+    pub let x = 42;
+User.x
+    ";
+
+    let mut interpreter = Interpreter::new();
+
+    let result = interpreter.run("test", mod_a).unwrap();
+
+    assert_eq!(result, 42.0.into())
+}
+
+#[test]
 fn native_fn() {
     fn sum(body: &[Value]) -> Result<Value, String> {
         match body {
@@ -284,6 +298,21 @@ fn concat_native_calls() {
 fn concat_native_calls_list() {
     assert_result(
         "import List; List.cons(1, List.cons(2, List.cons(3, List.empty())))",
+        Value::List(Rc::new(List::from_vec(vec![
+            Value::Num(1.0),
+            Value::Num(2.0),
+            Value::Num(3.0),
+        ]))),
+    );
+}
+
+#[test]
+fn list_lit() {
+    assert_result(
+        "
+import List;
+[1, 2, 3]
+",
         Value::List(Rc::new(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),

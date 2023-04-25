@@ -552,3 +552,53 @@ fn parse_import_statement_rename() {
         }
     );
 }
+
+#[test]
+fn parse_empty_list_lit() {
+    assert_eq!(parse_expr("[]").unwrap(), Expr::EmptyList);
+    assert_eq!(parse_expr("[ ]").unwrap(), Expr::EmptyList);
+}
+
+#[test]
+fn parse_singleton_list_lit() {
+    assert_eq!(
+        parse_expr("[ 1 ]").unwrap(),
+        Expr::Cons(Box::new(1.0.into()), Box::new(Expr::EmptyList))
+    );
+}
+
+#[test]
+fn parse_list_lit() {
+    assert_eq!(
+        parse_expr("[ 1, 2, 3 ]").unwrap(),
+        Expr::Cons(
+            Box::new(1.0.into()),
+            Box::new(Expr::Cons(
+                Box::new(2.0.into()),
+                Box::new(Expr::Cons(
+                    Box::new(3.0.into()),
+                    Box::new(Expr::EmptyList) //
+                ))
+            ))
+        )
+    );
+}
+
+#[test]
+fn parse_list_cons() {
+    assert_eq!(
+        parse_expr("[ hd, ..tl ]").unwrap(),
+        Expr::Cons(Box::new(ident("hd")), Box::new(ident("tl"),))
+    );
+}
+
+#[test]
+fn parse_mixed_list_cons() {
+    assert_eq!(
+        parse_expr("[ x, y, ..tl ]").unwrap(),
+        Expr::Cons(
+            Box::new(ident("x")),
+            Box::new(Expr::Cons(Box::new(ident("y")), Box::new(ident("tl"))))
+        )
+    );
+}

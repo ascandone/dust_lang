@@ -29,14 +29,12 @@ pub let foldr = fn lst, z, f {
   }
 };
 
-pub let map = fn lst, f {
-  foldr(lst, empty(), fn x, acc { cons(f(x), acc) })
-};
+pub let map = fn lst, f { foldr(lst, [], fn x, acc { [f(x), ..acc] }) };
 
 pub let filter = fn lst, pred {
   foldr(lst, empty(), fn x, acc {
     if pred(x) {
-      cons(x, acc)
+      [x, ..acc]
     } else {
       acc
     }

@@ -96,6 +96,7 @@ impl Compiler {
                 let Ident(ref ns, ref name) = ident;
                 let ns = match ns {
                     None => None,
+                    Some(ns) if ns == &self.module_context.ns => None,
                     Some(ns) => match self.module_context.visible_modules.get(ns) {
                         None => return Err(format!("Namespace was not imported: {ns}")),
                         Some(alias) => Some(alias.clone()),

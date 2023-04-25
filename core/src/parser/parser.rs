@@ -3,6 +3,7 @@ use crate::ast::{Ident, Lit, Namespace};
 use crate::cst::{Expr, Import, Program, Statement, NIL};
 use crate::parser::lexer::LexerError;
 use std::fmt::{Display, Formatter};
+use std::vec;
 
 const LOWEST_PREC: u8 = 0;
 const HIGHEST_PREC: u8 = 17;
@@ -127,6 +128,8 @@ impl<'a> Parser<'a> {
             Token::Use if inside_block => self.parse_use_expr(),
 
             Token::LBrace => self.parse_block_expr(),
+
+            Token::LBracket => self.parse_list_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(
                 self.current_token.clone(),
@@ -370,6 +373,34 @@ impl<'a> Parser<'a> {
         Ok(Expr::Do(Box::new(left), Box::new(right)))
     }
 
+    fn parse_list_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::LBracket)?;
+
+        let (exprs, end_tk) = self.sep_by_zero_or_more_multiple_ends(
+            Token::Comma,
+            vec![Token::RBracket, Token::Dots],
+            |p| p.parse_expr(LOWEST_PREC, false),
+        )?;
+
+        let tl = match end_tk {
+            Token::Dots => {
+                let tl = self.parse_expr(LOWEST_PREC, false)?;
+                self.expect_token(Token::RBracket)?;
+                tl
+            }
+
+            Token::RBracket => Expr::EmptyList,
+
+            _ => panic!("Invalid parser state"),
+        };
+
+        let list_lit = exprs
+            .into_iter()
+            .rfold(tl, |acc, expr| Expr::Cons(Box::new(expr), Box::new(acc)));
+
+        Ok(list_lit)
+    }
+
     fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {
         if &self.current_token == &expected_token {
             self.advance_token()?;
@@ -433,22 +464,34 @@ impl<'a> Parser<'a> {
     where
         F: Fn(&mut Self) -> Result<T, ParsingError>,
     {
+        let (r, _) = self.sep_by_zero_or_more_multiple_ends(separator, vec![end], f)?;
+        Ok(r)
+    }
+
+    fn sep_by_zero_or_more_multiple_ends<T, F>(
+        &mut self,
+        separator: Token,
+        end: Vec<Token>,
+        f: F,
+    ) -> Result<(Vec<T>, Token), ParsingError>
+    where
+        F: Fn(&mut Self) -> Result<T, ParsingError>,
+    {
         let mut args = vec![];
 
         loop {
-            if self.current_token == end {
-                self.advance_token()?;
-                break;
-            }
-
             if self.current_token == separator {
                 self.advance_token()?;
+            }
+
+            if end.contains(&self.current_token) {
+                let end_tk = self.current_token.clone();
+                self.advance_token()?;
+                return Ok((args, end_tk));
             }
 
             let expr = f(self)?;
             args.push(expr);
         }
-
-        Ok(args)
     }
 }

@@ -457,10 +457,17 @@ impl<'a> Parser<'a> {
         )?;
 
         let tl = match end_tk {
-            Token::Dots => {
+            Token::Dots if !exprs.is_empty() => {
                 let tl = self.parse_expr(LOWEST_PREC, false)?;
                 self.expect_token(Token::RBracket)?;
                 tl
+            }
+
+            Token::Dots => {
+                return Err(ParsingError::UnexpectedToken(
+                    self.current_token.clone(),
+                    format!("Expected a {:?} token", Token::RBracket),
+                ))
             }
 
             Token::RBracket => Expr::EmptyList,
@@ -551,7 +558,7 @@ impl<'a> Parser<'a> {
     where
         F: Fn(&mut Self) -> Result<T, ParsingError>,
     {
-        let mut args = vec![];
+        let mut exprs = vec![];
 
         loop {
             if self.current_token == separator {
@@ -561,11 +568,11 @@ impl<'a> Parser<'a> {
             if end.contains(&self.current_token) {
                 let end_tk = self.current_token.clone();
                 self.advance_token()?;
-                return Ok((args, end_tk));
+                return Ok((exprs, end_tk));
             }
 
             let expr = f(self)?;
-            args.push(expr);
+            exprs.push(expr);
         }
     }
 }

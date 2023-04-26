@@ -433,6 +433,18 @@ match 42 { x => x + 1 }
     );
 }
 
+#[test]
+fn cons_match() {
+    assert_result(
+        "
+import List;
+let lst = [1, 2, 3];
+match lst { [hd, ..[2, ..[3, ..[]]]] => hd }
+",
+        1,
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

@@ -53,7 +53,7 @@ pub enum Statement {
     Expr(Expr),
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum Lit {
     Nil,
     Bool(bool),
@@ -135,7 +135,7 @@ pub enum Expr {
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Pattern {
     Identifier(String),
     Lit(Lit),

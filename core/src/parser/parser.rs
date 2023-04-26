@@ -422,6 +422,7 @@ impl<'a> Parser<'a> {
                     self.expect_token(Token::Dots)?;
                     let tl_pattern = self.parse_pattern()?;
 
+                    self.advance_token()?;
                     Ok(Pattern::Cons(Box::new(hd_pattern), Box::new(tl_pattern)))
                 }
             }

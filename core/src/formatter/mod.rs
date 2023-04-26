@@ -330,13 +330,30 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
         Pattern::Identifier(ident) => Doc::Text(ident),
         Pattern::Lit(l) => Doc::Text(format!("{l}")),
         Pattern::EmptyList => Doc::text("[]"),
-        Pattern::Cons(hd, tl) => Doc::vec(&[
-            Doc::text("["),
-            pattern_to_doc(*hd),
-            Doc::text(", .."),
-            pattern_to_doc(*tl),
-            Doc::text("]"),
-        ]),
+        Pattern::Cons(_, _) => {
+            let mut docs = vec![];
+            let mut lst = pattern;
+            loop {
+                if !docs.is_empty() {
+                    docs.push(Doc::text(", "))
+                }
+
+                match lst {
+                    Pattern::Cons(hd, tl) => {
+                        docs.push(pattern_to_doc(*hd.clone()));
+                        lst = *tl;
+                    }
+
+                    Pattern::EmptyList => {}
+
+                    _ => {
+                        docs.push(Doc::text(".."));
+                        docs.push(pattern_to_doc(lst));
+                        return Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")]);
+                    }
+                }
+            }
+        }
     }
 }
 

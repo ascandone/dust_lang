@@ -382,6 +382,16 @@ fn match_many_clauses() {
     );
 }
 
+#[test]
+fn match_list_sugar() {
+    assert_fmt(
+        "match x {
+  [1, 2, 3, ..tl] => a,
+}
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

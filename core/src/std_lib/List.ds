@@ -6,7 +6,7 @@ pub let range = fn start, end {
       recur(end - 1, [end, ..acc])
     }
   };
-  recur(end - 1, empty())
+  recur(end - 1, [])
 };
 
 pub let foldl = fn lst, z, f {
@@ -26,7 +26,7 @@ pub let foldr = fn lst, z, f {
 pub let map = fn lst, f { foldr(lst, [], fn x, acc { [f(x), ..acc] }) };
 
 pub let filter = fn lst, pred {
-  foldr(lst, empty(), fn x, acc {
+  foldr(lst, [], fn x, acc {
     if pred(x) {
       [x, ..acc]
     } else {

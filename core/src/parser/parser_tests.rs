@@ -612,19 +612,95 @@ fn parse_empty_match() {
 }
 
 #[test]
-fn parse_single_clause_match() {
+fn parse_const_num_clause_match() {
     assert_eq!(
         parse_expr(
-            "match true {
+            "match x {
     0 => a,
 }"
         )
         .unwrap(),
         Expr::Match(
-            Box::new(true.into()),
+            Box::new(ident("x")),
             vec![
                 //
                 (Pattern::Lit(Lit::Num(0.0)), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_true_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    true => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Bool(true)), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_false_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    false => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Bool(false)), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_nil_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    nil => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Nil), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_str_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    \"abc\" => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::String("abc".to_string())), ident("a"))
             ]
         )
     );

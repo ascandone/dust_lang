@@ -383,6 +383,28 @@ impl<'a> Parser<'a> {
                 self.advance_token()?;
                 Ok(Pattern::Lit(Lit::Num(n)))
             }
+
+            Token::True => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Bool(true)))
+            }
+
+            Token::False => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Bool(false)))
+            }
+
+            Token::Nil => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Nil))
+            }
+
+            Token::String(ref s) => {
+                let s = s.to_string();
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::String(s)))
+            }
+
             _ => todo!("missing pattern {:?}", self.peek_token),
         }
     }

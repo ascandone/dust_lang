@@ -369,7 +369,7 @@ impl Into<Doc> for Statement {
                 Doc::text("let "),
                 Doc::Text(name),
                 Doc::text(" ="),
-                format_let_value(value),
+                format_let_value(value).force_broken(),
             ]),
             Statement::Import(Import { ns, rename }) => Doc::vec(&[
                 Doc::text("import "),

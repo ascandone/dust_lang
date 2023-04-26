@@ -23,7 +23,11 @@ pub let foldr = fn lst, z, f {
   }
 };
 
-pub let map = fn lst, f { foldr(lst, [], fn x, acc { [f(x), ..acc] }) };
+pub let map = fn lst, f {
+  foldr(lst, [], fn x, acc {
+    [f(x), ..acc]
+  })
+};
 
 pub let filter = fn lst, pred {
   foldr(lst, [], fn x, acc {

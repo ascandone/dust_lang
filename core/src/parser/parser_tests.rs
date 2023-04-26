@@ -724,3 +724,69 @@ fn parse_ident_match() {
         )
     );
 }
+
+#[test]
+fn parse_empty_list_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [] => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::EmptyList, ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_cons_list_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [hd, ..tl] => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (
+                    Pattern::Cons(
+                        Box::new(Pattern::Identifier("hd".to_string())),
+                        Box::new(Pattern::Identifier("tl".to_string())),
+                    ),
+                    ident("a")
+                )
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_nested_cons_list_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [42, ..[]] => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![(
+                Pattern::Cons(
+                    Box::new(Pattern::Lit(Lit::Num(42.0))),
+                    Box::new(Pattern::EmptyList),
+                ),
+                ident("a")
+            )]
+        )
+    );
+}

@@ -411,7 +411,25 @@ impl<'a> Parser<'a> {
                 Ok(Pattern::Identifier(s))
             }
 
-            _ => todo!("missing pattern {:?}", self.peek_token),
+            Token::LBracket => {
+                self.advance_token()?;
+                if self.current_token == Token::RBracket {
+                    self.advance_token()?;
+                    Ok(Pattern::EmptyList)
+                } else {
+                    let hd_pattern = self.parse_pattern()?;
+                    self.expect_token(Token::Comma)?;
+                    self.expect_token(Token::Dots)?;
+                    let tl_pattern = self.parse_pattern()?;
+
+                    Ok(Pattern::Cons(Box::new(hd_pattern), Box::new(tl_pattern)))
+                }
+            }
+
+            ref tk => Err(ParsingError::UnexpectedToken(
+                tk.clone(),
+                "Expected a pattern".to_string(),
+            )),
         }
     }
 

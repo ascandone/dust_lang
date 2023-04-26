@@ -140,7 +140,7 @@ pub enum Pattern {
     Identifier(String),
     Lit(Lit),
     EmptyList,
-    Cons(Box<Pattern>),
+    Cons(Box<Pattern>, Box<Pattern>),
 }
 
 /// utility to create an unqualified identifier

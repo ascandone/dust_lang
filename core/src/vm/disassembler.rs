@@ -85,7 +85,18 @@ impl Display for Function {
                 }
 
                 Arity::Two8And16 => {
-                    todo!("Arity::Two8And16")
+                    let arg_1 = self.bytecode[index];
+                    let arg_2 =
+                        u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
+
+                    write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
+
+                    if opcode == OpCode::MatchConstElseJump {
+                        let value = &self.constant_pool[arg_1 as usize];
+                        write!(f, " ({value})")?;
+                    };
+
+                    index += 3;
                 }
             };
 
@@ -226,6 +237,29 @@ Disassembly of '#[function nested at {nested_f_addr:?}]':
 0001 Return
 "
             )
+        )
+    }
+
+    #[test]
+    fn match_test() {
+        let main = Function {
+            arity: 1,
+            constant_pool: vec![Value::Num(42.0)],
+            bytecode: vec![
+                /* 00 */ OpCode::MatchConstElseJump as u8,
+                /* 01 */ 0,
+                /* 02 */ 0,
+                /* 03 */ 0,
+                /* 03 */ OpCode::Return as u8,
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            main.to_string(),
+            "0000 MatchConstElseJump 0x00, 0x00 (42)
+0004 Return
+"
         )
     }
 }

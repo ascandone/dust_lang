@@ -235,8 +235,14 @@ impl Compiler {
                 f.bytecode.push(opcode as u8);
             }
 
-            Expr::Match(_) => {
-                todo!()
+            Expr::Match(expr, clauses) => {
+                self.compile_expr_chunk(f, *expr, false)?;
+
+                for (_, _) in clauses {
+                    // TODO handle clause
+                }
+
+                f.bytecode.push(OpCode::PanicNoMatch as u8);
             }
         };
 

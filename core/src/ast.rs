@@ -119,7 +119,7 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<Expr>,
     },
-    Match(Vec<(Pattern, Expr)>),
+    Match(Box<Expr>, Vec<(Pattern, Expr)>),
 }
 
 #[derive(PartialEq, Debug)]

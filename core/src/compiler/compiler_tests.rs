@@ -1099,3 +1099,19 @@ fn modules_renamed_imports() {
         ]
     );
 }
+
+#[test]
+fn empty_match_test() {
+    let ast = Expr::Match(Box::new(true.into()), vec![]);
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::PanicNoMatch as u8,
+            OpCode::Return as u8,
+        ]
+    );
+}

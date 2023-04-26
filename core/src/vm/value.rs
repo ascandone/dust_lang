@@ -50,7 +50,7 @@ pub enum Value {
     Bool(bool),
     Num(f64),
     String(Rc<String>),
-    List(Rc<List<Value>>),
+    List(List<Value>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
     NativeFunction(Rc<NativeFunction>),
@@ -91,9 +91,9 @@ impl Value {
         }
     }
 
-    pub fn as_list(&self) -> Result<Rc<List<Value>>, String> {
+    pub fn as_list(&self) -> Result<&List<Value>, String> {
         match self {
-            Value::List(l) => Ok(Rc::clone(l)),
+            Value::List(l) => Ok(l),
             _ => self.type_err("a list"),
         }
     }
@@ -181,11 +181,11 @@ mod test {
         assert_eq!(
             format!(
                 "{}",
-                Value::List(Rc::new(List::from_vec(vec![
+                Value::List(List::from_vec(vec![
                     Value::Nil,
                     Value::Num(42.0),
-                    Value::List(Rc::new(List::Empty))
-                ])))
+                    Value::List(List::Empty)
+                ]))
             ),
             "[nil, 42, []]".to_string()
         );

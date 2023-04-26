@@ -5,14 +5,14 @@ use std::rc::Rc;
 #[derive(Debug, Clone, PartialEq)]
 pub enum List<T> {
     Empty,
-    Cons(T, Rc<List<T>>),
+    Cons(Rc<T>, Rc<List<T>>),
 }
 
 impl<T> List<T> {
     pub fn from_vec(v: Vec<T>) -> List<T> {
         let mut lst = List::Empty;
         for x in v.into_iter().rev() {
-            lst = List::Cons(x, Rc::new(lst))
+            lst = List::Cons(Rc::new(x), Rc::new(lst))
         }
         lst
     }
@@ -50,8 +50,11 @@ mod tests {
         assert_eq!(
             List::from_vec(vec![1u8, 2, 3]),
             List::Cons(
-                1,
-                Rc::new(List::Cons(2, Rc::new(List::Cons(3, Rc::new(List::Empty)))))
+                Rc::new(1),
+                Rc::new(List::Cons(
+                    Rc::new(2),
+                    Rc::new(List::Cons(Rc::new(3), Rc::new(List::Empty)))
+                ))
             )
         );
     }

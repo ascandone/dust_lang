@@ -280,10 +280,7 @@ fn let_bug() {
 
 #[test]
 fn list_empty() {
-    assert_result(
-        "import List; List.empty()",
-        Value::List(Rc::new(List::Empty)),
-    );
+    assert_result("import List; List.empty()", Value::List(List::Empty));
 }
 
 #[test]
@@ -298,11 +295,11 @@ fn concat_native_calls() {
 fn concat_native_calls_list() {
     assert_result(
         "import List; List.cons(1, List.cons(2, List.cons(3, List.empty())))",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),
             Value::Num(3.0),
-        ]))),
+        ])),
     );
 }
 
@@ -313,11 +310,11 @@ fn list_lit() {
 import List;
 [1, 2, 3]
 ",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),
             Value::Num(3.0),
-        ]))),
+        ])),
     );
 }
 
@@ -325,11 +322,11 @@ import List;
 fn list_range() {
     assert_result(
         "import List; List.range(1, 4)",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),
             Value::Num(3.0),
-        ]))),
+        ])),
     );
 }
 
@@ -340,11 +337,11 @@ fn list_map() {
 let lst = List.cons(1, List.cons(2, List.cons(3, List.empty())));
 List.map(lst, fn x { x * 10 })
 ",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(10.0),
             Value::Num(20.0),
             Value::Num(30.0),
-        ]))),
+        ])),
     );
 }
 
@@ -355,10 +352,7 @@ fn list_filter() {
 let lst = List.cons(1, List.cons(0, List.cons(3, List.empty())));
 List.filter(lst, fn x { x != 0 })
 ",
-        Value::List(Rc::new(List::from_vec(vec![
-            Value::Num(1.0),
-            Value::Num(3.0),
-        ]))),
+        Value::List(List::from_vec(vec![Value::Num(1.0), Value::Num(3.0)])),
     );
 }
 
@@ -384,11 +378,11 @@ import List;
 let lst = List.cons(1, List.cons(2, List.cons(3, List.empty())));
 List.foldl(lst, List.empty(), fn acc, x { List.cons(x, acc) })
 ",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(3.0),
             Value::Num(2.0),
             Value::Num(1.0),
-        ]))),
+        ])),
     );
 }
 

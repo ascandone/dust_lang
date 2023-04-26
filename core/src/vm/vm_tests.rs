@@ -837,7 +837,7 @@ fn match_empty_list_when_not_match_test() {
 #[test]
 fn match_empty_list_when_match_test() {
     let main = Function {
-        constant_pool: vec![Value::List(Rc::new(List::Empty))],
+        constant_pool: vec![Value::List(List::Empty)],
         bytecode: vec![
             /* 00 */ OpCode::ConstTrue as u8,
             /* 01 */ OpCode::Const as u8,
@@ -853,4 +853,68 @@ fn match_empty_list_when_match_test() {
     };
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
+}
+
+#[test]
+fn match_cons_list_when_not_match_test() {
+    let main = Function {
+        constant_pool: vec![42.0.into()],
+        bytecode: vec![
+            /* 00 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::ConstNil as u8,
+            /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 7,
+            /* 05 */ OpCode::Return as u8,
+            /* 06 */ OpCode::ConstNil as u8,
+            /* 07 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
+}
+
+#[test]
+fn match_cons_list_tl_when_match_test() {
+    let lst = Value::List(List::Cons(Rc::new(42.0.into()), Rc::new(List::Empty)));
+
+    let main = Function {
+        constant_pool: vec![lst],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 5,
+            /* 05 */ OpCode::Pop as u8,
+            /* 06 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        Vm::default().run_main(Rc::new(main)).unwrap(),
+        Value::List(List::Empty)
+    );
+}
+
+#[test]
+fn match_cons_list_hd_when_match_test() {
+    let lst = Value::List(List::Cons(Rc::new(42.0.into()), Rc::new(List::Empty)));
+
+    let main = Function {
+        constant_pool: vec![lst],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 6,
+            /* 05 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 42.0.into());
 }

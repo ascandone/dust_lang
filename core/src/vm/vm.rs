@@ -321,7 +321,7 @@ impl Vm {
                     let value = stack.peek();
 
                     match value {
-                        Value::List(l) if **l == List::Empty => {
+                        Value::List(List::Empty) => {
                             stack.pop();
                         }
 
@@ -332,7 +332,20 @@ impl Vm {
                 }
 
                 OpCode::MatchConsElseJump => {
-                    todo!()
+                    let j_target = frame.next_opcode_u16();
+                    let value = stack.pop();
+
+                    match value {
+                        Value::List(List::Cons(hd, tl)) => {
+                            stack.push(Value::List(tl.deref().clone()));
+                            stack.push(hd.deref().clone());
+                        }
+
+                        _ => {
+                            stack.push(value);
+                            frame.ip = j_target as usize;
+                        }
+                    }
                 }
 
                 // Algebraic/native ops

@@ -294,7 +294,7 @@ impl Vm {
                 // pattern match
                 OpCode::PanicNoMatch => {
                     let value = stack.pop();
-                    let reason = format!("Cannot match expression: {value}");
+                    let reason = format!("No match for {value}");
                     return Err(make_runtime_err(reason, &frame, &frames));
                 }
 

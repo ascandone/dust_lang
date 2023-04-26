@@ -411,6 +411,25 @@ match 42 { 42 => true }
     );
 }
 
+#[test]
+fn const_match_bad_path() {
+    assert_err(
+        "
+match 42 { 0 => true }
+",
+    );
+}
+
+#[test]
+fn const_multiple_match_good_path() {
+    assert_result(
+        "
+match 42 { 0 => true, 42 => false }
+",
+        false,
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

@@ -241,6 +241,10 @@ impl Compiler {
 
                 let mut next_clause_index = None;
                 for (pattern, expr) in clauses {
+                    if let Some(next_clause_index) = next_clause_index {
+                        set_big_endian_u16(f, next_clause_index);
+                    }
+
                     let next_clause_jump_index = match pattern {
                         Pattern::Lit(l) => {
                             let j_index = set_jump_placeholder(f, OpCode::MatchConstElseJump);

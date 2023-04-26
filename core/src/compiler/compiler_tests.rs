@@ -1144,3 +1144,43 @@ fn const_match_test() {
         ]
     );
 }
+
+#[test]
+fn const_match_test_many_clauses() {
+    let ast = Expr::Match(
+        Box::new(NIL),
+        vec![
+            (Pattern::Lit(Lit::Num(1.0)), false.into()),
+            (Pattern::Lit(Lit::Num(2.0)), true.into()),
+        ],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec![1.0.into(), 2.0.into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstNil as u8,
+            /*  1 */ OpCode::MatchConstElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 9,
+            /*  4 */ 0,
+            /*  5 */ OpCode::ConstFalse as u8,
+            /*  6 */ OpCode::Jump as u8,
+            /*  7 */ 0,
+            /*  8 */ 18,
+            /*  9 */ OpCode::MatchConstElseJump as u8,
+            /* 10 */ 0,
+            /* 11 */ 17,
+            /* 12 */ 1,
+            /* 13 */ OpCode::ConstTrue as u8,
+            /* 14 */ OpCode::Jump as u8,
+            /* 15 */ 0,
+            /* 16 */ 18,
+            /* 17 */ OpCode::PanicNoMatch as u8,
+            /* 18 */ OpCode::Return as u8, // <-
+        ]
+    );
+}

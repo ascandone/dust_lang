@@ -245,17 +245,28 @@ impl Compiler {
                         set_big_endian_u16(f, next_clause_index);
                     }
 
-                    let next_clause_jump_index = match pattern {
+                    next_clause_index = match pattern {
+                        Pattern::Identifier(ident) => {
+                            f.bytecode.push(OpCode::SetLocal as u8);
+                            let id = self.symbol_table.define_local(&ident);
+                            f.bytecode.push(id);
+                            None
+                        }
+
                         Pattern::Lit(l) => {
                             let j_index = set_jump_placeholder(f, OpCode::MatchConstElseJump);
                             let const_index = alloc_const(f, l.into());
                             f.bytecode.push(const_index);
-                            j_index
+                            Some(j_index)
                         }
-                        _ => todo!("Pattern"),
-                    };
 
-                    next_clause_index = Some(next_clause_jump_index);
+                        Pattern::EmptyList => {
+                            let index = set_jump_placeholder(f, OpCode::MatchEmptyListElseJump);
+                            Some(index)
+                        }
+
+                        Pattern::Cons(_, _) => todo!("cons list pattern"),
+                    };
 
                     self.compile_expr_chunk(f, expr, tail_position)?;
                     let j_index = set_jump_placeholder(f, OpCode::Jump);

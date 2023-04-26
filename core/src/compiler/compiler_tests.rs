@@ -1117,6 +1117,60 @@ fn empty_match_test() {
 }
 
 #[test]
+fn ident_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![
+            //
+            (Pattern::Identifier("x".to_string()), false.into()),
+        ],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::SetLocal as u8,
+            /*  2 */ 0,
+            /*  3 */ OpCode::ConstFalse as u8,
+            /*  4 */ OpCode::Jump as u8,
+            /*  5 */ 0,
+            /*  6 */ 8,
+            /*  7 */ OpCode::PanicNoMatch as u8,
+            /*  8 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn nil_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(Pattern::EmptyList, false.into())],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 8,
+            /*  4 */ OpCode::ConstFalse as u8,
+            /*  5 */ OpCode::Jump as u8,
+            /*  6 */ 0,
+            /*  7 */ 9,
+            /*  8 */ OpCode::PanicNoMatch as u8,
+            /*  9 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
 fn const_match_test() {
     let ast = Expr::Match(
         Box::new(true.into()),

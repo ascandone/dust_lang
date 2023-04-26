@@ -3,7 +3,6 @@ use core::interpreter::eval;
 use core::interpreter::Interpreter;
 use core::vm::list::List;
 use core::vm::value::Value;
-use std::rc::Rc;
 
 #[test]
 fn empty_expr() {
@@ -421,6 +420,16 @@ fn const_multiple_match_good_path() {
 match 42 { 0 => true, 42 => false }
 ",
         false,
+    );
+}
+
+#[test]
+fn ident_match() {
+    assert_result(
+        "
+match 42 { x => x + 1 }
+",
+        43,
     );
 }
 

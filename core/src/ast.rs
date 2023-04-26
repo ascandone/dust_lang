@@ -1,5 +1,7 @@
+use crate::vm::value::Value;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 pub type Program = Vec<Statement>;
 
@@ -57,6 +59,17 @@ pub enum Lit {
     Bool(bool),
     Num(f64),
     String(String),
+}
+
+impl From<Lit> for Value {
+    fn from(lit: Lit) -> Self {
+        match lit {
+            Lit::Nil => Value::Nil,
+            Lit::Bool(b) => Value::Bool(b),
+            Lit::Num(n) => Value::Num(n),
+            Lit::String(s) => Value::String(Rc::new(s)),
+        }
+    }
 }
 
 impl Display for Lit {

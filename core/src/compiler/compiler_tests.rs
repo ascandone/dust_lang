@@ -1,4 +1,4 @@
-use crate::ast::{ident, Ident, Import, Namespace};
+use crate::ast::{ident, Ident, Import, Lit, Namespace, Pattern};
 use crate::{
     ast::{Expr, Statement, NIL},
     compiler::compiler::Compiler,
@@ -1040,7 +1040,7 @@ fn modules_imports_are_scoped() {
     );
 
     let program = vec![
-        Statement::Import(Import::new(a_ns.clone())),
+        Statement::Import(Import::new(a_ns)),
         Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
     ];
 
@@ -1076,7 +1076,7 @@ fn modules_renamed_imports() {
 
     let program = vec![
         Statement::Import(Import {
-            ns: a_ns.clone(),
+            ns: a_ns,
             rename: Some(b_ns.clone()),
         }),
         Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
@@ -1112,6 +1112,35 @@ fn empty_match_test() {
             OpCode::ConstTrue as u8,
             OpCode::PanicNoMatch as u8,
             OpCode::Return as u8,
+        ]
+    );
+}
+
+#[test]
+fn const_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(Pattern::Lit(Lit::Num(42.0)), false.into())],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec![42.0.into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchConstElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 9,
+            /*  4 */ 0,
+            /*  5 */ OpCode::ConstFalse as u8,
+            /*  6 */ OpCode::Jump as u8,
+            /*  7 */ 0,
+            /*  8 */ 10,
+            /*  9 */ OpCode::PanicNoMatch as u8,
+            /* 10 */ OpCode::Return as u8, // <-
         ]
     );
 }

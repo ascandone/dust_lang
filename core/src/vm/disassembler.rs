@@ -9,7 +9,7 @@ enum Arity {
     One8,
     One16,
     Two8And8,
-    Two8And16,
+    Two16And8,
 }
 
 fn opcode_arity(opcode: OpCode) -> Arity {
@@ -27,7 +27,7 @@ fn opcode_arity(opcode: OpCode) -> Arity {
 
         MakeClosure => Two8And8,
 
-        MatchConstElseJump => Two8And16,
+        MatchConstElseJump => Two16And8,
 
         Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => Zero,
     }
@@ -84,15 +84,15 @@ impl Display for Function {
                     index += 2;
                 }
 
-                Arity::Two8And16 => {
-                    let arg_1 = self.bytecode[index];
-                    let arg_2 =
+                Arity::Two16And8 => {
+                    let arg_1 =
                         u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
+                    let arg_2 = self.bytecode[index];
 
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
 
                     if opcode == OpCode::MatchConstElseJump {
-                        let value = &self.constant_pool[arg_1 as usize];
+                        let value = &self.constant_pool[arg_2 as usize];
                         write!(f, " ({value})")?;
                     };
 

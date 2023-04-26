@@ -1,5 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Pattern, Program, Statement};
 use crate::vm::{
     bytecode::OpCode,
     value::{Function, Value},
@@ -89,8 +89,7 @@ impl Compiler {
             Expr::Lit(Lit::Nil) => f.bytecode.push(OpCode::ConstNil as u8),
             Expr::Lit(Lit::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
             Expr::Lit(Lit::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
-            Expr::Lit(Lit::String(s)) => push_const(f, Value::String(Rc::new(s))),
-            Expr::Lit(Lit::Num(n)) => push_const(f, Value::Num(n)),
+            Expr::Lit(l) => push_const(f, l.into()),
 
             Expr::Ident(ident) => {
                 let Ident(ref ns, ref name) = ident;
@@ -238,11 +237,36 @@ impl Compiler {
             Expr::Match(expr, clauses) => {
                 self.compile_expr_chunk(f, *expr, false)?;
 
-                for (_, _) in clauses {
-                    // TODO handle clause
+                let mut jump_indexes = vec![];
+
+                let mut next_clause_index = None;
+                for (pattern, expr) in clauses {
+                    let next_clause_jump_index = match pattern {
+                        Pattern::Lit(l) => {
+                            let j_index = set_jump_placeholder(f, OpCode::MatchConstElseJump);
+                            let const_index = alloc_const(f, l.into());
+                            f.bytecode.push(const_index);
+                            j_index
+                        }
+                        _ => todo!("Pattern"),
+                    };
+
+                    next_clause_index = Some(next_clause_jump_index);
+
+                    self.compile_expr_chunk(f, expr, tail_position)?;
+                    let j_index = set_jump_placeholder(f, OpCode::Jump);
+                    jump_indexes.push(j_index);
+                }
+
+                if let Some(next_clause_index) = next_clause_index {
+                    set_big_endian_u16(f, next_clause_index);
                 }
 
                 f.bytecode.push(OpCode::PanicNoMatch as u8);
+
+                for jump_index in jump_indexes {
+                    set_big_endian_u16(f, jump_index);
+                }
             }
         };
 

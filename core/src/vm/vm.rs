@@ -298,8 +298,8 @@ impl Vm {
                 }
 
                 OpCode::MatchConstElseJump => {
-                    let const_index = frame.next_opcode();
                     let j_target = frame.next_opcode_u16();
+                    let const_index = frame.next_opcode();
 
                     let constant_pool = &frame.closure.function.constant_pool;
                     let constant = &constant_pool[const_index as usize];

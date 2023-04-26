@@ -401,6 +401,16 @@ match 42 { }
     );
 }
 
+#[test]
+fn const_match_good_path() {
+    assert_result(
+        "
+match 42 { 42 => true }
+",
+        true,
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

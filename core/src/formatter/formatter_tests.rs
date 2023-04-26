@@ -323,6 +323,65 @@ fn list_lit_cons() {
     );
 }
 
+#[test]
+fn match_empty() {
+    assert_fmt(
+        "match x {}
+",
+    );
+}
+
+#[test]
+fn match_const_clause() {
+    assert_fmt(
+        "match x {
+  expr => value,
+}
+",
+    );
+
+    assert_fmt(
+        "match x {
+  42 => value,
+}
+",
+    );
+
+    assert_fmt(
+        "match x {
+  [] => value,
+}
+",
+    );
+
+    assert_fmt(
+        "match x {
+  [1, ..tl] => value,
+}
+",
+    );
+}
+
+#[test]
+fn match_many_clauses() {
+    assert_fmt(
+        "match x {
+  0 => a,
+  1 => b,
+}
+",
+    );
+
+    assert_fmt(
+        "match x {
+  0 => a,
+  1 => b,
+  2 => c,
+}
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

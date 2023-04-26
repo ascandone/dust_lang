@@ -2,8 +2,8 @@
 mod formatter_tests;
 mod pretty;
 
+use crate::ast::Pattern;
 use crate::cst::{Expr, Import, Program, Statement};
-use crate::formatter::pretty::Doc::Vec;
 use crate::formatter::pretty::{Doc, PPrint};
 
 pub fn format(program: Program) -> String {
@@ -283,10 +283,60 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
 
             docs.push(Doc::text("]"));
 
-            Vec(docs)
+            Doc::Vec(docs)
         }
 
-        Expr::Match(_, _) => todo!(),
+        Expr::Match(expr, clauses) => {
+            let clauses: Vec<Doc> = clauses
+                .into_iter()
+                .enumerate()
+                .map(|(index, (pattern, expr))| {
+                    Doc::vec(&[
+                        if index != 0 {
+                            space_break()
+                        } else {
+                            Doc::vec(&[])
+                        },
+                        pattern_to_doc(pattern),
+                        Doc::text(" => "),
+                        expr_to_doc(expr, false),
+                        Doc::text(","),
+                    ])
+                })
+                .collect();
+
+            Doc::vec(&[
+                Doc::text("match "),
+                expr_to_doc(*expr, false),
+                Doc::text(" {"),
+                if clauses.is_empty() {
+                    Doc::text("}")
+                } else {
+                    Doc::vec(&[
+                        nested_group(Doc::Vec(clauses)),
+                        space_break(),
+                        Doc::text("}"),
+                    ])
+                }
+                .group()
+                .force_broken(),
+            ])
+        }
+    }
+}
+
+fn pattern_to_doc(pattern: Pattern) -> Doc {
+    match pattern {
+        Pattern::Identifier(ident) => Doc::Text(ident),
+        Pattern::Lit(l) => Doc::Text(format!("{l}")),
+        Pattern::EmptyList => Doc::text("[]"),
+        Pattern::Cons(hd, tl) => Doc::vec(&[
+            Doc::text("["),
+            pattern_to_doc(*hd),
+            Doc::text(", .."),
+            pattern_to_doc(*tl),
+            Doc::text("]"),
+        ]),
     }
 }
 

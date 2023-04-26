@@ -19,7 +19,7 @@ pub let foldl = fn lst, z, f {
 pub let foldr = fn lst, z, f {
   match lst {
     [] => z,
-    [hd, ..tl] =>  f(hd, foldr(tl, z, f)),
+    [hd, ..tl] => f(hd, foldr(tl, z, f)),
   }
 };
 

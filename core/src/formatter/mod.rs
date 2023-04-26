@@ -74,8 +74,8 @@ fn block(doc: Doc) -> Doc {
     ])
 }
 
-fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
-    match doc {
+fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
+    match expr {
         Expr::Lit(l) => Doc::Text(format!("{l}")),
         Expr::Ident(id) => Doc::Text(format!("{id}")),
         Expr::If {
@@ -244,46 +244,31 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
             .force_broken()
         }
 
-        Expr::EmptyList => Doc::text("[]"),
-        Expr::Cons(hd, tl) => {
-            let mut values = vec![*hd];
-
-            let mut tl = *tl;
-            let mut rest = None;
+        Expr::Cons(_, _) | Expr::EmptyList => {
+            let mut docs = vec![];
+            let mut lst = expr;
 
             loop {
-                match tl {
+                match lst {
                     Expr::Cons(hd, next) => {
-                        values.push(*hd);
-                        tl = *next;
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(", "))
+                        }
+                        docs.push(expr_to_doc(*hd, false));
+                        lst = *next;
                     }
+
                     Expr::EmptyList => break,
-                    e => {
-                        rest = Some(e);
+
+                    _ => {
+                        docs.push(Doc::text(", .."));
+                        docs.push(expr_to_doc(lst, false));
                         break;
                     }
                 };
             }
 
-            let mut docs = vec![Doc::text("[")];
-            for (i, e) in values.into_iter().enumerate() {
-                if i != 0 {
-                    docs.push(Doc::text(", "))
-                }
-
-                let d = expr_to_doc(e, false);
-
-                docs.push(d)
-            }
-
-            if let Some(e) = rest {
-                docs.push(Doc::text(", .."));
-                docs.push(expr_to_doc(e, false));
-            }
-
-            docs.push(Doc::text("]"));
-
-            Doc::Vec(docs)
+            Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
 
         Expr::Match(expr, clauses) => {
@@ -333,12 +318,11 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
             let mut docs = vec![];
             let mut lst = pattern;
             loop {
-                if !docs.is_empty() {
-                    docs.push(Doc::text(", "))
-                }
-
                 match lst {
                     Pattern::Cons(hd, tl) => {
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(", "))
+                        }
                         docs.push(pattern_to_doc(*hd.clone()));
                         lst = *tl;
                     }
@@ -346,7 +330,7 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
                     Pattern::EmptyList => break,
 
                     _ => {
-                        docs.push(Doc::text(".."));
+                        docs.push(Doc::text(", .."));
                         docs.push(pattern_to_doc(lst));
                         break;
                     }

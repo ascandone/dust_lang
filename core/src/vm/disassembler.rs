@@ -92,7 +92,7 @@ impl Display for Function {
                 Arity::Two16And8 => {
                     let arg_1 =
                         u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
-                    let arg_2 = self.bytecode[index];
+                    let arg_2 = self.bytecode[index + 2];
 
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
 

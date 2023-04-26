@@ -705,3 +705,22 @@ fn parse_const_str_match() {
         )
     );
 }
+
+#[test]
+fn parse_ident_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    id => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Identifier("id".to_string()), ident("a"))
+            ]
+        )
+    );
+}

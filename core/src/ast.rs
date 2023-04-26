@@ -137,8 +137,7 @@ pub enum Expr {
 
 #[derive(PartialEq, Debug)]
 pub enum Pattern {
-    CatchAll,
-    Identifier,
+    Identifier(String),
     Lit(Lit),
     EmptyList,
     Cons(Box<Pattern>),

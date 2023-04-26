@@ -405,6 +405,12 @@ impl<'a> Parser<'a> {
                 Ok(Pattern::Lit(Lit::String(s)))
             }
 
+            Token::Ident(ref s) => {
+                let s = s.to_string();
+                self.advance_token()?;
+                Ok(Pattern::Identifier(s))
+            }
+
             _ => todo!("missing pattern {:?}", self.peek_token),
         }
     }

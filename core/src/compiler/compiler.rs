@@ -234,6 +234,10 @@ impl Compiler {
 
                 f.bytecode.push(opcode as u8);
             }
+
+            Expr::Match(_) => {
+                todo!()
+            }
         };
 
         Ok(())

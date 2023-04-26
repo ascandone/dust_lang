@@ -9,6 +9,7 @@ enum Arity {
     One8,
     One16,
     Two8And8,
+    Two8And16,
 }
 
 fn opcode_arity(opcode: OpCode) -> Arity {
@@ -16,7 +17,7 @@ fn opcode_arity(opcode: OpCode) -> Arity {
     use OpCode::*;
 
     match opcode {
-        ConstNil | ConstTrue | ConstFalse | Pop | Return | GetCurrentClosure => Zero,
+        ConstNil | ConstTrue | ConstFalse | Pop | Return | GetCurrentClosure | PanicNoMatch => Zero,
 
         Const | SetLocal | GetLocal | GetFree | Call => One8,
 
@@ -25,6 +26,8 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         }
 
         MakeClosure => Two8And8,
+
+        MatchConstElseJump => Two8And16,
 
         Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => Zero,
     }
@@ -79,6 +82,10 @@ impl Display for Function {
 
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
                     index += 2;
+                }
+
+                Arity::Two8And16 => {
+                    todo!("Arity::Two8And16")
                 }
             };
 

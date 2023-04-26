@@ -290,6 +290,30 @@ impl Vm {
                     };
                 }
 
+                // pattern match
+                OpCode::PanicNoMatch => {
+                    let value = stack.pop();
+                    let reason = format!("Cannot match expression: {value}");
+                    return Err(make_runtime_err(reason, &frame, &frames));
+                }
+
+                OpCode::MatchConstElseJump => {
+                    let const_index = frame.next_opcode();
+                    let j_target = frame.next_opcode_u16();
+
+                    let constant_pool = &frame.closure.function.constant_pool;
+                    let constant = &constant_pool[const_index as usize];
+
+                    let value = stack.peek();
+
+                    if value == constant {
+                        // discard value
+                        stack.pop();
+                    } else {
+                        frame.ip = j_target as usize;
+                    }
+                }
+
                 // Algebraic/native ops
                 OpCode::Add => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(Value::Num(a + b)),

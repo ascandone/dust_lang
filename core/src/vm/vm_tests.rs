@@ -759,3 +759,57 @@ fn call_native_test() {
         Value::Num(30.0)
     );
 }
+
+#[test]
+fn panic_no_match_test() {
+    let main = Function {
+        bytecode: vec![
+            OpCode::ConstNil as u8,
+            OpCode::PanicNoMatch as u8,
+            OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert!(Vm::default().run_main(Rc::new(main)).is_err());
+}
+
+#[test]
+fn match_const_when_match_test() {
+    let main = Function {
+        constant_pool: vec![42.0.into()],
+        bytecode: vec![
+            /* 00 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::Const as u8,
+            /* 02 */ 0,
+            /* 03 */ OpCode::MatchConstElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 0,
+            /* 06 */ 8,
+            /* 07 */ OpCode::Return as u8,
+            /* 08 */ OpCode::PanicNoMatch as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
+}
+
+#[test]
+fn match_const_when_not_match_test() {
+    let main = Function {
+        constant_pool: vec![42.0.into()],
+        bytecode: vec![
+            /* 00 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::MatchConstElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 0,
+            /* 04 */ 6,
+            /* 05 */ OpCode::Return as u8,
+            /* 06 */ OpCode::PanicNoMatch as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert!(Vm::default().run_main(Rc::new(main)).is_err());
+}

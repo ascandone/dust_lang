@@ -119,6 +119,16 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<Expr>,
     },
+    Match(Vec<(Pattern, Expr)>),
+}
+
+#[derive(PartialEq, Debug)]
+pub enum Pattern {
+    CatchAll,
+    Identifier,
+    Lit(Lit),
+    EmptyList,
+    Cons(Box<Pattern>),
 }
 
 /// utility to create an unqualified identifier

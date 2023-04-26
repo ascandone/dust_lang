@@ -74,6 +74,12 @@ pub enum Token {
     /// `;`
     Semicolon,
 
+    /// `=>`
+    FatArrowRight,
+
+    /// `match`
+    Match,
+
     /// `fn`
     Fn,
 

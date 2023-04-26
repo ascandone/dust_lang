@@ -3,6 +3,7 @@ use super::{
     stack::Stack,
     value::{Closure, Function, Value},
 };
+use crate::vm::list::List;
 use std::fmt::{Display, Formatter};
 use std::mem::transmute;
 use std::ops::Deref;
@@ -288,6 +289,63 @@ impl Vm {
                         ip: 0,
                         base_pointer,
                     };
+                }
+
+                // pattern match
+                OpCode::PanicNoMatch => {
+                    let value = stack.pop();
+                    let reason = format!("No match for {value}");
+                    return Err(make_runtime_err(reason, &frame, &frames));
+                }
+
+                OpCode::MatchConstElseJump => {
+                    let j_target = frame.next_opcode_u16();
+                    let const_index = frame.next_opcode();
+
+                    let constant_pool = &frame.closure.function.constant_pool;
+                    let constant = &constant_pool[const_index as usize];
+
+                    let value = stack.peek();
+
+                    if value == constant {
+                        // discard value
+                        stack.pop();
+                    } else {
+                        frame.ip = j_target as usize;
+                    }
+                }
+
+                OpCode::MatchEmptyListElseJump => {
+                    let j_target = frame.next_opcode_u16();
+
+                    let value = stack.peek();
+
+                    match value {
+                        Value::List(List::Empty) => {
+                            stack.pop();
+                        }
+
+                        _ => {
+                            frame.ip = j_target as usize;
+                        }
+                    }
+                }
+
+                OpCode::MatchConsElseJump => {
+                    let j_target = frame.next_opcode_u16();
+                    let value = stack.pop();
+
+                    match value {
+                        Value::List(List::Cons(hd, tl)) => {
+                            stack.push(Value::List(tl.deref().clone()));
+                            stack.push(hd.deref().clone());
+                        }
+
+                        _ => {
+                            stack.push(value);
+                            frame.ip = j_target as usize;
+                        }
+                    }
                 }
 
                 // Algebraic/native ops

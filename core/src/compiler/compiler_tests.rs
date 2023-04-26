@@ -1,4 +1,4 @@
-use crate::ast::{ident, Ident, Import, Namespace};
+use crate::ast::{ident, Ident, Import, Lit, Namespace, Pattern};
 use crate::{
     ast::{Expr, Statement, NIL},
     compiler::compiler::Compiler,
@@ -1040,7 +1040,7 @@ fn modules_imports_are_scoped() {
     );
 
     let program = vec![
-        Statement::Import(Import::new(a_ns.clone())),
+        Statement::Import(Import::new(a_ns)),
         Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
     ];
 
@@ -1076,7 +1076,7 @@ fn modules_renamed_imports() {
 
     let program = vec![
         Statement::Import(Import {
-            ns: a_ns.clone(),
+            ns: a_ns,
             rename: Some(b_ns.clone()),
         }),
         Statement::Expr(Expr::Ident(Ident(Some(b_ns), "x".to_string()))),
@@ -1096,6 +1096,181 @@ fn modules_renamed_imports() {
             0,
             0,
             OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn empty_match_test() {
+    let ast = Expr::Match(Box::new(true.into()), vec![]);
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            OpCode::ConstTrue as u8,
+            OpCode::PanicNoMatch as u8,
+            OpCode::Return as u8,
+        ]
+    );
+}
+
+#[test]
+fn ident_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![
+            //
+            (Pattern::Identifier("x".to_string()), false.into()),
+        ],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::SetLocal as u8,
+            /*  2 */ 0,
+            /*  3 */ OpCode::ConstFalse as u8,
+            /*  4 */ OpCode::Jump as u8,
+            /*  5 */ 0,
+            /*  6 */ 8,
+            /*  7 */ OpCode::PanicNoMatch as u8,
+            /*  8 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn nil_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(Pattern::EmptyList, false.into())],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 8,
+            /*  4 */ OpCode::ConstFalse as u8,
+            /*  5 */ OpCode::Jump as u8,
+            /*  6 */ 0,
+            /*  7 */ 9,
+            /*  8 */ OpCode::PanicNoMatch as u8,
+            /*  9 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn const_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(Pattern::Lit(Lit::Num(42.0)), false.into())],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec![42.0.into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchConstElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 9,
+            /*  4 */ 0,
+            /*  5 */ OpCode::ConstFalse as u8,
+            /*  6 */ OpCode::Jump as u8,
+            /*  7 */ 0,
+            /*  8 */ 10,
+            /*  9 */ OpCode::PanicNoMatch as u8,
+            /* 10 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn const_match_test_many_clauses() {
+    let ast = Expr::Match(
+        Box::new(NIL),
+        vec![
+            (Pattern::Lit(Lit::Num(1.0)), false.into()),
+            (Pattern::Lit(Lit::Num(2.0)), true.into()),
+        ],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec![1.0.into(), 2.0.into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstNil as u8,
+            /*  1 */ OpCode::MatchConstElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 9,
+            /*  4 */ 0,
+            /*  5 */ OpCode::ConstFalse as u8,
+            /*  6 */ OpCode::Jump as u8,
+            /*  7 */ 0,
+            /*  8 */ 18,
+            /*  9 */ OpCode::MatchConstElseJump as u8,
+            /* 10 */ 0,
+            /* 11 */ 17,
+            /* 12 */ 1,
+            /* 13 */ OpCode::ConstTrue as u8,
+            /* 14 */ OpCode::Jump as u8,
+            /* 15 */ 0,
+            /* 16 */ 18,
+            /* 17 */ OpCode::PanicNoMatch as u8,
+            /* 18 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn cons_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(
+            Pattern::Cons(
+                Box::new(Pattern::Identifier("hd".to_string())),
+                Box::new(Pattern::Identifier("tl".to_string())),
+            ),
+            false.into(),
+        )],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchConsElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 12,
+            /*  4 */ OpCode::SetLocal as u8,
+            /*  5 */ 0,
+            /*  6 */ OpCode::SetLocal as u8,
+            /*  7 */ 1,
+            /*  8 */ OpCode::ConstFalse as u8,
+            /*  9 */ OpCode::Jump as u8,
+            /* 10 */ 0,
+            /* 11 */ 13,
+            /* 12 */ OpCode::PanicNoMatch as u8,
+            /* 13 */ OpCode::Return as u8, // <-
         ]
     );
 }

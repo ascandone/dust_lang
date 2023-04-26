@@ -86,6 +86,7 @@ impl<'a> Lexer<'a> {
             (".", Token::Dot),
             ("<-", Token::ArrowLeft),
             ("as", Token::As),
+            ("match", Token::Match),
             ("else", Token::Else),
             ("false", Token::False),
             ("fn", Token::Fn),
@@ -110,6 +111,10 @@ impl<'a> Lexer<'a> {
                 Some('=') => {
                     self.next_char();
                     Token::Eq
+                }
+                Some('>') => {
+                    self.next_char();
+                    Token::FatArrowRight
                 }
                 _ => Token::Assign,
             },

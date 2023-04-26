@@ -2,8 +2,8 @@
 mod formatter_tests;
 mod pretty;
 
+use crate::ast::Pattern;
 use crate::cst::{Expr, Import, Program, Statement};
-use crate::formatter::pretty::Doc::Vec;
 use crate::formatter::pretty::{Doc, PPrint};
 
 pub fn format(program: Program) -> String {
@@ -74,8 +74,8 @@ fn block(doc: Doc) -> Doc {
     ])
 }
 
-fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
-    match doc {
+fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
+    match expr {
         Expr::Lit(l) => Doc::Text(format!("{l}")),
         Expr::Ident(id) => Doc::Text(format!("{id}")),
         Expr::If {
@@ -244,46 +244,100 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
             .force_broken()
         }
 
-        Expr::EmptyList => Doc::text("[]"),
-        Expr::Cons(hd, tl) => {
-            let mut values = vec![*hd];
-
-            let mut tl = *tl;
-            let mut rest = None;
+        Expr::Cons(_, _) | Expr::EmptyList => {
+            let mut docs = vec![];
+            let mut lst = expr;
 
             loop {
-                match tl {
+                match lst {
                     Expr::Cons(hd, next) => {
-                        values.push(*hd);
-                        tl = *next;
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(", "))
+                        }
+                        docs.push(expr_to_doc(*hd, false));
+                        lst = *next;
                     }
+
                     Expr::EmptyList => break,
-                    e => {
-                        rest = Some(e);
+
+                    _ => {
+                        docs.push(Doc::text(", .."));
+                        docs.push(expr_to_doc(lst, false));
                         break;
                     }
                 };
             }
 
-            let mut docs = vec![Doc::text("[")];
-            for (i, e) in values.into_iter().enumerate() {
-                if i != 0 {
-                    docs.push(Doc::text(", "))
+            Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
+        }
+
+        Expr::Match(expr, clauses) => {
+            let clauses: Vec<Doc> = clauses
+                .into_iter()
+                .enumerate()
+                .map(|(index, (pattern, expr))| {
+                    Doc::vec(&[
+                        if index != 0 {
+                            space_break()
+                        } else {
+                            Doc::vec(&[])
+                        },
+                        pattern_to_doc(pattern),
+                        Doc::text(" => "),
+                        expr_to_doc(expr, false),
+                        Doc::text(","),
+                    ])
+                })
+                .collect();
+
+            Doc::vec(&[
+                Doc::text("match "),
+                expr_to_doc(*expr, false),
+                Doc::text(" {"),
+                if clauses.is_empty() {
+                    Doc::text("}")
+                } else {
+                    Doc::vec(&[
+                        nested_group(Doc::Vec(clauses)),
+                        space_break(),
+                        Doc::text("}"),
+                    ])
                 }
+                .group()
+                .force_broken(),
+            ])
+        }
+    }
+}
 
-                let d = expr_to_doc(e, false);
+fn pattern_to_doc(pattern: Pattern) -> Doc {
+    match pattern {
+        Pattern::Identifier(ident) => Doc::Text(ident),
+        Pattern::Lit(l) => Doc::Text(format!("{l}")),
+        Pattern::Cons(_, _) | Pattern::EmptyList => {
+            let mut docs = vec![];
+            let mut lst = pattern;
+            loop {
+                match lst {
+                    Pattern::Cons(hd, tl) => {
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(", "))
+                        }
+                        docs.push(pattern_to_doc(*hd.clone()));
+                        lst = *tl;
+                    }
 
-                docs.push(d)
+                    Pattern::EmptyList => break,
+
+                    _ => {
+                        docs.push(Doc::text(", .."));
+                        docs.push(pattern_to_doc(lst));
+                        break;
+                    }
+                }
             }
 
-            if let Some(e) = rest {
-                docs.push(Doc::text(", .."));
-                docs.push(expr_to_doc(e, false));
-            }
-
-            docs.push(Doc::text("]"));
-
-            Vec(docs)
+            Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
     }
 }
@@ -317,7 +371,7 @@ impl Into<Doc> for Statement {
                 Doc::text("let "),
                 Doc::Text(name),
                 Doc::text(" ="),
-                format_let_value(value),
+                format_let_value(value).force_broken(),
             ]),
             Statement::Import(Import { ns, rename }) => Doc::vec(&[
                 Doc::text("import "),

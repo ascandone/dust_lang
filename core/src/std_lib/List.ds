@@ -3,36 +3,34 @@ pub let range = fn start, end {
     if start > end {
       acc
     } else {
-      recur(end - 1, cons(end, acc))
+      recur(end - 1, [end, ..acc])
     }
   };
-  recur(end - 1, empty())
+  recur(end - 1, [])
 };
 
 pub let foldl = fn lst, z, f {
-  if is_empty(lst) {
-    z
-  } else {
-    let hd = head(lst);
-    let tl = tail(lst);
-    foldl(tl, f(z, hd), f)
+  match lst {
+    [] => z,
+    [hd, ..tl] => foldl(tl, f(z, hd), f),
   }
 };
 
 pub let foldr = fn lst, z, f {
-  if is_empty(lst) {
-    z
-  } else {
-    let hd = head(lst);
-    let tl = tail(lst);
-    f(hd, foldr(tl, z, f))
+  match lst {
+    [] => z,
+    [hd, ..tl] => f(hd, foldr(tl, z, f)),
   }
 };
 
-pub let map = fn lst, f { foldr(lst, [], fn x, acc { [f(x), ..acc] }) };
+pub let map = fn lst, f {
+  foldr(lst, [], fn x, acc {
+    [f(x), ..acc]
+  })
+};
 
 pub let filter = fn lst, pred {
-  foldr(lst, empty(), fn x, acc {
+  foldr(lst, [], fn x, acc {
     if pred(x) {
       [x, ..acc]
     } else {

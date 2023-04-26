@@ -21,6 +21,12 @@ pub enum OpCode {
     MakeClosure,
     GetCurrentClosure,
 
+    // Pattern matching
+    PanicNoMatch,
+    MatchConstElseJump,
+    MatchEmptyListElseJump,
+    MatchConsElseJump,
+
     // Algebraic ops
     Add,
     Sub,

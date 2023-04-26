@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::ast::{Ident, Namespace};
+use crate::ast::{Ident, Namespace, Pattern};
 
 #[derive(PartialEq, Debug)]
 pub struct Program {
@@ -103,6 +103,8 @@ pub enum Expr {
     // data structures
     EmptyList,
     Cons(Box<Expr>, Box<Expr>),
+
+    Match(Box<Expr>, Vec<(Pattern, Expr)>),
 }
 
 pub const NIL: Expr = Expr::Lit(ast::Lit::Nil);
@@ -249,6 +251,18 @@ impl TryFrom<Expr> for ast::Expr {
 
                 args: vec![(*hd).try_into()?, (*tl).try_into()?],
             }),
+
+            Expr::Match(expr, clauses) => {
+                let mut ast_clauses = vec![];
+                for (pattern, expr) in clauses {
+                    ast_clauses.push((pattern, expr.try_into()?))
+                }
+
+                Ok(ast::Expr::Match(
+                    cst_box_try_into_ast_box(expr)?,
+                    ast_clauses,
+                ))
+            }
         }
     }
 }

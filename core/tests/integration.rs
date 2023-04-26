@@ -3,7 +3,6 @@ use core::interpreter::eval;
 use core::interpreter::Interpreter;
 use core::vm::list::List;
 use core::vm::value::Value;
-use std::rc::Rc;
 
 #[test]
 fn empty_expr() {
@@ -280,10 +279,7 @@ fn let_bug() {
 
 #[test]
 fn list_empty() {
-    assert_result(
-        "import List; List.empty()",
-        Value::List(Rc::new(List::Empty)),
-    );
+    assert_result("import List; List.empty()", Value::List(List::Empty));
 }
 
 #[test]
@@ -298,11 +294,11 @@ fn concat_native_calls() {
 fn concat_native_calls_list() {
     assert_result(
         "import List; List.cons(1, List.cons(2, List.cons(3, List.empty())))",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),
             Value::Num(3.0),
-        ]))),
+        ])),
     );
 }
 
@@ -313,11 +309,11 @@ fn list_lit() {
 import List;
 [1, 2, 3]
 ",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),
             Value::Num(3.0),
-        ]))),
+        ])),
     );
 }
 
@@ -325,11 +321,11 @@ import List;
 fn list_range() {
     assert_result(
         "import List; List.range(1, 4)",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(1.0),
             Value::Num(2.0),
             Value::Num(3.0),
-        ]))),
+        ])),
     );
 }
 
@@ -340,11 +336,11 @@ fn list_map() {
 let lst = List.cons(1, List.cons(2, List.cons(3, List.empty())));
 List.map(lst, fn x { x * 10 })
 ",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(10.0),
             Value::Num(20.0),
             Value::Num(30.0),
-        ]))),
+        ])),
     );
 }
 
@@ -355,10 +351,7 @@ fn list_filter() {
 let lst = List.cons(1, List.cons(0, List.cons(3, List.empty())));
 List.filter(lst, fn x { x != 0 })
 ",
-        Value::List(Rc::new(List::from_vec(vec![
-            Value::Num(1.0),
-            Value::Num(3.0),
-        ]))),
+        Value::List(List::from_vec(vec![Value::Num(1.0), Value::Num(3.0)])),
     );
 }
 
@@ -384,11 +377,73 @@ import List;
 let lst = List.cons(1, List.cons(2, List.cons(3, List.empty())));
 List.foldl(lst, List.empty(), fn acc, x { List.cons(x, acc) })
 ",
-        Value::List(Rc::new(List::from_vec(vec![
+        Value::List(List::from_vec(vec![
             Value::Num(3.0),
             Value::Num(2.0),
             Value::Num(1.0),
-        ]))),
+        ])),
+    );
+}
+
+#[test]
+fn empty_match() {
+    assert_err(
+        "
+match 42 { }
+",
+    );
+}
+
+#[test]
+fn const_match_good_path() {
+    assert_result(
+        "
+match 42 { 42 => true }
+",
+        true,
+    );
+}
+
+#[test]
+fn const_match_bad_path() {
+    assert_err(
+        "
+match 42 { 0 => true }
+",
+    );
+}
+
+#[test]
+fn const_multiple_match_good_path() {
+    assert_result(
+        "
+match 42 { 0 => true, 42 => false }
+",
+        false,
+    );
+}
+
+#[test]
+fn ident_match() {
+    assert_result(
+        "
+match 42 { x => x + 1 }
+",
+        43,
+    );
+}
+
+#[test]
+fn cons_match() {
+    assert_result(
+        "
+import List;
+let lst = [1, 2, 3, 4];
+match lst {
+    [hd, 2, 3, .._] => hd
+}
+",
+        1,
     );
 }
 

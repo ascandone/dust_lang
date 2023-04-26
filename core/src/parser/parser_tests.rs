@@ -1,5 +1,5 @@
 use super::ast::Namespace;
-use crate::ast::Ident;
+use crate::ast::{Ident, Lit, Pattern};
 use crate::cst::{ident, Expr, Import, Program, Statement, NIL};
 use crate::parser::{parse, parse_ast, parse_expr};
 
@@ -599,6 +599,232 @@ fn parse_mixed_list_cons() {
         Expr::Cons(
             Box::new(ident("x")),
             Box::new(Expr::Cons(Box::new(ident("y")), Box::new(ident("tl"))))
+        )
+    );
+}
+
+#[test]
+fn parse_empty_match() {
+    assert_eq!(
+        parse_expr("match true {}").unwrap(),
+        Expr::Match(Box::new(true.into()), vec![])
+    );
+}
+
+#[test]
+fn parse_const_num_clause_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    0 => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Num(0.0)), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_true_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    true => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Bool(true)), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_false_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    false => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Bool(false)), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_nil_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    nil => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::Nil), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_const_str_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    \"abc\" => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Lit(Lit::String("abc".to_string())), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_ident_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    id => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::Identifier("id".to_string()), ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_empty_list_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [] => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (Pattern::EmptyList, ident("a"))
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_cons_list_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [hd, ..tl] => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                //
+                (
+                    Pattern::Cons(
+                        Box::new(Pattern::Identifier("hd".to_string())),
+                        Box::new(Pattern::Identifier("tl".to_string())),
+                    ),
+                    ident("a")
+                )
+            ]
+        )
+    );
+}
+
+#[test]
+fn parse_nested_cons_list_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [42, ..[]] => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![(
+                Pattern::Cons(
+                    Box::new(Pattern::Lit(Lit::Num(42.0))),
+                    Box::new(Pattern::EmptyList),
+                ),
+                ident("a")
+            )]
+        )
+    );
+}
+
+#[test]
+fn parse_nested_cons_list_match_sugar() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [42] => a,
+    [1, 2, 3, ..tl] => b,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                (
+                    Pattern::Cons(
+                        Box::new(Pattern::Lit(Lit::Num(42.0))),
+                        Box::new(Pattern::EmptyList),
+                    ),
+                    ident("a")
+                ),
+                (
+                    Pattern::Cons(
+                        Box::new(Pattern::Lit(Lit::Num(1.0))),
+                        Box::new(Pattern::Cons(
+                            Box::new(Pattern::Lit(Lit::Num(2.0))),
+                            Box::new(Pattern::Cons(
+                                Box::new(Pattern::Lit(Lit::Num(3.0))),
+                                Box::new(Pattern::Identifier("tl".to_string())),
+                            ),),
+                        )),
+                    ),
+                    ident("b")
+                )
+            ]
         )
     );
 }

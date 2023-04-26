@@ -1,5 +1,5 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Ident, Lit, Namespace};
+use crate::ast::{Ident, Lit, Namespace, Pattern};
 use crate::cst::{Expr, Import, Program, Statement, NIL};
 use crate::parser::lexer::LexerError;
 use std::fmt::{Display, Formatter};
@@ -124,6 +124,7 @@ impl<'a> Parser<'a> {
             Token::LParen => self.parse_parens_expr(),
             Token::Fn => self.parse_fn_expr(),
             Token::If => self.parse_if_expr(),
+            Token::Match => self.parse_match_expr(),
             Token::Let if inside_block => self.parse_let_expr(),
             Token::Use if inside_block => self.parse_use_expr(),
 
@@ -360,6 +361,98 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_match_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::Match)?;
+        let expr = self.parse_expr(LOWEST_PREC, false)?;
+        self.expect_token(Token::LBrace)?;
+
+        let clauses = self.sep_by_zero_or_more(Token::Comma, Token::RBrace, |p| {
+            let pattern = p.parse_pattern()?;
+            p.expect_token(Token::FatArrowRight)?;
+            let expr = p.parse_expr(LOWEST_PREC, false)?;
+
+            Ok((pattern, expr))
+        })?;
+
+        Ok(Expr::Match(Box::new(expr), clauses))
+    }
+
+    fn parse_pattern(&mut self) -> Result<Pattern, ParsingError> {
+        match self.current_token {
+            Token::Num(n) => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Num(n)))
+            }
+
+            Token::True => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Bool(true)))
+            }
+
+            Token::False => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Bool(false)))
+            }
+
+            Token::Nil => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Nil))
+            }
+
+            Token::String(ref s) => {
+                let s = s.to_string();
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::String(s)))
+            }
+
+            Token::Ident(ref s) => {
+                let s = s.to_string();
+                self.advance_token()?;
+                Ok(Pattern::Identifier(s))
+            }
+
+            Token::LBracket => {
+                self.advance_token()?;
+
+                let (patterns, end_tk) = self.sep_by_zero_or_more_multiple_ends(
+                    Token::Comma,
+                    vec![Token::RBracket, Token::Dots],
+                    |p| p.parse_pattern(),
+                )?;
+
+                let tl = match end_tk {
+                    Token::Dots if !patterns.is_empty() => {
+                        let pat = self.parse_pattern()?;
+                        self.expect_token(Token::RBracket)?;
+                        pat
+                    }
+
+                    Token::Dots => {
+                        return Err(ParsingError::UnexpectedToken(
+                            self.current_token.clone(),
+                            format!("Expected a {:?} token", Token::RBracket),
+                        ))
+                    }
+
+                    Token::RBracket => Pattern::EmptyList,
+
+                    _ => panic!("Invalid parser state"),
+                };
+
+                let pattern = patterns
+                    .into_iter()
+                    .rfold(tl, |acc, expr| Pattern::Cons(Box::new(expr), Box::new(acc)));
+
+                Ok(pattern)
+            }
+
+            ref tk => Err(ParsingError::UnexpectedToken(
+                tk.clone(),
+                "Expected a pattern".to_string(),
+            )),
+        }
+    }
+
     fn parse_block_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::LBrace)?;
         let expr = self.parse_expr(LOWEST_PREC, true)?;
@@ -383,10 +476,17 @@ impl<'a> Parser<'a> {
         )?;
 
         let tl = match end_tk {
-            Token::Dots => {
+            Token::Dots if !exprs.is_empty() => {
                 let tl = self.parse_expr(LOWEST_PREC, false)?;
                 self.expect_token(Token::RBracket)?;
                 tl
+            }
+
+            Token::Dots => {
+                return Err(ParsingError::UnexpectedToken(
+                    self.current_token.clone(),
+                    format!("Expected a {:?} token", Token::RBracket),
+                ))
             }
 
             Token::RBracket => Expr::EmptyList,
@@ -477,7 +577,7 @@ impl<'a> Parser<'a> {
     where
         F: Fn(&mut Self) -> Result<T, ParsingError>,
     {
-        let mut args = vec![];
+        let mut exprs = vec![];
 
         loop {
             if self.current_token == separator {
@@ -487,11 +587,11 @@ impl<'a> Parser<'a> {
             if end.contains(&self.current_token) {
                 let end_tk = self.current_token.clone();
                 self.advance_token()?;
-                return Ok((args, end_tk));
+                return Ok((exprs, end_tk));
             }
 
             let expr = f(self)?;
-            args.push(expr);
+            exprs.push(expr);
         }
     }
 }

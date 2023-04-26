@@ -7,20 +7,20 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 fn empty(_: &[Value]) -> Result<Value, String> {
-    Ok(Value::List(Rc::new(List::Empty)))
+    Ok(Value::List(List::Empty))
 }
 
 fn cons(values: &[Value]) -> Result<Value, String> {
     let (head, tail) = arity_2(values);
-    let tail = tail.as_list()?;
-    let lst = List::Cons(head.clone(), tail);
-    Ok(Value::List(Rc::new(lst)))
+    let tail = tail.as_list()?.clone();
+    let lst = List::Cons(Rc::new(head.clone()), Rc::new(tail));
+    Ok(Value::List(lst))
 }
 
 fn head(values: &[Value]) -> Result<Value, String> {
     let lst = arity_1(values).as_list()?;
-    Ok(match lst.deref() {
-        List::Cons(hd, _) => hd.clone(),
+    Ok(match lst {
+        List::Cons(hd, _) => hd.deref().clone(),
         List::Empty => Value::Nil,
     })
 }
@@ -28,7 +28,7 @@ fn head(values: &[Value]) -> Result<Value, String> {
 fn tail(values: &[Value]) -> Result<Value, String> {
     let lst = arity_1(values).as_list()?;
     Ok(match lst.deref() {
-        List::Cons(_, tl) => Value::List(Rc::clone(tl)),
+        List::Cons(_, tl) => Value::List(tl.deref().clone()),
         List::Empty => Value::Nil,
     })
 }

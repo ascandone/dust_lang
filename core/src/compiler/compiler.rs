@@ -1,5 +1,5 @@
 use super::symbol_table::{Scope, SymbolTable};
-use crate::ast::{Expr, Ident, Import, Lit, Namespace, Program, Statement};
+use crate::ast::{Expr, Ident, Import, Lit, Namespace, Pattern, Program, Statement};
 use crate::vm::{
     bytecode::OpCode,
     value::{Function, Value},
@@ -89,8 +89,7 @@ impl Compiler {
             Expr::Lit(Lit::Nil) => f.bytecode.push(OpCode::ConstNil as u8),
             Expr::Lit(Lit::Bool(true)) => f.bytecode.push(OpCode::ConstTrue as u8),
             Expr::Lit(Lit::Bool(false)) => f.bytecode.push(OpCode::ConstFalse as u8),
-            Expr::Lit(Lit::String(s)) => push_const(f, Value::String(Rc::new(s))),
-            Expr::Lit(Lit::Num(n)) => push_const(f, Value::Num(n)),
+            Expr::Lit(l) => push_const(f, l.into()),
 
             Expr::Ident(ident) => {
                 let Ident(ref ns, ref name) = ident;
@@ -233,6 +232,73 @@ impl Compiler {
                 self.compile_expr_chunk(f, *right, false)?;
 
                 f.bytecode.push(opcode as u8);
+            }
+
+            Expr::Match(expr, clauses) => {
+                self.compile_expr_chunk(f, *expr, false)?;
+
+                let mut jump_indexes = vec![];
+                let mut next_clause_indexes = vec![];
+
+                for (pattern, expr) in clauses {
+                    for index in &next_clause_indexes {
+                        set_big_endian_u16(f, *index);
+                    }
+                    next_clause_indexes = vec![];
+
+                    let mut patterns = vec![pattern];
+
+                    loop {
+                        match patterns.pop() {
+                            None => break,
+                            Some(pattern) => match pattern {
+                                Pattern::Identifier(ident) => {
+                                    f.bytecode.push(OpCode::SetLocal as u8);
+                                    let id = self.symbol_table.define_local(&ident);
+                                    f.bytecode.push(id);
+                                }
+
+                                Pattern::Lit(l) => {
+                                    let j_index =
+                                        set_jump_placeholder(f, OpCode::MatchConstElseJump);
+                                    next_clause_indexes.push(j_index);
+
+                                    let const_index = alloc_const(f, l.into());
+                                    f.bytecode.push(const_index);
+                                }
+
+                                Pattern::EmptyList => {
+                                    let j_index =
+                                        set_jump_placeholder(f, OpCode::MatchEmptyListElseJump);
+                                    next_clause_indexes.push(j_index);
+                                }
+
+                                Pattern::Cons(hd, tl) => {
+                                    let j_index =
+                                        set_jump_placeholder(f, OpCode::MatchConsElseJump);
+                                    next_clause_indexes.push(j_index);
+
+                                    patterns.push(tl.deref().clone());
+                                    patterns.push(hd.deref().clone());
+                                }
+                            },
+                        };
+                    }
+
+                    self.compile_expr_chunk(f, expr, tail_position)?;
+                    let j_index = set_jump_placeholder(f, OpCode::Jump);
+                    jump_indexes.push(j_index);
+                }
+
+                for index in next_clause_indexes {
+                    set_big_endian_u16(f, index);
+                }
+
+                f.bytecode.push(OpCode::PanicNoMatch as u8);
+
+                for jump_index in jump_indexes {
+                    set_big_endian_u16(f, jump_index);
+                }
             }
         };
 

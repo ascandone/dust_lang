@@ -1,5 +1,7 @@
+use crate::vm::value::Value;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 pub type Program = Vec<Statement>;
 
@@ -51,12 +53,23 @@ pub enum Statement {
     Expr(Expr),
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum Lit {
     Nil,
     Bool(bool),
     Num(f64),
     String(String),
+}
+
+impl From<Lit> for Value {
+    fn from(lit: Lit) -> Self {
+        match lit {
+            Lit::Nil => Value::Nil,
+            Lit::Bool(b) => Value::Bool(b),
+            Lit::Num(n) => Value::Num(n),
+            Lit::String(s) => Value::String(Rc::new(s)),
+        }
+    }
 }
 
 impl Display for Lit {
@@ -119,6 +132,15 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<Expr>,
     },
+    Match(Box<Expr>, Vec<(Pattern, Expr)>),
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum Pattern {
+    Identifier(String),
+    Lit(Lit),
+    EmptyList,
+    Cons(Box<Pattern>, Box<Pattern>),
 }
 
 /// utility to create an unqualified identifier

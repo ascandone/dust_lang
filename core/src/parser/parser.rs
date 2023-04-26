@@ -413,18 +413,37 @@ impl<'a> Parser<'a> {
 
             Token::LBracket => {
                 self.advance_token()?;
-                if self.current_token == Token::RBracket {
-                    self.advance_token()?;
-                    Ok(Pattern::EmptyList)
-                } else {
-                    let hd_pattern = self.parse_pattern()?;
-                    self.expect_token(Token::Comma)?;
-                    self.expect_token(Token::Dots)?;
-                    let tl_pattern = self.parse_pattern()?;
 
-                    self.advance_token()?;
-                    Ok(Pattern::Cons(Box::new(hd_pattern), Box::new(tl_pattern)))
-                }
+                let (patterns, end_tk) = self.sep_by_zero_or_more_multiple_ends(
+                    Token::Comma,
+                    vec![Token::RBracket, Token::Dots],
+                    |p| p.parse_pattern(),
+                )?;
+
+                let tl = match end_tk {
+                    Token::Dots if !patterns.is_empty() => {
+                        let pat = self.parse_pattern()?;
+                        self.expect_token(Token::RBracket)?;
+                        pat
+                    }
+
+                    Token::Dots => {
+                        return Err(ParsingError::UnexpectedToken(
+                            self.current_token.clone(),
+                            format!("Expected a {:?} token", Token::RBracket),
+                        ))
+                    }
+
+                    Token::RBracket => Pattern::EmptyList,
+
+                    _ => panic!("Invalid parser state"),
+                };
+
+                let pattern = patterns
+                    .into_iter()
+                    .rfold(tl, |acc, expr| Pattern::Cons(Box::new(expr), Box::new(acc)));
+
+                Ok(pattern)
             }
 
             ref tk => Err(ParsingError::UnexpectedToken(

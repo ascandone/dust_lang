@@ -790,3 +790,41 @@ fn parse_nested_cons_list_match() {
         )
     );
 }
+
+#[test]
+fn parse_nested_cons_list_match_sugar() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    [42] => a,
+    [1, 2, 3, ..tl] => b,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                (
+                    Pattern::Cons(
+                        Box::new(Pattern::Lit(Lit::Num(42.0))),
+                        Box::new(Pattern::EmptyList),
+                    ),
+                    ident("a")
+                ),
+                (
+                    Pattern::Cons(
+                        Box::new(Pattern::Lit(Lit::Num(1.0))),
+                        Box::new(Pattern::Cons(
+                            Box::new(Pattern::Lit(Lit::Num(2.0))),
+                            Box::new(Pattern::Cons(
+                                Box::new(Pattern::Lit(Lit::Num(3.0))),
+                                Box::new(Pattern::Identifier("tl".to_string())),
+                            ),),
+                        )),
+                    ),
+                    ident("b")
+                )
+            ]
+        )
+    );
+}

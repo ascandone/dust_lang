@@ -438,8 +438,10 @@ fn cons_match() {
     assert_result(
         "
 import List;
-let lst = [1, 2, 3];
-match lst { [hd, ..[2, ..[3, ..[]]]] => hd }
+let lst = [1, 2, 3, 4];
+match lst {
+    [hd, 2, 3, .._] => hd
+}
 ",
         1,
     );

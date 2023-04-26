@@ -392,6 +392,15 @@ List.foldl(lst, List.empty(), fn acc, x { List.cons(x, acc) })
     );
 }
 
+#[test]
+fn empty_match() {
+    assert_err(
+        "
+match 42 { }
+",
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

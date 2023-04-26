@@ -285,6 +285,8 @@ fn expr_to_doc(doc: Expr, inside_block: bool) -> Doc {
 
             Vec(docs)
         }
+
+        Expr::Match(_, _) => todo!(),
     }
 }
 

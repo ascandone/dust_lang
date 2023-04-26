@@ -1,5 +1,5 @@
 use super::{lexer::Lexer, token::Token};
-use crate::ast::{Ident, Lit, Namespace};
+use crate::ast::{Ident, Lit, Namespace, Pattern};
 use crate::cst::{Expr, Import, Program, Statement, NIL};
 use crate::parser::lexer::LexerError;
 use std::fmt::{Display, Formatter};
@@ -124,6 +124,7 @@ impl<'a> Parser<'a> {
             Token::LParen => self.parse_parens_expr(),
             Token::Fn => self.parse_fn_expr(),
             Token::If => self.parse_if_expr(),
+            Token::Match => self.parse_match_expr(),
             Token::Let if inside_block => self.parse_let_expr(),
             Token::Use if inside_block => self.parse_use_expr(),
 
@@ -357,6 +358,32 @@ impl<'a> Parser<'a> {
                 if_branch: Box::new(if_branch),
                 else_branch: Box::new(nested_expr),
             })
+        }
+    }
+
+    fn parse_match_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::Match)?;
+        let expr = self.parse_expr(LOWEST_PREC, false)?;
+        self.expect_token(Token::LBrace)?;
+
+        let clauses = self.sep_by_zero_or_more(Token::Comma, Token::RBrace, |p| {
+            let pattern = p.parse_pattern()?;
+            p.expect_token(Token::FatArrowRight)?;
+            let expr = p.parse_expr(LOWEST_PREC, false)?;
+
+            Ok((pattern, expr))
+        })?;
+
+        Ok(Expr::Match(Box::new(expr), clauses))
+    }
+
+    fn parse_pattern(&mut self) -> Result<Pattern, ParsingError> {
+        match self.current_token {
+            Token::Num(n) => {
+                self.advance_token()?;
+                Ok(Pattern::Lit(Lit::Num(n)))
+            }
+            _ => todo!("missing pattern {:?}", self.peek_token),
         }
     }
 

@@ -1,5 +1,5 @@
 use super::ast::Namespace;
-use crate::ast::Ident;
+use crate::ast::{Ident, Lit, Pattern};
 use crate::cst::{ident, Expr, Import, Program, Statement, NIL};
 use crate::parser::{parse, parse_ast, parse_expr};
 
@@ -599,6 +599,33 @@ fn parse_mixed_list_cons() {
         Expr::Cons(
             Box::new(ident("x")),
             Box::new(Expr::Cons(Box::new(ident("y")), Box::new(ident("tl"))))
+        )
+    );
+}
+
+#[test]
+fn parse_empty_match() {
+    assert_eq!(
+        parse_expr("match true {}").unwrap(),
+        Expr::Match(Box::new(true.into()), vec![])
+    );
+}
+
+#[test]
+fn parse_single_clause_match() {
+    assert_eq!(
+        parse_expr(
+            "match true {
+    0 => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(true.into()),
+            vec![
+                //
+                (Pattern::Lit(Lit::Num(0.0)), ident("a"))
+            ]
         )
     );
 }

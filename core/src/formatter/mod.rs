@@ -329,8 +329,7 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
     match pattern {
         Pattern::Identifier(ident) => Doc::Text(ident),
         Pattern::Lit(l) => Doc::Text(format!("{l}")),
-        Pattern::EmptyList => Doc::text("[]"),
-        Pattern::Cons(_, _) => {
+        Pattern::Cons(_, _) | Pattern::EmptyList => {
             let mut docs = vec![];
             let mut lst = pattern;
             loop {
@@ -344,15 +343,17 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
                         lst = *tl;
                     }
 
-                    Pattern::EmptyList => {}
+                    Pattern::EmptyList => break,
 
                     _ => {
                         docs.push(Doc::text(".."));
                         docs.push(pattern_to_doc(lst));
-                        return Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")]);
+                        break;
                     }
                 }
             }
+
+            Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
     }
 }

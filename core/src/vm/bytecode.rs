@@ -24,6 +24,8 @@ pub enum OpCode {
     // Pattern matching
     PanicNoMatch,
     MatchConstElseJump,
+    MatchEmptyListElseJump,
+    MatchConsElseJump,
 
     // Algebraic ops
     Add,

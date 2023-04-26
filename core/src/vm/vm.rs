@@ -3,6 +3,7 @@ use super::{
     stack::Stack,
     value::{Closure, Function, Value},
 };
+use crate::vm::list::List;
 use std::fmt::{Display, Formatter};
 use std::mem::transmute;
 use std::ops::Deref;
@@ -312,6 +313,26 @@ impl Vm {
                     } else {
                         frame.ip = j_target as usize;
                     }
+                }
+
+                OpCode::MatchEmptyListElseJump => {
+                    let j_target = frame.next_opcode_u16();
+
+                    let value = stack.peek();
+
+                    match value {
+                        Value::List(l) if **l == List::Empty => {
+                            stack.pop();
+                        }
+
+                        _ => {
+                            frame.ip = j_target as usize;
+                        }
+                    }
+                }
+
+                OpCode::MatchConsElseJump => {
+                    todo!()
                 }
 
                 // Algebraic/native ops

@@ -21,9 +21,14 @@ fn opcode_arity(opcode: OpCode) -> Arity {
 
         Const | SetLocal | GetLocal | GetFree | Call => One8,
 
-        Jump | JumpIfFalse | JumpIfFalseElsePop | JumpIfTrueElsePop | SetGlobal | GetGlobal => {
-            One16
-        }
+        Jump
+        | JumpIfFalse
+        | JumpIfFalseElsePop
+        | JumpIfTrueElsePop
+        | SetGlobal
+        | GetGlobal
+        | MatchEmptyListElseJump
+        | MatchConsElseJump => One16,
 
         MakeClosure => Two8And8,
 

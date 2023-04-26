@@ -1,3 +1,4 @@
+use crate::vm::list::List;
 use crate::vm::value::NativeFunction;
 use crate::vm::{
     bytecode::OpCode,
@@ -812,4 +813,44 @@ fn match_const_when_not_match_test() {
     };
 
     assert!(Vm::default().run_main(Rc::new(main)).is_err());
+}
+
+#[test]
+fn match_empty_list_when_not_match_test() {
+    let main = Function {
+        constant_pool: vec![42.0.into()],
+        bytecode: vec![
+            /* 00 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 5,
+            /* 04 */ OpCode::Return as u8,
+            /* 05 */ OpCode::ConstNil as u8,
+            /* 06 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
+}
+
+#[test]
+fn match_empty_list_when_match_test() {
+    let main = Function {
+        constant_pool: vec![Value::List(Rc::new(List::Empty))],
+        bytecode: vec![
+            /* 00 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::Const as u8,
+            /* 02 */ 0,
+            /* 03 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 7,
+            /* 06 */ OpCode::Return as u8,
+            /* 07 */ OpCode::ConstFalse as u8,
+            /* 08 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
 }

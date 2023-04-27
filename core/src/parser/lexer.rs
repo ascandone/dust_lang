@@ -105,6 +105,15 @@ impl<'a> Lexer<'a> {
         self.next_char();
 
         Ok(match ch {
+            '#' => match self.peek_char() {
+                Some('(') => {
+                    self.next_char();
+                    Token::HashLParen
+                }
+
+                ch => return Err(InvalidToken(ch)),
+            },
+
             '[' => Token::LBracket,
             ']' => Token::RBracket,
             '=' => match self.peek_char() {
@@ -342,6 +351,16 @@ mod tests {
         assert_tokens("let use import pub as", {
             use Token::*;
             &[Let, Use, Import, Pub, As]
+        });
+    }
+
+    #[test]
+    fn delimiters() {
+        assert_tokens("( ) [ ] { } #(", {
+            use Token::*;
+            &[
+                LParen, RParen, LBracket, RBracket, LBrace, RBrace, HashLParen,
+            ]
         });
     }
 

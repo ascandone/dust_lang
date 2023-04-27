@@ -51,6 +51,8 @@ pub enum Value {
     Num(f64),
     String(Rc<String>),
     List(List<Value>),
+    Tuple2(Rc<Value>, Rc<Value>),
+    Tuple3(Rc<Value>, Rc<Value>, Rc<Value>),
     Function(Rc<Function>),
     Closure(Rc<Closure>),
     NativeFunction(Rc<NativeFunction>),
@@ -138,6 +140,9 @@ impl Display for Value {
             Value::Num(n) => write!(f, "{n}"),
             Value::String(s) => write!(f, "\"{s}\""),
             Value::List(l) => write!(f, "{l}"),
+            Value::Tuple2(x, y) => write!(f, "#({x}, {y})"),
+            Value::Tuple3(x, y, z) => write!(f, "#({x}, {y}, {z})"),
+
             Value::Function(r) => {
                 write!(f, "#[function {} at {:?}]", r.display_name(), Rc::as_ptr(r))
             }

@@ -792,6 +792,39 @@ fn parse_nested_cons_list_match() {
 }
 
 #[test]
+fn parse_tuple_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    #(x, y) => a,
+    #(x, y, z) => b,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            Box::new(ident("x")),
+            vec![
+                (
+                    Pattern::Tuple(vec![
+                        Pattern::Identifier("x".to_string()),
+                        Pattern::Identifier("y".to_string()),
+                    ]),
+                    ident("a")
+                ),
+                (
+                    Pattern::Tuple(vec![
+                        Pattern::Identifier("x".to_string()),
+                        Pattern::Identifier("y".to_string()),
+                        Pattern::Identifier("z".to_string()),
+                    ]),
+                    ident("b")
+                ),
+            ]
+        )
+    );
+}
+
+#[test]
 fn parse_nested_cons_list_match_sugar() {
     assert_eq!(
         parse_expr(
@@ -826,5 +859,18 @@ fn parse_nested_cons_list_match_sugar() {
                 )
             ]
         )
+    );
+}
+
+#[test]
+fn parse_tuple() {
+    assert_eq!(
+        parse_expr("#(1, 2)").unwrap(),
+        Expr::Tuple(vec![1.0.into(), 2.0.into()])
+    );
+
+    assert_eq!(
+        parse_expr("#(1, 2, 3)").unwrap(),
+        Expr::Tuple(vec![1.0.into(), 2.0.into(), 3.0.into()])
     );
 }

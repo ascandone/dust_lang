@@ -12,12 +12,17 @@ const HIGHEST_PREC: u8 = 17;
 pub enum ParsingError {
     UnexpectedToken(Token, String),
     LexerError(LexerError),
+    InvalidSyntax(String),
 }
 
 impl Display for ParsingError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ParsingError::LexerError(e) => {
+                write!(f, "{e}")
+            }
+
+            ParsingError::InvalidSyntax(e) => {
                 write!(f, "{e}")
             }
 
@@ -129,8 +134,8 @@ impl<'a> Parser<'a> {
             Token::Use if inside_block => self.parse_use_expr(),
 
             Token::LBrace => self.parse_block_expr(),
-
             Token::LBracket => self.parse_list_expr(),
+            Token::HashLParen => self.parse_tuple_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(
                 self.current_token.clone(),
@@ -411,6 +416,14 @@ impl<'a> Parser<'a> {
                 Ok(Pattern::Identifier(s))
             }
 
+            Token::HashLParen => {
+                self.advance_token()?;
+                let patterns =
+                    self.sep_by_zero_or_more(Token::Comma, Token::RParen, |p| p.parse_pattern())?;
+
+                Ok(Pattern::Tuple(patterns))
+            }
+
             Token::LBracket => {
                 self.advance_token()?;
 
@@ -464,6 +477,14 @@ impl<'a> Parser<'a> {
         self.expect_token(Token::Semicolon)?;
         let right = self.parse_expr(LOWEST_PREC, true)?;
         Ok(Expr::Do(Box::new(left), Box::new(right)))
+    }
+
+    fn parse_tuple_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::HashLParen)?;
+        let exprs = self.sep_by_zero_or_more(Token::Comma, Token::RParen, |p| {
+            p.parse_expr(LOWEST_PREC, false)
+        })?;
+        Ok(Expr::Tuple(exprs))
     }
 
     fn parse_list_expr(&mut self) -> Result<Expr, ParsingError> {

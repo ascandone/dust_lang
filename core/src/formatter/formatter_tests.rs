@@ -392,6 +392,19 @@ fn match_list_sugar() {
     );
 }
 
+#[test]
+fn tuples() {
+    assert_fmt(
+        "#(1, 2)
+",
+    );
+
+    assert_fmt(
+        "#(1, 2, 3)
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

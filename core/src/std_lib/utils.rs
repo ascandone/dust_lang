@@ -13,3 +13,10 @@ pub fn arity_2(values: &[Value]) -> (&Value, &Value) {
         _ => panic!("Arity error"),
     }
 }
+
+pub fn arity_3(values: &[Value]) -> (&Value, &Value, &Value) {
+    match &values {
+        &[a, b, c, ..] => (c, b, a),
+        _ => panic!("Arity error"),
+    }
+}

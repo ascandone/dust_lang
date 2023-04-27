@@ -30,7 +30,7 @@ pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "show", 1, show);
     interpreter.define_native(ns, "concat", 2, concat);
 
-    interpreter.add_module(ns.clone(), MOD).unwrap();
+    interpreter.add_module(ns.clone(), MOD, true).unwrap();
 }
 
 #[cfg(test)]

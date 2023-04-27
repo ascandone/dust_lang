@@ -28,7 +28,9 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         | SetGlobal
         | GetGlobal
         | MatchEmptyListElseJump
-        | MatchConsElseJump => One16,
+        | MatchConsElseJump
+        | MatchTuple2ElseJump
+        | MatchTuple3ElseJump => One16,
 
         MakeClosure => Two8And8,
 

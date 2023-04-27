@@ -15,12 +15,21 @@ pub struct Repl {
     debug_bytecode: bool,
 }
 
-fn colored_value(value: Value) -> ColoredString {
+fn colored_value(value: &Value) -> ColoredString {
     match value {
         Value::Nil => value.to_string().white().dimmed(),
         Value::Bool(_) => value.to_string().yellow().bold(),
         Value::Num(_) => value.to_string().blue(),
         Value::String(_) => value.to_string().bright_green(),
+        Value::Tuple2(x, y) => format!("#({}, {})", colored_value(x), colored_value(y)).white(),
+        Value::Tuple3(x, y, z) => format!(
+            "#({}, {}, {})",
+            colored_value(x),
+            colored_value(y),
+            colored_value(z)
+        )
+        .white(),
+
         // TODO colored list
         Value::List(_) => value.to_string().white(),
         Value::NativeFunction(_) | Value::Closure(_) | Value::Function(_) => {
@@ -57,7 +66,7 @@ impl Repl {
                     if self.debug_bytecode {
                         println!("{f}");
                     };
-                    println!("{}", colored_value(value))
+                    println!("{}", colored_value(&value))
                 }
             };
         }

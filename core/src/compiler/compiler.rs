@@ -281,6 +281,16 @@ impl Compiler {
                                     patterns.push(tl.deref().clone());
                                     patterns.push(hd.deref().clone());
                                 }
+
+                                Pattern::Tuple(tuple_patterns) => {
+                                    let j_index =
+                                        set_jump_placeholder(f, OpCode::MatchTuple2ElseJump);
+                                    next_clause_indexes.push(j_index);
+
+                                    for pattern in tuple_patterns.into_iter().rev() {
+                                        patterns.push(pattern.clone());
+                                    }
+                                }
                             },
                         };
                     }
@@ -305,6 +315,12 @@ impl Compiler {
         Ok(())
     }
 
+    pub fn import_module(&mut self, ns: Namespace, rename: Option<Namespace>) {
+        self.module_context
+            .visible_modules
+            .insert(rename.unwrap_or(ns.clone()), ns);
+    }
+
     fn compile_statement_chunk(
         &mut self,
         f: &mut Function,
@@ -312,18 +328,7 @@ impl Compiler {
     ) -> Result<(), String> {
         match statement {
             Statement::Import(Import { ns, rename }) => {
-                match rename {
-                    None => self
-                        .module_context
-                        .visible_modules
-                        .insert(ns.clone(), ns.clone()),
-
-                    Some(renamed_ns) => self
-                        .module_context
-                        .visible_modules
-                        .insert(renamed_ns, ns.clone()),
-                };
-
+                self.import_module(ns.clone(), rename);
                 if self.imported_modules.contains(&ns) {
                     f.bytecode.push(OpCode::ConstNil as u8);
                     Ok(())

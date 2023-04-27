@@ -1280,10 +1280,10 @@ fn tuple2_match_test() {
     let ast = Expr::Match(
         Box::new(true.into()),
         vec![(
-            Pattern::Tuple2(
-                Box::new(Pattern::Identifier("x".to_string())),
-                Box::new(Pattern::Identifier("y".to_string())),
-            ),
+            Pattern::Tuple(vec![
+                Pattern::Identifier("x".to_string()),
+                Pattern::Identifier("x".to_string()),
+            ]),
             false.into(),
         )],
     );

@@ -333,13 +333,24 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
     match pattern {
         Pattern::Identifier(ident) => Doc::Text(ident),
         Pattern::Lit(l) => Doc::Text(format!("{l}")),
-        Pattern::Tuple2(x, y) => Doc::vec(&[
-            Doc::text("#("),
-            pattern_to_doc(*x),
-            Doc::text(" , "),
-            pattern_to_doc(*y),
-            Doc::text(")"),
-        ]),
+        Pattern::Tuple(patterns) => {
+            let docs = patterns
+                .into_iter()
+                .enumerate()
+                .map(|(index, pattern)| {
+                    Doc::vec(&[
+                        if index != 0 {
+                            Doc::text(", ")
+                        } else {
+                            Doc::vec(&[])
+                        },
+                        pattern_to_doc(pattern),
+                    ])
+                })
+                .collect();
+
+            Doc::vec(&[Doc::text("#("), Doc::Vec(docs), Doc::text(")")])
+        }
         Pattern::Cons(_, _) | Pattern::EmptyList => {
             let mut docs = vec![];
             let mut lst = pattern;

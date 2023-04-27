@@ -282,13 +282,14 @@ impl Compiler {
                                     patterns.push(hd.deref().clone());
                                 }
 
-                                Pattern::Tuple2(x, y) => {
+                                Pattern::Tuple(tuple_patterns) => {
                                     let j_index =
                                         set_jump_placeholder(f, OpCode::MatchTuple2ElseJump);
                                     next_clause_indexes.push(j_index);
 
-                                    patterns.push(x.deref().clone());
-                                    patterns.push(y.deref().clone());
+                                    for pattern in tuple_patterns.into_iter().rev() {
+                                        patterns.push(pattern.clone());
+                                    }
                                 }
                             },
                         };

@@ -1274,3 +1274,39 @@ fn cons_match_test() {
         ]
     );
 }
+
+#[test]
+fn tuple2_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(
+            Pattern::Tuple2(
+                Box::new(Pattern::Identifier("x".to_string())),
+                Box::new(Pattern::Identifier("y".to_string())),
+            ),
+            false.into(),
+        )],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchTuple2ElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 12,
+            /*  4 */ OpCode::SetLocal as u8,
+            /*  5 */ 0,
+            /*  6 */ OpCode::SetLocal as u8,
+            /*  7 */ 1,
+            /*  8 */ OpCode::ConstFalse as u8,
+            /*  9 */ OpCode::Jump as u8,
+            /* 10 */ 0,
+            /* 11 */ 13,
+            /* 12 */ OpCode::PanicNoMatch as u8,
+            /* 13 */ OpCode::Return as u8, // <-
+        ]
+    );
+}

@@ -139,6 +139,7 @@ pub enum Expr {
 pub enum Pattern {
     Identifier(String),
     Lit(Lit),
+    Tuple2(Box<Pattern>, Box<Pattern>),
     EmptyList,
     Cons(Box<Pattern>, Box<Pattern>),
 }

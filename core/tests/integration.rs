@@ -211,11 +211,15 @@ fn modules_import() {
 
     let mut interpreter = Interpreter::new();
     interpreter
-        .add_module(Namespace(vec!["A".to_string()]), mod_a)
+        .add_module(Namespace(vec!["A".to_string()]), mod_a, false)
         .unwrap();
 
     interpreter
-        .add_module(Namespace(vec!["B".to_string(), "C".to_string()]), mod_b_c)
+        .add_module(
+            Namespace(vec!["B".to_string(), "C".to_string()]),
+            mod_b_c,
+            false,
+        )
         .unwrap();
 
     let result = interpreter.run("test", src).unwrap();
@@ -250,7 +254,7 @@ fn native_fn() {
 
     let ns = Namespace(vec!["Basics".to_string()]);
     interpreter.define_native(&ns, "sum", 2, sum);
-    interpreter.add_module(ns, "").unwrap();
+    interpreter.add_module(ns, "", false).unwrap();
 
     let value = interpreter
         .run("test", "import Basics; Basics.sum(10, 20)")

@@ -912,9 +912,95 @@ fn match_cons_list_hd_when_match_test() {
             /* 03 */ 0,
             /* 04 */ 6,
             /* 05 */ OpCode::Return as u8,
+            /* 06 */ OpCode::ConstTrue as u8,
+            /* 07 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 42.0.into());
+}
+
+#[test]
+fn match_tuple2_when_match_test() {
+    let t = Value::Tuple2(Rc::new(1.0.into()), Rc::new(2.0.into()));
+
+    let main = Function {
+        constant_pool: vec![t],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 6,
+            /* 05 */ OpCode::Return as u8,
+            /* 06 */ OpCode::ConstTrue as u8,
+            /* 07 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 1.0.into());
+}
+
+#[test]
+fn match_tuple2_when_not_match_test() {
+    let main = Function {
+        bytecode: vec![
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 5,
+            /* 04 */ OpCode::Return as u8,
+            /* 05 */ OpCode::ConstTrue as u8,
+            /* 06 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
+}
+
+#[test]
+fn match_tuple3_when_match_test() {
+    let t = Value::Tuple3(
+        Rc::new(1.0.into()),
+        Rc::new(2.0.into()),
+        Rc::new(3.0.into()),
+    );
+
+    let main = Function {
+        constant_pool: vec![t],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchTuple3ElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 6,
+            /* 05 */ OpCode::Return as u8,
+            /* 06 */ OpCode::ConstTrue as u8,
+            /* 07 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 1.0.into());
+}
+
+#[test]
+fn match_tuple3_when_not_match_test() {
+    let main = Function {
+        bytecode: vec![
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::MatchTuple3ElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 5,
+            /* 04 */ OpCode::Return as u8,
+            /* 05 */ OpCode::ConstTrue as u8,
+            /* 06 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
 }

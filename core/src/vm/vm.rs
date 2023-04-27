@@ -331,6 +331,22 @@ impl Vm {
                     }
                 }
 
+                OpCode::MatchEmptyMapElseJump => {
+                    let j_target = frame.next_opcode_u16();
+
+                    let value = stack.peek();
+
+                    match value {
+                        Value::Map(m) if m.is_empty() => {
+                            stack.pop();
+                        }
+
+                        _ => {
+                            frame.ip = j_target as usize;
+                        }
+                    }
+                }
+
                 OpCode::MatchConsElseJump => {
                     let j_target = frame.next_opcode_u16();
                     let value = stack.pop();

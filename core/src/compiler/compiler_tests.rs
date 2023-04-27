@@ -1135,11 +1135,7 @@ fn ident_match_test() {
             /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
             /*  3 */ OpCode::ConstFalse as u8,
-            /*  4 */ OpCode::Jump as u8,
-            /*  5 */ 0,
-            /*  6 */ 8,
-            /*  7 */ OpCode::PanicNoMatch as u8,
-            /*  8 */ OpCode::Return as u8, // <-
+            /*  4 */ OpCode::Return as u8,
         ]
     );
 }

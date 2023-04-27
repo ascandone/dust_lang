@@ -240,6 +240,8 @@ impl Compiler {
                 let mut jump_indexes = vec![];
                 let mut next_clause_indexes = vec![];
 
+                let always_succeeds = matches!(clauses.last(), Some((Pattern::Identifier(_), _)));
+
                 for (pattern, expr) in clauses {
                     for index in &next_clause_indexes {
                         set_big_endian_u16(f, *index);
@@ -296,15 +298,20 @@ impl Compiler {
                     }
 
                     self.compile_expr_chunk(f, expr, tail_position)?;
-                    let j_index = set_jump_placeholder(f, OpCode::Jump);
-                    jump_indexes.push(j_index);
+
+                    if !always_succeeds {
+                        let j_index = set_jump_placeholder(f, OpCode::Jump);
+                        jump_indexes.push(j_index);
+                    }
                 }
 
                 for index in next_clause_indexes {
                     set_big_endian_u16(f, index);
                 }
 
-                f.bytecode.push(OpCode::PanicNoMatch as u8);
+                if !always_succeeds {
+                    f.bytecode.push(OpCode::PanicNoMatch as u8);
+                }
 
                 for jump_index in jump_indexes {
                     set_big_endian_u16(f, jump_index);

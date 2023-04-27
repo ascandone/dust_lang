@@ -21,7 +21,7 @@ fn colored_value(value: &Value) -> ColoredString {
         Value::Bool(_) => value.to_string().yellow().bold(),
         Value::Num(_) => value.to_string().blue(),
         Value::String(_) => value.to_string().bright_green(),
-        Value::Tuple2(x, y) => format!("#({}, {})", colored_value(&x), colored_value(&y)).white(),
+        Value::Tuple2(x, y) => format!("#({}, {})", colored_value(x), colored_value(y)).white(),
         Value::Tuple3(x, y, z) => format!(
             "#({}, {}, {})",
             colored_value(x),

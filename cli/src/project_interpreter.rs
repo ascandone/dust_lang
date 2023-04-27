@@ -31,7 +31,7 @@ pub fn project_interpreter() -> Result<Interpreter, interpreter::Error> {
                     .map(|c| c.split('.').next().unwrap().to_string())
                     .collect::<Vec<_>>();
 
-                interpreter.add_module(Namespace(ns.clone()), &content)?;
+                interpreter.add_module(Namespace(ns.clone()), &content, false)?;
             }
         }
     }

@@ -105,6 +105,8 @@ pub enum Expr {
     Cons(Box<Expr>, Box<Expr>),
 
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
+
+    Tuple(Vec<Expr>),
 }
 
 pub const NIL: Expr = Expr::Lit(ast::Lit::Nil);
@@ -251,6 +253,26 @@ impl TryFrom<Expr> for ast::Expr {
 
                 args: vec![(*hd).try_into()?, (*tl).try_into()?],
             }),
+
+            Expr::Tuple(values) => {
+                let mut args = vec![];
+                for value in values {
+                    args.push(value.try_into()?)
+                }
+
+                Ok(ast::Expr::Call {
+                    f: Box::new(ast::Expr::Ident(Ident(
+                        Some(Namespace(vec!["Tuple".to_string()])),
+                        match args.len() {
+                            2 => "tuple2",
+                            3 => "tuple3",
+                            _ => return Err(format!("Invalid arity for tuple: {}", args.len())),
+                        }
+                        .to_string(),
+                    ))),
+                    args,
+                })
+            }
 
             Expr::Match(expr, clauses) => {
                 let mut ast_clauses = vec![];

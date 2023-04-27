@@ -21,5 +21,5 @@ pub fn tuple3(values: &[Value]) -> Result<Value, String> {
 pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "tuple2", 2, tuple2);
     interpreter.define_native(ns, "tuple3", 3, tuple3);
-    interpreter.add_module(ns.clone(), "").unwrap();
+    interpreter.add_module(ns.clone(), "", true).unwrap();
 }

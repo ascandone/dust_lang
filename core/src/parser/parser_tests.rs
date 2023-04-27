@@ -828,3 +828,16 @@ fn parse_nested_cons_list_match_sugar() {
         )
     );
 }
+
+#[test]
+fn parse_tuple() {
+    assert_eq!(
+        parse_expr("#(1, 2)").unwrap(),
+        Expr::Tuple(vec![1.0.into(), 2.0.into()])
+    );
+
+    assert_eq!(
+        parse_expr("#(1, 2, 3)").unwrap(),
+        Expr::Tuple(vec![1.0.into(), 2.0.into(), 3.0.into()])
+    );
+}

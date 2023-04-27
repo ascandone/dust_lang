@@ -68,9 +68,18 @@ impl Interpreter {
         instance
     }
 
-    pub fn add_module(&mut self, ns: Namespace, src: &str) -> Result<(), Error> {
+    pub fn add_module(
+        &mut self,
+        ns: Namespace,
+        src: &str,
+        implicit_import: bool,
+    ) -> Result<(), Error> {
         let program = parse_ast(src).map_err(Error::Parsing)?;
-        self.compiler.add_module(ns, program);
+        self.compiler.add_module(ns.clone(), program);
+
+        if implicit_import {
+            self.compiler.import_module(ns, None);
+        }
         Ok(())
     }
 

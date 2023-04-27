@@ -46,5 +46,5 @@ pub fn load(ns: &Namespace, interpreter: &mut Interpreter) {
     interpreter.define_native(ns, "head", 1, head);
     interpreter.define_native(ns, "tail", 1, tail);
     interpreter.define_native(ns, "is_empty", 1, is_empty);
-    interpreter.add_module(ns.clone(), MOD).unwrap();
+    interpreter.add_module(ns.clone(), MOD, true).unwrap();
 }

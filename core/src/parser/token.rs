@@ -56,6 +56,9 @@ pub enum Token {
     /// `)`
     RParen,
 
+    /// `#(`
+    HashLParen,
+
     /// `[`
     LBracket,
 

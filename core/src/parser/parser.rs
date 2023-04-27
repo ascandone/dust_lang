@@ -411,6 +411,14 @@ impl<'a> Parser<'a> {
                 Ok(Pattern::Identifier(s))
             }
 
+            Token::HashLParen => {
+                self.advance_token()?;
+                let patterns =
+                    self.sep_by_zero_or_more(Token::Comma, Token::RParen, |p| p.parse_pattern())?;
+
+                Ok(Pattern::Tuple(patterns))
+            }
+
             Token::LBracket => {
                 self.advance_token()?;
 

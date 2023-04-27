@@ -451,6 +451,19 @@ match lst {
     );
 }
 
+#[test]
+fn tuple_match() {
+    assert_result(
+        "
+import Tuple;
+match #(1, 2) {
+    #(x, _) => x
+}
+",
+        1,
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

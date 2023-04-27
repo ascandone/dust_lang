@@ -250,6 +250,7 @@ impl Compiler {
 
                     let mut patterns = vec![pattern];
 
+                    let mut bound_locals = vec![];
                     loop {
                         match patterns.pop() {
                             None => break,
@@ -257,6 +258,7 @@ impl Compiler {
                                 Pattern::Identifier(ident) => {
                                     f.bytecode.push(OpCode::SetLocal as u8);
                                     let id = self.symbol_table.define_local(&ident);
+                                    bound_locals.push(ident);
                                     f.bytecode.push(id);
                                 }
 
@@ -298,6 +300,10 @@ impl Compiler {
                     }
 
                     self.compile_expr_chunk(f, expr, tail_position)?;
+
+                    for local in bound_locals {
+                        self.symbol_table.remove_local(&local);
+                    }
 
                     if !always_succeeds {
                         let j_index = set_jump_placeholder(f, OpCode::Jump);

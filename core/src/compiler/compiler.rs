@@ -186,17 +186,6 @@ impl Compiler {
                 }
             }
 
-            Expr::Let { name, value, body } => {
-                let binding_index = self.symbol_table.define_local(&name);
-                self.binding_name = Some(name.clone());
-                self.compile_expr_chunk(f, *value, false)?;
-                self.binding_name = None;
-                f.bytecode.push(OpCode::SetLocal as u8);
-                f.bytecode.push(binding_index);
-                self.compile_expr_chunk(f, *body, tail_position)?;
-                self.symbol_table.remove_local(&name);
-            }
-
             Expr::Do(left, right) => {
                 self.compile_expr_chunk(f, *left, false)?;
                 f.bytecode.push(OpCode::Pop as u8);

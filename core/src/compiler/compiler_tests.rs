@@ -1,3 +1,4 @@
+use crate::ast::Let;
 use crate::ast::{ident, Ident, Import, Lit, Namespace, Pattern};
 use crate::{
     ast::{Expr, Statement, NIL},
@@ -332,14 +333,15 @@ fn lambda_expr_no_args_test() {
 #[test]
 fn infer_lambda_name_from_let_expr() {
     // { let f = fn {nil}; nil }
-    let ast = Expr::Let {
+    let ast = Let {
         name: "f".to_string(),
         value: Box::new(Expr::Fn {
             params: vec![],
             body: Box::new(NIL),
         }),
         body: Box::new(NIL),
-    };
+    }
+    .as_match();
 
     let main = new_compiler().compile_expr(ast).unwrap();
 
@@ -475,11 +477,12 @@ fn f_call_test() {
 fn let_test() {
     // (let1 (x #true) nil)
 
-    let ast = Expr::Let {
+    let ast = Let {
         name: "x".to_string(),
         value: Box::new(true.into()),
         body: Box::new(NIL),
-    };
+    }
+    .as_match();
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
@@ -503,15 +506,19 @@ fn multiple_let_test() {
     //   (let (y #false)
     //      nil))
 
-    let ast = Expr::Let {
+    let ast = Let {
         name: "x".to_string(),
         value: Box::new(true.into()),
-        body: Box::new(Expr::Let {
-            name: "y".to_string(),
-            value: Box::new(false.into()),
-            body: Box::new(NIL),
-        }),
-    };
+        body: Box::new(
+            Let {
+                name: "y".to_string(),
+                value: Box::new(false.into()),
+                body: Box::new(NIL),
+            }
+            .as_match(),
+        ),
+    }
+    .as_match();
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
@@ -536,11 +543,12 @@ fn multiple_let_test() {
 fn local_binding_test() {
     // (let1 (x #true) x)
 
-    let ast = Expr::Let {
+    let ast = Let {
         name: "x".to_string(),
         value: Box::new(true.into()),
         body: Box::new(ident("x")),
-    };
+    }
+    .as_match();
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
@@ -661,14 +669,15 @@ fn make_closure_test() {
 fn make_let_closure_test() {
     // (let1 (x #true) (lambda* () x))
 
-    let ast = Expr::Let {
+    let ast = Let {
         name: "x".to_string(),
         value: Box::new(true.into()),
         body: Box::new(Expr::Fn {
             params: vec![],
             body: Box::new(ident("x")),
         }),
-    };
+    }
+    .as_match();
 
     let main = new_compiler().compile_expr(ast).unwrap();
 
@@ -792,11 +801,14 @@ fn tailcall_test() {
 fn let1_does_not_leak_test() {
     // (do (let1 (x #true) #true) x)
     let ast = Expr::Do(
-        Box::new(Expr::Let {
-            name: "x".to_string(),
-            value: Box::new(true.into()),
-            body: Box::new(true.into()),
-        }),
+        Box::new(
+            Let {
+                name: "x".to_string(),
+                value: Box::new(true.into()),
+                body: Box::new(true.into()),
+            }
+            .as_match(),
+        ),
         Box::new(ident("x")),
     );
 
@@ -809,16 +821,22 @@ fn let_only_allocates_needed() {
     // { let x = true; nil }
     // { let y = true; nil }
     let ast = Expr::Do(
-        Box::new(Expr::Let {
-            name: "x".to_string(),
-            value: Box::new(true.into()),
-            body: Box::new(NIL),
-        }),
-        Box::new(Expr::Let {
-            name: "y".to_string(),
-            value: Box::new(true.into()),
-            body: Box::new(NIL),
-        }),
+        Box::new(
+            Let {
+                name: "x".to_string(),
+                value: Box::new(true.into()),
+                body: Box::new(NIL),
+            }
+            .as_match(),
+        ),
+        Box::new(
+            Let {
+                name: "y".to_string(),
+                value: Box::new(true.into()),
+                body: Box::new(NIL),
+            }
+            .as_match(),
+        ),
     );
 
     let main = new_compiler().compile_expr(ast).unwrap();

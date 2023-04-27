@@ -90,7 +90,7 @@ impl fmt::Debug for Lit {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Ident(pub Option<Namespace>, pub String);
 
 impl Display for Ident {
@@ -107,7 +107,7 @@ impl Display for Ident {
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Expr {
     Ident(Ident),
     Lit(Lit),
@@ -123,16 +123,33 @@ pub enum Expr {
         f: Box<Expr>,
         args: Vec<Expr>,
     },
-    Let {
-        name: String,
-        value: Box<Expr>,
-        body: Box<Expr>,
-    },
     Fn {
         params: Vec<String>,
         body: Box<Expr>,
     },
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
+}
+
+#[cfg(test)]
+pub struct Let {
+    pub name: String,
+    pub value: Box<Expr>,
+    pub body: Box<Expr>,
+}
+
+#[cfg(test)]
+impl Let {
+    pub fn as_match(&self) -> Expr {
+        use std::ops::Deref;
+
+        Expr::Match(
+            self.value.clone(),
+            vec![(
+                Pattern::Identifier(self.name.clone()),
+                self.body.deref().clone(),
+            )],
+        )
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]

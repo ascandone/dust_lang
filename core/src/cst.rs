@@ -198,11 +198,10 @@ impl TryFrom<Expr> for ast::Expr {
                 })
             }
 
-            Expr::Let { name, value, body } => Ok(ast::Expr::Let {
-                name,
-                value: cst_box_try_into_ast_box(value)?,
-                body: cst_box_try_into_ast_box(body)?,
-            }),
+            Expr::Let { name, value, body } => Ok(ast::Expr::Match(
+                cst_box_try_into_ast_box(value)?,
+                vec![(Pattern::Identifier(name.to_string()), (*body).try_into()?)],
+            )),
 
             Expr::Use {
                 body,

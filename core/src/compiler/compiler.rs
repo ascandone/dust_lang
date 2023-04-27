@@ -235,7 +235,13 @@ impl Compiler {
             }
 
             Expr::Match(expr, clauses) => {
+                self.binding_name = match clauses.as_slice() {
+                    [(Pattern::Identifier(name), _)] => Some(name.to_string()),
+                    _ => None,
+                };
+
                 self.compile_expr_chunk(f, *expr, false)?;
+                self.binding_name = None;
 
                 let mut jump_indexes = vec![];
                 let mut next_clause_indexes = vec![];

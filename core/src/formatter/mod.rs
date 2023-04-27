@@ -271,8 +271,24 @@ fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
             Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
 
-        // TODO format
-        Expr::Tuple(_) => todo!(),
+        Expr::Tuple(exprs) => {
+            let docs: Vec<Doc> = exprs
+                .into_iter()
+                .enumerate()
+                .map(|(index, expr)| {
+                    Doc::vec(&[
+                        if index != 0 {
+                            Doc::text(", ")
+                        } else {
+                            Doc::vec(&[])
+                        },
+                        expr_to_doc(expr, false),
+                    ])
+                })
+                .collect();
+
+            Doc::vec(&[Doc::text("#("), Doc::Vec(docs), Doc::text(")")])
+        }
 
         Expr::Match(expr, clauses) => {
             let clauses: Vec<Doc> = clauses

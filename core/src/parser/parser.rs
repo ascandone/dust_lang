@@ -12,12 +12,17 @@ const HIGHEST_PREC: u8 = 17;
 pub enum ParsingError {
     UnexpectedToken(Token, String),
     LexerError(LexerError),
+    InvalidSyntax(String),
 }
 
 impl Display for ParsingError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ParsingError::LexerError(e) => {
+                write!(f, "{e}")
+            }
+
+            ParsingError::InvalidSyntax(e) => {
                 write!(f, "{e}")
             }
 

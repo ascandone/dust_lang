@@ -14,7 +14,7 @@ pub fn parse(input: &str) -> Result<Program, ParsingError> {
 }
 
 pub fn parse_ast(input: &str) -> Result<ast::Program, ParsingError> {
-    parse(input).map(|p| try_from_program(p).unwrap())
+    parse(input).and_then(|p| try_from_program(p).map_err(ParsingError::InvalidSyntax))
 }
 
 #[cfg(test)]

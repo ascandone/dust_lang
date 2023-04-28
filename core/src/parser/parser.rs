@@ -135,7 +135,10 @@ impl<'a> Parser<'a> {
 
             Token::LBrace => self.parse_block_expr(),
             Token::LBracket => self.parse_list_expr(),
+
             Token::HashLParen => self.parse_tuple_expr(),
+
+            Token::HashLBrace => self.parse_map_expr(),
 
             _ => Err(ParsingError::UnexpectedToken(
                 self.current_token.clone(),
@@ -520,6 +523,46 @@ impl<'a> Parser<'a> {
             .rfold(tl, |acc, expr| Expr::Cons(Box::new(expr), Box::new(acc)));
 
         Ok(list_lit)
+    }
+
+    fn parse_map_expr(&mut self) -> Result<Expr, ParsingError> {
+        self.expect_token(Token::HashLBrace)?;
+
+        let (entries, end_tk) = self.sep_by_zero_or_more_multiple_ends(
+            Token::Comma,
+            vec![Token::RBrace, Token::Dots],
+            |p| {
+                let k = p.parse_expr(LOWEST_PREC, false)?;
+                p.expect_token(Token::FatArrowRight)?;
+                let v = p.parse_expr(LOWEST_PREC, false)?;
+                Ok((k, v))
+            },
+        )?;
+
+        let tl = match end_tk {
+            Token::Dots if !entries.is_empty() => {
+                let tl = self.parse_expr(LOWEST_PREC, false)?;
+                self.expect_token(Token::RBrace)?;
+                tl
+            }
+
+            Token::Dots => {
+                return Err(ParsingError::UnexpectedToken(
+                    self.current_token.clone(),
+                    format!("Expected a {:?} token", Token::RBrace),
+                ))
+            }
+
+            Token::RBrace => Expr::EmptyMap,
+
+            _ => panic!("Invalid parser state"),
+        };
+
+        let map_lit = entries.into_iter().rfold(tl, |acc, (k, v)| {
+            Expr::ConsMap((Box::new(k), Box::new(v)), Box::new(acc))
+        });
+
+        Ok(map_lit)
     }
 
     fn expect_token(&mut self, expected_token: Token) -> Result<(), ParsingError> {

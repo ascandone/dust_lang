@@ -111,6 +111,11 @@ impl<'a> Lexer<'a> {
                     Token::HashLParen
                 }
 
+                Some('{') => {
+                    self.next_char();
+                    Token::HashLBrace
+                }
+
                 ch => return Err(InvalidToken(ch)),
             },
 
@@ -356,10 +361,10 @@ mod tests {
 
     #[test]
     fn delimiters() {
-        assert_tokens("( ) [ ] { } #(", {
+        assert_tokens("( ) [ ] { } #( #{", {
             use Token::*;
             &[
-                LParen, RParen, LBracket, RBracket, LBrace, RBrace, HashLParen,
+                LParen, RParen, LBracket, RBracket, LBrace, RBrace, HashLParen, HashLBrace,
             ]
         });
     }

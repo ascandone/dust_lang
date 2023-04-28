@@ -464,6 +464,19 @@ match #(1, 2) {
     );
 }
 
+#[test]
+fn map_lit() {
+    assert_result(
+        "
+import Map;
+#{ \"x\" => 42 }
+",
+        Value::Map(im_rc::hashmap![
+            "x".to_string() => 42.0.into()
+        ]),
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

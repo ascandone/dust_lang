@@ -326,6 +326,8 @@ fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
                 .force_broken(),
             ])
         }
+
+        Expr::EmptyMap | Expr::ConsMap(_, _) => todo!(),
     }
 }
 

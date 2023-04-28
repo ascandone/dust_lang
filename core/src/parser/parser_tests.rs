@@ -604,6 +604,33 @@ fn parse_mixed_list_cons() {
 }
 
 #[test]
+fn parse_empty_map() {
+    assert_eq!(parse_expr("#{}").unwrap(), Expr::EmptyMap);
+}
+
+#[test]
+fn parse_singleton_map() {
+    assert_eq!(
+        parse_expr("#{ \"x\" => 42 }").unwrap(),
+        Expr::ConsMap(
+            (Box::new("x".into()), Box::new(42.0.into())),
+            Box::new(Expr::EmptyMap)
+        )
+    );
+}
+
+#[test]
+fn parse_cons_map() {
+    assert_eq!(
+        parse_expr("#{ \"x\" => 42, ..tl }").unwrap(),
+        Expr::ConsMap(
+            (Box::new("x".into()), Box::new(42.0.into())),
+            Box::new(ident("tl"))
+        )
+    );
+}
+
+#[test]
 fn parse_empty_match() {
     assert_eq!(
         parse_expr("match true {}").unwrap(),

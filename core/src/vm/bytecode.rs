@@ -29,6 +29,7 @@ pub enum OpCode {
     MatchTuple2ElseJump,
     MatchTuple3ElseJump,
     MatchEmptyMapElseJump,
+    MatchConsMapElseJump,
 
     // Algebraic ops
     Add,

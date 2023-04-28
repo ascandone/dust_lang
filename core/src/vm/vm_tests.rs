@@ -896,6 +896,84 @@ fn match_empty_map_when_match_test() {
 }
 
 #[test]
+fn match_cons_map_when_not_match_test() {
+    let main = Function {
+        constant_pool: vec!["key".into()],
+        bytecode: vec![
+            /* 00 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::ConstNil as u8,
+            /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 8,
+            /* 05 */ 0,
+            /* 06 */ OpCode::Return as u8,
+            /* 07 */ OpCode::ConstNil as u8,
+            /* 08 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
+}
+
+#[test]
+fn match_cons_map_tl_when_match_test() {
+    let m = im_rc::hashmap![
+        "x".to_string() => 0.0.into(),
+        "y".to_string() => 1.0.into(),
+        "z".to_string() => 2.0.into(),
+    ];
+
+    let main = Function {
+        constant_pool: vec![Value::Map(m), "x".into()],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 7,
+            /* 05 */ 1,
+            /* 06 */ OpCode::Pop as u8,
+            /* 07 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(
+        Vm::default().run_main(Rc::new(main)).unwrap(),
+        Value::Map(im_rc::hashmap![
+            "y".to_string() => 1.0.into(),
+            "z".to_string() => 2.0.into(),
+        ])
+    );
+}
+
+#[test]
+fn match_cons_map_hd_when_match_test() {
+    let m = im_rc::hashmap![
+        "x".to_string() => 0.0.into(),
+        "y".to_string() => 1.0.into(),
+        "z".to_string() => 2.0.into(),
+    ];
+
+    let main = Function {
+        constant_pool: vec![Value::Map(m), "x".into()],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 6,
+            /* 05 */ 1,
+            /* 06 */ OpCode::Return as u8,
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 0.0.into());
+}
+
+#[test]
 fn match_cons_list_when_not_match_test() {
     let main = Function {
         constant_pool: vec![42.0.into()],

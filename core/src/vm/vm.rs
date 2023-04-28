@@ -364,6 +364,35 @@ impl Vm {
                     }
                 }
 
+                OpCode::MatchConsMapElseJump => {
+                    let j_target = frame.next_opcode_u16();
+                    let const_index = frame.next_opcode();
+                    let constant_pool = &frame.closure.function.constant_pool;
+                    let key = &constant_pool[const_index as usize].as_string().unwrap();
+
+                    match stack.pop() {
+                        Value::Map(m) => match m.get(key.deref()) {
+                            None => {
+                                stack.push(Value::Map(m));
+                                frame.ip = j_target as usize;
+                            }
+
+                            Some(lookup) => {
+                                let mut map_copy = m.clone();
+                                map_copy.remove(key.deref());
+
+                                stack.push(Value::Map(map_copy));
+                                stack.push(lookup.clone());
+                            }
+                        },
+
+                        value => {
+                            stack.push(value);
+                            frame.ip = j_target as usize;
+                        }
+                    }
+                }
+
                 OpCode::MatchTuple2ElseJump => {
                     let j_target = frame.next_opcode_u16();
                     let value = stack.pop();

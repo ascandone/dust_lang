@@ -86,7 +86,7 @@ pub enum Expr {
         args: Vec<Expr>,
     },
     Let {
-        name: String,
+        pattern: Pattern,
         value: Box<Expr>,
         body: Box<Expr>,
     },
@@ -201,9 +201,13 @@ impl TryFrom<Expr> for ast::Expr {
                 })
             }
 
-            Expr::Let { name, value, body } => Ok(ast::Expr::Match(
+            Expr::Let {
+                pattern,
+                value,
+                body,
+            } => Ok(ast::Expr::Match(
                 cst_box_try_into_ast_box(value)?,
-                vec![(Pattern::Identifier(name.to_string()), (*body).try_into()?)],
+                vec![(pattern, (*body).try_into()?)],
             )),
 
             Expr::Use {

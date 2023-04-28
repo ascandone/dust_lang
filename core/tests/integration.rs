@@ -491,6 +491,15 @@ match m {
     );
 }
 
+#[test]
+fn let_expr_pattern() {
+    assert_result(
+        "{ let #(x, _) = #(1, 2); x }
+",
+        Value::Num(1.0),
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

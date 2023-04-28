@@ -182,11 +182,15 @@ fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
         )
         .group(),
 
-        Expr::Let { name, value, body } => block_if_needed(
+        Expr::Let {
+            pattern,
+            value,
+            body,
+        } => block_if_needed(
             !inside_block,
             Doc::vec(&[
                 Doc::text("let "),
-                Doc::Text(name),
+                pattern_to_doc(pattern),
                 Doc::text(" ="),
                 format_let_value(*value),
                 Doc::text(";"),

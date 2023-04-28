@@ -324,14 +324,14 @@ impl<'a> Parser<'a> {
 
     fn parse_let_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::Let)?;
-        let name = self.expect_ident()?;
+        let pattern = self.parse_pattern()?;
         self.expect_token(Token::Assign)?;
         let value = self.parse_expr(LOWEST_PREC, false)?;
         self.expect_token(Token::Semicolon)?;
         let body = self.parse_expr(LOWEST_PREC, true)?;
 
         Ok(Expr::Let {
-            name,
+            pattern,
             value: Box::new(value),
             body: Box::new(body),
         })

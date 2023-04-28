@@ -279,7 +279,7 @@ fn parse_let_inside_if() {
         Expr::If {
             condition: Box::new(true.into()),
             if_branch: Box::new(Expr::Let {
-                name: "x".to_string(),
+                pattern: "x".into(),
                 value: Box::new(0.0.into()),
                 body: Box::new(100.0.into())
             }),
@@ -295,10 +295,10 @@ fn parse_nested_let_inside_if() {
         Expr::If {
             condition: Box::new(true.into()),
             if_branch: Box::new(Expr::Let {
-                name: "x".to_string(),
+                pattern: "x".into(),
                 value: Box::new(0.0.into()),
                 body: Box::new(Expr::Let {
-                    name: "y".to_string(),
+                    pattern: "y".into(),
                     value: Box::new(1.0.into()),
                     body: Box::new(100.0.into())
                 })
@@ -315,7 +315,7 @@ fn parse_let_inside_fn_body() {
         Expr::Fn {
             params: vec![],
             body: Box::new(Expr::Let {
-                name: "x".to_string(),
+                pattern: "x".into(),
                 value: Box::new(0.0.into()),
                 body: Box::new(1.0.into())
             })
@@ -333,7 +333,7 @@ fn parse_let_inside_block_expr() {
     assert_eq!(
         parse_expr("{ let x = 0; 1 }").unwrap(),
         Expr::Let {
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: Box::new(0.0.into()),
             body: Box::new(1.0.into()),
         }
@@ -379,7 +379,7 @@ fn parse_let_and_semicolon() {
     assert_eq!(
         parse_expr("{ let x = 0; 1; 2 }").unwrap(),
         Expr::Let {
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: Box::new(0.0.into()),
             body: Box::new(Expr::Do(Box::new(1.0.into()), Box::new(2.0.into()),))
         },

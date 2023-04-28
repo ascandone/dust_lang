@@ -163,6 +163,13 @@ pub enum Pattern {
     ConsMap((String, Box<Pattern>), Box<Pattern>),
 }
 
+#[cfg(test)]
+impl From<&str> for Pattern {
+    fn from(name: &str) -> Self {
+        Pattern::Identifier(name.to_string())
+    }
+}
+
 /// utility to create an unqualified identifier
 pub fn ident(name: &str) -> Expr {
     Expr::Ident(Ident(None, name.to_string()))

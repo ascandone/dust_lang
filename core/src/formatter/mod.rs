@@ -481,7 +481,7 @@ impl Into<Doc> for Statement {
         match self {
             Statement::Let {
                 public,
-                name,
+                pattern,
                 value,
             } => Doc::Vec(vec![
                 if public {
@@ -490,7 +490,7 @@ impl Into<Doc> for Statement {
                     Doc::nil()
                 },
                 Doc::text("let "),
-                Doc::Text(name),
+                pattern_to_doc(pattern),
                 Doc::text(" ="),
                 format_let_value(value).force_broken(),
             ]),

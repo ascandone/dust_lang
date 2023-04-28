@@ -381,23 +381,32 @@ impl Compiler {
                 }
             }
             Statement::Let {
-                name,
+                pattern,
                 value,
                 public,
             } => {
-                self.binding_name = Some(name.clone());
+                self.binding_name = match pattern {
+                    Pattern::Identifier(ref name) => Some(name.clone()),
+                    _ => None,
+                };
+
                 self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;
 
-                f.bytecode.push(OpCode::SetGlobal as u8);
+                self.compile_pattern(f, pattern, |name, f, compiler| {
+                    f.bytecode.push(OpCode::SetGlobal as u8);
 
-                let index = self
-                    .symbol_table
-                    .define_global(public, &self.module_context.ns, &name);
+                    let index = compiler.symbol_table.define_global(
+                        public,
+                        &compiler.module_context.ns,
+                        &name,
+                    );
 
-                let (msb, lsb) = to_big_endian_u16(index);
-                f.bytecode.push(msb);
-                f.bytecode.push(lsb);
+                    let (msb, lsb) = to_big_endian_u16(index);
+                    f.bytecode.push(msb);
+                    f.bytecode.push(lsb);
+                });
+
                 Ok(())
             }
             Statement::Expr(expr) => self.compile_expr_chunk(f, expr, false),

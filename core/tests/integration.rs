@@ -492,6 +492,16 @@ match m {
 }
 
 #[test]
+fn let_statement_pattern() {
+    assert_result(
+        "let #(x, y) = #(1, 2);
+x
+",
+        Value::Num(1.0),
+    );
+}
+
+#[test]
 fn let_expr_pattern() {
     assert_result(
         "{ let #(x, _) = #(1, 2); x }

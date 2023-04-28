@@ -239,18 +239,14 @@ impl<'a> Parser<'a> {
     /// Pre: let token has been encountered
     fn parse_let_decl(&mut self, public: bool) -> Result<Statement, ParsingError> {
         self.expect_token(Token::Let)?;
-        let Token::Ident(ref name) = self.current_token.clone() else {
-          return Err(ParsingError::UnexpectedToken(self.current_token.clone(), "Expected a Ident token".to_string()))
-        };
-
-        self.advance_token()?;
+        let pattern = self.parse_pattern()?;
         self.expect_token(Token::Assign)?;
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
         Ok(Statement::Let {
             public,
-            name: name.clone(),
+            pattern,
             value,
         })
     }

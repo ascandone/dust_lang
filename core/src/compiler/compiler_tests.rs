@@ -140,7 +140,7 @@ fn multiple_exprs_do_test() {
 #[test]
 fn def_test() {
     let ast = vec![Statement::Let {
-        name: "x".to_string(),
+        pattern: "x".into(),
         value: true.into(),
         public: false,
     }];
@@ -163,12 +163,12 @@ fn def_test() {
 fn def_twice_test() {
     let ast = vec![
         Statement::Let {
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: true.into(),
             public: false,
         },
         Statement::Let {
-            name: "y".to_string(),
+            pattern: "y".into(),
             value: false.into(),
             public: false,
         },
@@ -198,7 +198,7 @@ fn global_scope_test() {
     let ast = vec![
         Statement::Let {
             public: false,
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: true.into(),
         },
         Statement::Expr(ident("x")),
@@ -355,7 +355,7 @@ fn infer_lambda_name_from_let_statement() {
     // let f = fn {nil}
     let ast = Statement::Let {
         public: false,
-        name: "f".to_string(),
+        pattern: "f".into(),
         value: Expr::Fn {
             params: vec![],
             body: Box::new(NIL),
@@ -711,7 +711,7 @@ fn get_current_closure_test() {
     // let f = fn { f }
 
     let ast = Statement::Let {
-        name: "f".to_string(),
+        pattern: "f".into(),
         value: Expr::Fn {
             params: vec![],
             body: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
@@ -733,7 +733,7 @@ fn error_on_rec_invalid_params() {
     // let f = fn x { f() }
     let ast = Statement::Let {
         public: false,
-        name: "f".to_string(),
+        pattern: "f".into(),
         value: Expr::Fn {
             params: vec!["x".to_string()],
             body: Box::new(Expr::Call {
@@ -753,7 +753,7 @@ fn tailcall_test() {
 
     let ast = Statement::Let {
         public: false,
-        name: "f".to_string(),
+        pattern: "f".into(),
         value: Expr::Fn {
             params: vec!["x".to_string(), "y".to_string()],
             body: Box::new(Expr::Call {
@@ -955,7 +955,7 @@ fn modules_import_value() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: true.into(),
         }],
     );
@@ -1006,7 +1006,7 @@ fn module_not_imported_err() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: true.into(),
         }],
     );
@@ -1052,7 +1052,7 @@ fn modules_imports_are_scoped() {
         b_ns.clone(),
         vec![Statement::Let {
             public: true,
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: true.into(),
         }],
     );
@@ -1087,7 +1087,7 @@ fn modules_renamed_imports() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            name: "x".to_string(),
+            pattern: "x".into(),
             value: true.into(),
         }],
     );

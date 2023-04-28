@@ -46,7 +46,7 @@ impl Import {
 pub enum Statement {
     Let {
         public: bool,
-        name: String,
+        pattern: Pattern,
         value: Expr,
     },
     Import(Import),

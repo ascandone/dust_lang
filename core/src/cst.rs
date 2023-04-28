@@ -37,7 +37,7 @@ impl Import {
 pub enum Statement {
     Let {
         public: bool,
-        name: String,
+        pattern: Pattern,
         value: Expr,
     },
     Import(Import),
@@ -50,12 +50,12 @@ impl TryFrom<Statement> for ast::Statement {
     fn try_from(value: Statement) -> Result<Self, Self::Error> {
         match value {
             Statement::Let {
-                name,
+                pattern,
                 value,
                 public,
             } => Ok(ast::Statement::Let {
                 public,
-                name,
+                pattern,
                 value: value.try_into()?,
             }),
 

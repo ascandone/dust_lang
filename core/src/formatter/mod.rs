@@ -270,6 +270,39 @@ fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
 
             Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
+        Expr::EmptyMap | Expr::ConsMap(_, _) => {
+            let mut docs = vec![];
+            let mut lst = expr;
+
+            loop {
+                match lst {
+                    Expr::ConsMap((k, v), next) => {
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(","))
+                        }
+
+                        docs.push(Doc::vec(&[
+                            space_break(),
+                            expr_to_doc(*k, false),
+                            Doc::text(" => "),
+                            expr_to_doc(*v, false),
+                        ]));
+
+                        lst = *next;
+                    }
+
+                    Expr::EmptyMap => break,
+
+                    _ => {
+                        docs.push(Doc::text(", .."));
+                        docs.push(expr_to_doc(lst, false));
+                        break;
+                    }
+                };
+            }
+
+            Doc::vec(&[Doc::text("#{"), Doc::Vec(docs), Doc::text(" }")])
+        }
 
         Expr::Tuple(exprs) => {
             let docs: Vec<Doc> = exprs
@@ -326,8 +359,6 @@ fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
                 .force_broken(),
             ])
         }
-
-        Expr::EmptyMap | Expr::ConsMap(_, _) => todo!(),
     }
 }
 

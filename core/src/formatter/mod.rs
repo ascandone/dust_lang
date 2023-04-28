@@ -417,7 +417,7 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
                 match map {
                     Pattern::ConsMap((k, v), rest) => {
                         if !docs.is_empty() {
-                            docs.push(Doc::text(", "))
+                            docs.push(Doc::text(","))
                         }
 
                         docs.push(Doc::vec(&[

@@ -378,6 +378,10 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
 
             Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
+
+        Pattern::ConsMap(_, _) | Pattern::EmptyMap => {
+            todo!()
+        }
     }
 }
 

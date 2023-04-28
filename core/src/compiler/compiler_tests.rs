@@ -1159,7 +1159,7 @@ fn ident_match_test() {
 }
 
 #[test]
-fn nil_match_test() {
+fn empty_list_match_test() {
     let ast = Expr::Match(
         Box::new(true.into()),
         vec![(Pattern::EmptyList, false.into())],
@@ -1172,6 +1172,32 @@ fn nil_match_test() {
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
             /*  1 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 8,
+            /*  4 */ OpCode::ConstFalse as u8,
+            /*  5 */ OpCode::Jump as u8,
+            /*  6 */ 0,
+            /*  7 */ 9,
+            /*  8 */ OpCode::PanicNoMatch as u8,
+            /*  9 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn empty_map_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(Pattern::EmptyMap, false.into())],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchEmptyMapElseJump as u8,
             /*  2 */ 0,
             /*  3 */ 8,
             /*  4 */ OpCode::ConstFalse as u8,
@@ -1285,6 +1311,48 @@ fn cons_match_test() {
             /* 11 */ 13,
             /* 12 */ OpCode::PanicNoMatch as u8,
             /* 13 */ OpCode::Return as u8, // <-
+        ]
+    );
+}
+
+#[test]
+fn cons_map_match_test() {
+    let ast = Expr::Match(
+        Box::new(true.into()),
+        vec![(
+            Pattern::ConsMap(
+                (
+                    "key".to_string(),
+                    Box::new(Pattern::Identifier("x".to_string())),
+                ),
+                Box::new(Pattern::Identifier("rest".to_string())),
+            ),
+            false.into(),
+        )],
+    );
+
+    let f = new_compiler().compile_expr(ast).unwrap();
+
+    assert_eq!(f.constant_pool, vec!["key".into()]);
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /*  0 */ OpCode::ConstTrue as u8,
+            /*  1 */ OpCode::MatchConsMapElseJump as u8,
+            /*  2 */ 0,
+            /*  3 */ 13,
+            /*  4 */ 0,
+            /*  5 */ OpCode::SetLocal as u8,
+            /*  6 */ 0,
+            /*  7 */ OpCode::SetLocal as u8,
+            /*  8 */ 1,
+            /*  9 */ OpCode::ConstFalse as u8,
+            /* 10 */ OpCode::Jump as u8,
+            /* 11 */ 0,
+            /* 12 */ 14,
+            /* 13 */ OpCode::PanicNoMatch as u8,
+            /* 14 */ OpCode::Return as u8, // <-
         ]
     );
 }

@@ -303,6 +303,22 @@ impl Compiler {
                         patterns.push(hd.deref().clone());
                     }
 
+                    Pattern::EmptyMap => {
+                        let j_index = set_jump_placeholder(f, OpCode::MatchEmptyMapElseJump);
+                        next_clause_indexes.push(j_index);
+                    }
+
+                    Pattern::ConsMap((k, v), rest) => {
+                        let j_index = set_jump_placeholder(f, OpCode::MatchConsMapElseJump);
+                        next_clause_indexes.push(j_index);
+
+                        let const_index = alloc_const(f, k.into());
+                        f.bytecode.push(const_index);
+
+                        patterns.push(rest.deref().clone());
+                        patterns.push(v.deref().clone());
+                    }
+
                     Pattern::Tuple(tuple_patterns) => {
                         let j_index = set_jump_placeholder(f, OpCode::MatchTuple2ElseJump);
                         next_clause_indexes.push(j_index);

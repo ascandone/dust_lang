@@ -477,6 +477,20 @@ import Map;
     );
 }
 
+#[test]
+fn cons_map_match() {
+    assert_result(
+        "
+let m = #{ \"x\" => 0, \"y\" => 1 };
+
+match m {
+    #{ \"x\" => 0, \"y\" => y } => y + 10
+}
+",
+        Value::Num(11.0),
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

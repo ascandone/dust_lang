@@ -772,6 +772,49 @@ fn parse_empty_list_match() {
 }
 
 #[test]
+fn parse_empty_map_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    #{} => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            //
+            Box::new(ident("x")),
+            vec![(Pattern::EmptyMap, ident("a"))]
+        )
+    );
+}
+
+#[test]
+fn parse_cons_map_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    #{ \"k\" => v, .. rest } => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            //
+            Box::new(ident("x")),
+            vec![(
+                Pattern::ConsMap(
+                    (
+                        "k".to_string(),
+                        Box::new(Pattern::Identifier("v".to_string()))
+                    ),
+                    Box::new(Pattern::Identifier("rest".to_string()))
+                ),
+                ident("a")
+            )]
+        )
+    );
+}
+
+#[test]
 fn parse_cons_list_match() {
     assert_eq!(
         parse_expr(

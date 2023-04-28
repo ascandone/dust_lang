@@ -369,6 +369,20 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_string(&mut self) -> Result<String, ParsingError> {
+        match &self.current_token {
+            Token::String(s) => {
+                let s = s.to_string();
+                self.advance_token()?;
+                Ok(s)
+            }
+            _ => Err(ParsingError::UnexpectedToken(
+                self.current_token.clone(),
+                "Expected a string".to_string(),
+            )),
+        }
+    }
+
     fn parse_match_expr(&mut self) -> Result<Expr, ParsingError> {
         self.expect_token(Token::Match)?;
         let expr = self.parse_expr(LOWEST_PREC, false)?;
@@ -458,6 +472,50 @@ impl<'a> Parser<'a> {
                 let pattern = patterns
                     .into_iter()
                     .rfold(tl, |acc, expr| Pattern::Cons(Box::new(expr), Box::new(acc)));
+
+                Ok(pattern)
+            }
+
+            Token::HashLBrace => {
+                self.advance_token()?;
+
+                let (kvs, end_tk) = self.sep_by_zero_or_more_multiple_ends(
+                    Token::Comma,
+                    vec![Token::RBrace, Token::Dots],
+                    |p| {
+                        let pat = p.parse_string()?;
+                        p.expect_token(Token::FatArrowRight)?;
+                        let e = p.parse_pattern()?;
+                        Ok((pat, e))
+                    },
+                )?;
+
+                let tl = match end_tk {
+                    Token::Dots if !kvs.is_empty() => {
+                        let pat = self.parse_pattern()?;
+                        self.expect_token(Token::RBrace)?;
+                        pat
+                    }
+
+                    Token::Dots => {
+                        return Err(ParsingError::UnexpectedToken(
+                            self.current_token.clone(),
+                            format!("Expected a {:?} token", Token::RBrace),
+                        ))
+                    }
+
+                    Token::RBrace => Pattern::EmptyMap,
+
+                    _ => panic!("Invalid parser state"),
+                };
+
+                let pattern = kvs.into_iter().rfold(tl, |acc, (k, v)| {
+                    Pattern::ConsMap(
+                        //
+                        (k, Box::new(v)),
+                        Box::new(acc),
+                    )
+                });
 
                 Ok(pattern)
             }

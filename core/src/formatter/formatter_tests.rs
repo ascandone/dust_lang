@@ -441,6 +441,25 @@ fn maps_match() {
     );
 }
 
+#[test]
+fn maps_broken() {
+    assert_fmt(
+        "let m = #{ };
+
+let m = #{
+  k => v,
+  k => v
+};
+
+let m = #{
+  k => v,
+  k => v,
+  ..tl
+}
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

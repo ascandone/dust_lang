@@ -157,7 +157,7 @@ impl Display for Value {
                     if i != 0 {
                         write!(f, ",")?;
                     }
-                    write!(f, " {k} => {v}")?
+                    write!(f, " {} => {v}", Value::String(Rc::new(k.to_string())))?
                 }
                 write!(f, " }}")?;
                 Ok(())

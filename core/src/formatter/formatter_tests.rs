@@ -442,6 +442,16 @@ fn maps_match() {
 }
 
 #[test]
+fn lists_broken() {
+    assert_fmt(
+        "let l = [];
+
+let l = [1, 2]
+",
+    );
+}
+
+#[test]
 fn maps_broken() {
     assert_fmt(
         "let m = #{ };
@@ -455,7 +465,13 @@ let m = #{
   k => v,
   k => v,
   ..tl
-}
+};
+
+let m = f(#{
+  k => v,
+  k => v,
+  ..tl
+})
 ",
     );
 }

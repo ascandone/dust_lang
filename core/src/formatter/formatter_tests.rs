@@ -428,6 +428,18 @@ fn maps() {
     );
 }
 
+#[test]
+fn maps_match() {
+    assert_fmt(
+        "match x {
+  #{ } => 0,
+  #{ \"x\" => x } => 0,
+  #{ \"x\" => x, ..tl } => 0,
+}
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

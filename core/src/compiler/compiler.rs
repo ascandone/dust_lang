@@ -385,6 +385,8 @@ impl Compiler {
                 value,
                 public,
             } => {
+                let always_succeeds = matches!(&pattern, Pattern::Identifier(_));
+
                 self.binding_name = match pattern {
                     Pattern::Identifier(ref name) => Some(name.clone()),
                     _ => None,
@@ -393,19 +395,34 @@ impl Compiler {
                 self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;
 
-                self.compile_pattern(f, pattern, |name, f, compiler| {
-                    f.bytecode.push(OpCode::SetGlobal as u8);
+                let mut bound_globals_count = 0;
+                let jump_indexes_to_panic =
+                    self.compile_pattern(f, pattern, |name, f, compiler| {
+                        f.bytecode.push(OpCode::SetGlobal as u8);
 
-                    let index = compiler.symbol_table.define_global(
-                        public,
-                        &compiler.module_context.ns,
-                        &name,
-                    );
+                        let index = compiler.symbol_table.define_global(
+                            public,
+                            &compiler.module_context.ns,
+                            &name,
+                        );
 
-                    let (msb, lsb) = to_big_endian_u16(index);
-                    f.bytecode.push(msb);
-                    f.bytecode.push(lsb);
-                });
+                        let (msb, lsb) = to_big_endian_u16(index);
+                        f.bytecode.push(msb);
+                        f.bytecode.push(lsb);
+
+                        bound_globals_count += 1;
+                    });
+
+                f.bytecode.push(OpCode::ConstNil as u8);
+
+                if !always_succeeds {
+                    let j_index_to_return = set_jump_placeholder(f, OpCode::Jump);
+                    for index in &jump_indexes_to_panic {
+                        set_big_endian_u16(f, *index);
+                    }
+                    f.bytecode.push(OpCode::PanicNoMatch as u8);
+                    set_big_endian_u16(f, j_index_to_return);
+                }
 
                 Ok(())
             }

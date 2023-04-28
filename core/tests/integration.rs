@@ -499,6 +499,21 @@ x
 ",
         Value::Num(1.0),
     );
+
+    assert_result(
+        "let #{ } = #{ };
+",
+        Value::Nil,
+    );
+
+    assert_result(
+        "let m = #{ \"x\" => 0, \"y\" => 1 };
+
+let #{ \"x\" => x, \"y\" => 1 } = m;
+x
+",
+        Value::Num(0.0),
+    );
 }
 
 #[test]
@@ -514,8 +529,11 @@ pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,
 {
-    let value_result = eval("test", src).unwrap();
-    assert_eq!(value_result, expected_value.into(), "{:?}", src);
+    let value_result = eval("test", src);
+    match value_result {
+        Err(e) => panic!("{e:?}\nsrc:\n{src}"),
+        Ok(value_result) => assert_eq!(value_result, expected_value.into(), "{src}"),
+    };
 }
 
 pub fn assert_err(src: &str) {

@@ -168,7 +168,6 @@ impl Vm {
                     let value = stack.pop();
                     let ident = frame.next_opcode_u16() as usize;
                     self.globals.resize(ident + 1, value);
-                    stack.push(Value::Nil)
                 }
 
                 OpCode::GetGlobal => {

@@ -638,7 +638,7 @@ fn make_closure_test() {
         Vm::default().run_main(Rc::new(main)).unwrap(),
         Value::Closure(Rc::new(Closure {
             free: vec![Value::Bool(false), Value::Bool(true),],
-            function: f.clone(),
+            function: f,
         }))
     );
 }
@@ -1121,4 +1121,39 @@ fn match_tuple3_when_not_match_test() {
     };
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
+}
+
+#[test]
+fn match_cons_list_global_when_match_test() {
+    let main = Function {
+        constant_pool: vec![
+            Value::Map(im_rc::hashmap! [
+                "key".to_string() => 42.0.into()
+            ]),
+            Value::String(Rc::new("key".to_string())),
+        ],
+        bytecode: vec![
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 03 */ 0,
+            /* 04 */ 16, // goto PanicNoMatch
+            /* 05 */ 1,
+            /* 06 */ OpCode::SetGlobal as u8,
+            /* 07 */ 0,
+            /* 08 */ 0,
+            /* 09 */ OpCode::SetGlobal as u8,
+            /* 10 */ 0,
+            /* 11 */ 1,
+            /* 12 */ OpCode::ConstNil as u8,
+            /* 13 */ OpCode::Jump as u8,
+            /* 14 */ 0,
+            /* 15 */ 17, // goto return
+            /* 16 */ OpCode::PanicNoMatch as u8, // <-
+            /* 17 */ OpCode::Return as u8, // <-
+        ],
+        ..Default::default()
+    };
+
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
 }

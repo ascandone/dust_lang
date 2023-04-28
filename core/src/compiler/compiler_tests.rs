@@ -154,6 +154,7 @@ fn def_test() {
             OpCode::SetGlobal as u8,
             0,
             0,
+            OpCode::ConstNil as u8,
             OpCode::Return as u8
         ]
     );
@@ -183,11 +184,13 @@ fn def_twice_test() {
             OpCode::SetGlobal as u8,
             0,
             0,
+            OpCode::ConstNil as u8,
             OpCode::Pop as u8,
             OpCode::ConstFalse as u8,
             OpCode::SetGlobal as u8,
             0,
             1,
+            OpCode::ConstNil as u8,
             OpCode::Return as u8
         ]
     );
@@ -213,11 +216,115 @@ fn global_scope_test() {
             OpCode::SetGlobal as u8,
             0,
             0,
+            OpCode::ConstNil as u8,
             OpCode::Pop as u8,
             OpCode::GetGlobal as u8,
             0,
             0,
             OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn global_scope_pattern_test() {
+    let ast = vec![Statement::Let {
+        public: false,
+        pattern: Pattern::EmptyList,
+        value: NIL,
+    }];
+
+    let f = new_compiler().compile_program(ast, "main").unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 8, // goto PanicNoMatch
+            /* 04 */ OpCode::ConstNil as u8,
+            /* 05 */ OpCode::Jump as u8,
+            /* 06 */ 0,
+            /* 07 */ 9, // goto return
+            /* 08 */ OpCode::PanicNoMatch as u8,
+            /* 09 */ OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn global_scope_pattern_cons_test() {
+    let ast = vec![Statement::Let {
+        public: false,
+        pattern: Pattern::Cons(
+            Box::new(Pattern::Identifier("hd".to_string())),
+            Box::new(Pattern::Identifier("tl".to_string())),
+        ),
+        value: NIL,
+    }];
+
+    let f = new_compiler().compile_program(ast, "main").unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::MatchConsElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 14, // goto PanicNoMatch
+            /* 04 */ OpCode::SetGlobal as u8,
+            /* 05 */ 0,
+            /* 06 */ 0,
+            /* 07 */ OpCode::SetGlobal as u8,
+            /* 08 */ 0,
+            /* 09 */ 1,
+            /* 10 */ OpCode::ConstNil as u8,
+            /* 11 */ OpCode::Jump as u8,
+            /* 12 */ 0,
+            /* 13 */ 15, // goto return
+            /* 14 */ OpCode::PanicNoMatch as u8,
+            /* 15 */ OpCode::Return as u8
+        ]
+    );
+}
+
+#[test]
+fn global_scope_pattern_cons_map_test() {
+    let ast = vec![Statement::Let {
+        public: false,
+        pattern: Pattern::ConsMap(
+            (
+                "key".to_string(),
+                Box::new(Pattern::Identifier("x".to_string())),
+            ),
+            Box::new(Pattern::Identifier("rest".to_string())),
+        ),
+        value: NIL,
+    }];
+
+    let f = new_compiler().compile_program(ast, "main").unwrap();
+
+    assert_eq!(
+        f.bytecode,
+        vec![
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::MatchConsMapElseJump as u8,
+            /* 02 */ 0,
+            /* 03 */ 15, // goto PanicNoMatch
+            /* 04 */ 0,
+            /* 05 */ OpCode::SetGlobal as u8,
+            /* 06 */ 0,
+            /* 07 */ 0,
+            /* 08 */ OpCode::SetGlobal as u8,
+            /* 09 */ 0,
+            /* 10 */ 1,
+            /* 11 */ OpCode::ConstNil as u8,
+            /* 12 */ OpCode::Jump as u8,
+            /* 13 */ 0,
+            /* 14 */ 16, // goto return
+            /* 15 */ OpCode::PanicNoMatch as u8,
+            /* 16 */ OpCode::Return as u8
         ]
     );
 }
@@ -977,6 +1084,7 @@ fn modules_import_value() {
             OpCode::SetGlobal as u8,
             0,
             0,
+            OpCode::ConstNil as u8,
             OpCode::Pop as u8,
             OpCode::GetGlobal as u8,
             0,
@@ -1109,6 +1217,7 @@ fn modules_renamed_imports() {
             OpCode::SetGlobal as u8,
             0,
             0,
+            OpCode::ConstNil as u8,
             OpCode::Pop as u8,
             OpCode::GetGlobal as u8,
             0,

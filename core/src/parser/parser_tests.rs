@@ -70,6 +70,26 @@ fn parse_let_decl() {
 }
 
 #[test]
+fn parse_let_pattern() {
+    assert_eq!(
+        parse("let #{\"k\" => x} = nil").unwrap(),
+        Program {
+            statements: vec![Statement::Let {
+                public: false,
+                pattern: Pattern::ConsMap(
+                    (
+                        "k".to_string(),
+                        Box::new(Pattern::Identifier("x".to_string()))
+                    ),
+                    Box::new(Pattern::EmptyMap)
+                ),
+                value: NIL
+            }]
+        },
+    )
+}
+
+#[test]
 fn parse_expr_program() {
     assert_eq!(
         parse("42").unwrap(),

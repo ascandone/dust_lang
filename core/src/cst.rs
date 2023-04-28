@@ -104,6 +104,9 @@ pub enum Expr {
     EmptyList,
     Cons(Box<Expr>, Box<Expr>),
 
+    EmptyMap,
+    ConsMap((Box<Expr>, Box<Expr>), Box<Expr>),
+
     Match(Box<Expr>, Vec<(Pattern, Expr)>),
 
     Tuple(Vec<Expr>),
@@ -244,6 +247,14 @@ impl TryFrom<Expr> for ast::Expr {
                 args: vec![],
             }),
 
+            Expr::EmptyMap => Ok(ast::Expr::Call {
+                f: Box::new(ast::Expr::Ident(Ident(
+                    Some(Namespace(vec!["Map".to_string()])),
+                    "empty".to_string(),
+                ))),
+                args: vec![],
+            }),
+
             Expr::Cons(hd, tl) => Ok(ast::Expr::Call {
                 f: Box::new(ast::Expr::Ident(Ident(
                     Some(Namespace(vec!["List".to_string()])),
@@ -251,6 +262,15 @@ impl TryFrom<Expr> for ast::Expr {
                 ))),
 
                 args: vec![(*hd).try_into()?, (*tl).try_into()?],
+            }),
+
+            Expr::ConsMap((k, v), map) => Ok(ast::Expr::Call {
+                f: Box::new(ast::Expr::Ident(Ident(
+                    Some(Namespace(vec!["Map".to_string()])),
+                    "insert".to_string(),
+                ))),
+
+                args: vec![(*map).try_into()?, (*k).try_into()?, (*v).try_into()?],
             }),
 
             Expr::Tuple(values) => {

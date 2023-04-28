@@ -2,7 +2,7 @@
 mod formatter_tests;
 mod pretty;
 
-use crate::ast::Pattern;
+use crate::ast::{Lit, Pattern};
 use crate::cst::{Expr, Import, Program, Statement};
 use crate::formatter::pretty::{Doc, PPrint};
 
@@ -270,6 +270,39 @@ fn expr_to_doc(expr: Expr, inside_block: bool) -> Doc {
 
             Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
         }
+        Expr::EmptyMap | Expr::ConsMap(_, _) => {
+            let mut docs = vec![];
+            let mut lst = expr;
+
+            loop {
+                match lst {
+                    Expr::ConsMap((k, v), next) => {
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(","))
+                        }
+
+                        docs.push(Doc::vec(&[
+                            space_break(),
+                            expr_to_doc(*k, false),
+                            Doc::text(" => "),
+                            expr_to_doc(*v, false),
+                        ]));
+
+                        lst = *next;
+                    }
+
+                    Expr::EmptyMap => break,
+
+                    _ => {
+                        docs.push(Doc::text(", .."));
+                        docs.push(expr_to_doc(lst, false));
+                        break;
+                    }
+                };
+            }
+
+            Doc::vec(&[Doc::text("#{"), Doc::Vec(docs), Doc::text(" }")])
+        }
 
         Expr::Tuple(exprs) => {
             let docs: Vec<Doc> = exprs
@@ -375,6 +408,39 @@ fn pattern_to_doc(pattern: Pattern) -> Doc {
             }
 
             Doc::vec(&[Doc::text("["), Doc::Vec(docs), Doc::text("]")])
+        }
+
+        Pattern::ConsMap((_, _), _) | Pattern::EmptyMap => {
+            let mut docs = vec![];
+            let mut map = pattern;
+            loop {
+                match map {
+                    Pattern::ConsMap((k, v), rest) => {
+                        if !docs.is_empty() {
+                            docs.push(Doc::text(", "))
+                        }
+
+                        docs.push(Doc::vec(&[
+                            Doc::text(" "),
+                            expr_to_doc(Expr::Lit(Lit::String(k)), false),
+                            Doc::text(" => "),
+                            pattern_to_doc(*v.clone()),
+                        ]));
+
+                        map = *rest;
+                    }
+
+                    Pattern::EmptyMap => break,
+
+                    _ => {
+                        docs.push(Doc::text(", .."));
+                        docs.push(pattern_to_doc(map));
+                        break;
+                    }
+                }
+            }
+
+            Doc::vec(&[Doc::text("#{"), Doc::Vec(docs), Doc::text(" }")])
         }
     }
 }

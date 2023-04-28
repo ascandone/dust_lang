@@ -28,13 +28,14 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         | SetGlobal
         | GetGlobal
         | MatchEmptyListElseJump
+        | MatchEmptyMapElseJump
         | MatchConsElseJump
         | MatchTuple2ElseJump
         | MatchTuple3ElseJump => One16,
 
         MakeClosure => Two8And8,
 
-        MatchConstElseJump => Two16And8,
+        MatchConstElseJump | MatchConsMapElseJump => Two16And8,
 
         Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => Zero,
     }
@@ -98,10 +99,10 @@ impl Display for Function {
 
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
 
-                    if opcode == OpCode::MatchConstElseJump {
+                    if let OpCode::MatchConstElseJump | OpCode::MatchConsMapElseJump = opcode {
                         let value = &self.constant_pool[arg_2 as usize];
                         write!(f, " ({value})")?;
-                    };
+                    }
 
                     index += 3;
                 }
@@ -248,9 +249,8 @@ Disassembly of '#[function nested at {nested_f_addr:?}]':
     }
 
     #[test]
-    fn match_test() {
+    fn match_const_test() {
         let main = Function {
-            arity: 1,
             constant_pool: vec![Value::Num(42.0)],
             bytecode: vec![
                 /* 00 */ OpCode::MatchConstElseJump as u8,
@@ -265,6 +265,28 @@ Disassembly of '#[function nested at {nested_f_addr:?}]':
         assert_eq!(
             main.to_string(),
             "0000 MatchConstElseJump 0x00, 0x00 (42)
+0004 Return
+"
+        )
+    }
+
+    #[test]
+    fn match_cons_map() {
+        let main = Function {
+            constant_pool: vec!["x".into()],
+            bytecode: vec![
+                /* 00 */ OpCode::MatchConsMapElseJump as u8,
+                /* 01 */ 0,
+                /* 02 */ 10,
+                /* 03 */ 0,
+                /* 03 */ OpCode::Return as u8,
+            ],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            main.to_string(),
+            "0000 MatchConsMapElseJump 0x0a, 0x00 (\"x\")
 0004 Return
 "
         )

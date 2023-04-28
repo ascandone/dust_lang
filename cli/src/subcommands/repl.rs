@@ -31,7 +31,7 @@ fn colored_value(value: &Value) -> ColoredString {
         .white(),
 
         // TODO colored list
-        Value::List(_) => value.to_string().white(),
+        Value::List(_) | Value::Map(_) => value.to_string().white(),
         Value::NativeFunction(_) | Value::Closure(_) | Value::Function(_) => {
             value.to_string().cyan()
         }

@@ -464,6 +464,33 @@ match #(1, 2) {
     );
 }
 
+#[test]
+fn map_lit() {
+    assert_result(
+        "
+import Map;
+#{ \"x\" => 42 }
+",
+        Value::Map(im_rc::hashmap![
+            "x".to_string() => 42.0.into()
+        ]),
+    );
+}
+
+#[test]
+fn cons_map_match() {
+    assert_result(
+        "
+let m = #{ \"x\" => 0, \"y\" => 1 };
+
+match m {
+    #{ \"x\" => 0, \"y\" => y } => y + 10
+}
+",
+        Value::Num(11.0),
+    );
+}
+
 pub fn assert_result<A>(src: &str, expected_value: A)
 where
     A: Into<Value>,

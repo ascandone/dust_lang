@@ -604,6 +604,33 @@ fn parse_mixed_list_cons() {
 }
 
 #[test]
+fn parse_empty_map() {
+    assert_eq!(parse_expr("#{}").unwrap(), Expr::EmptyMap);
+}
+
+#[test]
+fn parse_singleton_map() {
+    assert_eq!(
+        parse_expr("#{ \"x\" => 42 }").unwrap(),
+        Expr::ConsMap(
+            (Box::new("x".into()), Box::new(42.0.into())),
+            Box::new(Expr::EmptyMap)
+        )
+    );
+}
+
+#[test]
+fn parse_cons_map() {
+    assert_eq!(
+        parse_expr("#{ \"x\" => 42, ..tl }").unwrap(),
+        Expr::ConsMap(
+            (Box::new("x".into()), Box::new(42.0.into())),
+            Box::new(ident("tl"))
+        )
+    );
+}
+
+#[test]
 fn parse_empty_match() {
     assert_eq!(
         parse_expr("match true {}").unwrap(),
@@ -740,6 +767,49 @@ fn parse_empty_list_match() {
                 //
                 (Pattern::EmptyList, ident("a"))
             ]
+        )
+    );
+}
+
+#[test]
+fn parse_empty_map_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    #{} => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            //
+            Box::new(ident("x")),
+            vec![(Pattern::EmptyMap, ident("a"))]
+        )
+    );
+}
+
+#[test]
+fn parse_cons_map_match() {
+    assert_eq!(
+        parse_expr(
+            "match x {
+    #{ \"k\" => v, .. rest } => a,
+}"
+        )
+        .unwrap(),
+        Expr::Match(
+            //
+            Box::new(ident("x")),
+            vec![(
+                Pattern::ConsMap(
+                    (
+                        "k".to_string(),
+                        Box::new(Pattern::Identifier("v".to_string()))
+                    ),
+                    Box::new(Pattern::Identifier("rest".to_string()))
+                ),
+                ident("a")
+            )]
         )
     );
 }

@@ -159,6 +159,8 @@ pub enum Pattern {
     Tuple(Vec<Pattern>),
     EmptyList,
     Cons(Box<Pattern>, Box<Pattern>),
+    EmptyMap,
+    ConsMap((String, Box<Pattern>), Box<Pattern>),
 }
 
 /// utility to create an unqualified identifier

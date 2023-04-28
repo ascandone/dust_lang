@@ -405,6 +405,41 @@ fn tuples() {
     );
 }
 
+#[test]
+fn maps() {
+    assert_fmt(
+        "#{ }
+",
+    );
+
+    assert_fmt(
+        "#{ \"x\" => 42 }
+",
+    );
+
+    assert_fmt(
+        "#{ \"x\" => 0, \"y\" => 1 }
+",
+    );
+
+    assert_fmt(
+        "#{ \"x\" => 0, \"y\" => 1, ..rest }
+",
+    );
+}
+
+#[test]
+fn maps_match() {
+    assert_fmt(
+        "match x {
+  #{ } => 0,
+  #{ \"x\" => x } => 0,
+  #{ \"x\" => x, ..tl } => 0,
+}
+",
+    );
+}
+
 fn assert_fmt(expr: &str) {
     assert_eq!(&format(parse(expr).unwrap()), expr);
 }

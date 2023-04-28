@@ -51,6 +51,7 @@ pub enum Value {
     Num(f64),
     String(Rc<String>),
     List(List<Value>),
+    Map(im_rc::HashMap<String, Value>),
     Tuple2(Rc<Value>, Rc<Value>),
     Tuple3(Rc<Value>, Rc<Value>, Rc<Value>),
     Function(Rc<Function>),
@@ -99,6 +100,13 @@ impl Value {
             _ => self.type_err("a list"),
         }
     }
+
+    pub fn as_map(&self) -> Result<&im_rc::HashMap<String, Value>, String> {
+        match self {
+            Value::Map(m) => Ok(m),
+            _ => self.type_err("a map"),
+        }
+    }
 }
 
 impl From<f64> for Value {
@@ -142,6 +150,18 @@ impl Display for Value {
             Value::List(l) => write!(f, "{l}"),
             Value::Tuple2(x, y) => write!(f, "#({x}, {y})"),
             Value::Tuple3(x, y, z) => write!(f, "#({x}, {y}, {z})"),
+
+            Value::Map(m) => {
+                write!(f, "#{{")?;
+                for (i, (k, v)) in m.iter().enumerate() {
+                    if i != 0 {
+                        write!(f, ",")?;
+                    }
+                    write!(f, " {} => {v}", Value::String(Rc::new(k.to_string())))?
+                }
+                write!(f, " }}")?;
+                Ok(())
+            }
 
             Value::Function(r) => {
                 write!(f, "#[function {} at {:?}]", r.display_name(), Rc::as_ptr(r))

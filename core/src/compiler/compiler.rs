@@ -237,7 +237,16 @@ impl Compiler {
                 let always_succeeds = matches!(clauses.last(), Some((Pattern::Identifier(_), _)));
 
                 for (pattern, expr) in clauses {
-                    let (bound_locals, next_clause_indexes) = self.compile_pattern(f, pattern);
+                    let mut bound_locals = vec![];
+
+                    let next_clause_indexes =
+                        self.compile_pattern(f, pattern, |ident, f, compiler| {
+                            let id = compiler.symbol_table.define_local(&ident);
+                            bound_locals.push(ident);
+                            f.bytecode.push(OpCode::SetLocal as u8);
+                            f.bytecode.push(id);
+                        });
+
                     self.compile_expr_chunk(f, expr, tail_position)?;
                     for local in bound_locals {
                         self.symbol_table.remove_local(&local);
@@ -266,9 +275,16 @@ impl Compiler {
         Ok(())
     }
 
-    fn compile_pattern(&mut self, f: &mut Function, pattern: Pattern) -> (Vec<String>, Vec<usize>) {
+    fn compile_pattern<F>(
+        &mut self,
+        f: &mut Function,
+        pattern: Pattern,
+        mut handle_ident: F,
+    ) -> Vec<usize>
+    where
+        F: FnMut(String, &mut Function, &mut Self) -> (),
+    {
         let mut patterns = vec![pattern];
-        let mut bound_locals = vec![];
         let mut next_clause_indexes = vec![];
 
         loop {
@@ -276,10 +292,7 @@ impl Compiler {
                 None => break,
                 Some(pattern) => match pattern {
                     Pattern::Identifier(ident) => {
-                        f.bytecode.push(OpCode::SetLocal as u8);
-                        let id = self.symbol_table.define_local(&ident);
-                        bound_locals.push(ident);
-                        f.bytecode.push(id);
+                        handle_ident(ident, f, self);
                     }
 
                     Pattern::Lit(l) => {
@@ -331,7 +344,7 @@ impl Compiler {
             };
         }
 
-        (bound_locals, next_clause_indexes)
+        next_clause_indexes
     }
 
     pub fn import_module(&mut self, ns: Namespace, rename: Option<Namespace>) {

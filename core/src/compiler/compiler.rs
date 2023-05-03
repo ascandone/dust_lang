@@ -240,7 +240,7 @@ impl Compiler {
                     let mut bound_locals = vec![];
 
                     let next_clause_indexes =
-                        self.compile_pattern(f, pattern, |ident, f, compiler| {
+                        self.compile_pattern(f, pattern.clone(), |ident, f, compiler| {
                             let id = compiler.symbol_table.define_local(&ident);
                             bound_locals.push(ident);
                             f.bytecode.push(OpCode::SetLocal as u8);
@@ -252,7 +252,7 @@ impl Compiler {
                         self.symbol_table.remove_local(&local);
                     }
 
-                    if !always_succeeds {
+                    if !matches!(&pattern, Pattern::Identifier(_)) {
                         let j_index = set_jump_placeholder(f, OpCode::Jump);
                         jump_indexes.push(j_index);
                     }
@@ -282,7 +282,7 @@ impl Compiler {
         mut handle_ident: F,
     ) -> Vec<usize>
     where
-        F: FnMut(String, &mut Function, &mut Self) -> (),
+        F: FnMut(String, &mut Function, &mut Self),
     {
         let mut patterns = vec![pattern];
         let mut next_clause_indexes = vec![];

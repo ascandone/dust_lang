@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 type Arity = Vec<ArityBytes>;
 
+#[derive(Clone, Copy)]
 enum ArityBytes {
     One,
     Two,
@@ -66,6 +67,26 @@ fn write_arg(
     write!(f, " 0x{arg:0>2x}")
 }
 
+fn write_args(
+    f: &mut Formatter<'_>,
+    arity: &Arity,
+    index: usize,
+    bytecode: &[u8],
+) -> std::fmt::Result {
+    let mut offset = index;
+
+    for (index, arity_bytes) in arity.iter().enumerate() {
+        if index != 0 {
+            write!(f, ",")?;
+        }
+
+        write_arg(f, *arity_bytes, offset, bytecode)?;
+        offset += arity_bytes.bytes() as usize;
+    }
+
+    Ok(())
+}
+
 impl Display for Function {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut index = 0;
@@ -82,7 +103,7 @@ impl Display for Function {
             match arity.as_slice() {
                 [] => {}
                 [ArityBytes::One] => {
-                    write_arg(f, ArityBytes::One, index, &self.bytecode)?;
+                    write_args(f, &arity, index, &self.bytecode)?;
 
                     if opcode == OpCode::Const {
                         let arg = self.bytecode[index];
@@ -96,13 +117,11 @@ impl Display for Function {
                 }
 
                 [ArityBytes::Two] => {
-                    write_arg(f, ArityBytes::Two, index, &self.bytecode)?;
+                    write_args(f, &arity, index, &self.bytecode)?;
                 }
 
                 [ArityBytes::One, ArityBytes::One] => {
-                    write_arg(f, ArityBytes::One, index, &self.bytecode)?;
-                    write!(f, ",")?;
-                    write_arg(f, ArityBytes::One, index + 1, &self.bytecode)?;
+                    write_args(f, &arity, index, &self.bytecode)?;
 
                     if opcode == OpCode::MakeClosure {
                         let _arg_1 = self.bytecode[index];
@@ -115,9 +134,7 @@ impl Display for Function {
                 }
 
                 [ArityBytes::Two, ArityBytes::One] => {
-                    write_arg(f, ArityBytes::Two, index, &self.bytecode)?;
-                    write!(f, ",")?;
-                    write_arg(f, ArityBytes::One, index + 2, &self.bytecode)?;
+                    write_args(f, &arity, index, &self.bytecode)?;
 
                     if let OpCode::MatchConstElseJump | OpCode::MatchConsMapElseJump = opcode {
                         let _arg_1 =

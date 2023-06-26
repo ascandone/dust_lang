@@ -4,22 +4,23 @@ use std::fmt::{Display, Formatter};
 use std::mem::transmute;
 use std::rc::Rc;
 
-enum Arity {
-    Zero,
-    One8,
-    One16,
-    Two8And8,
-    Two16And8,
+type Arity = Vec<ArityBytes>;
+
+enum ArityBytes {
+    One,
+    Two,
 }
 
 fn opcode_arity(opcode: OpCode) -> Arity {
-    use crate::vm::disassembler::Arity::*;
+    use ArityBytes::*;
     use OpCode::*;
 
     match opcode {
-        ConstNil | ConstTrue | ConstFalse | Pop | Return | GetCurrentClosure | PanicNoMatch => Zero,
+        ConstNil | ConstTrue | ConstFalse | Pop | Return | GetCurrentClosure | PanicNoMatch => {
+            vec![]
+        }
 
-        Const | SetLocal | GetLocal | GetFree | Call => One8,
+        Const | SetLocal | GetLocal | GetFree | Call => vec![One],
 
         Jump
         | JumpIfFalse
@@ -31,13 +32,14 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         | MatchEmptyMapElseJump
         | MatchConsElseJump
         | MatchTuple2ElseJump
-        | MatchTuple3ElseJump => One16,
+        | MatchTuple3ElseJump => vec![Two],
 
-        MakeClosure => Two8And8,
+        MakeClosure => vec![One, One],
+        MatchConstElseJump | MatchConsMapElseJump => vec![Two, One],
 
-        MatchConstElseJump | MatchConsMapElseJump => Two16And8,
-
-        Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => Zero,
+        Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => {
+            vec![]
+        }
     }
 }
 
@@ -53,9 +55,9 @@ impl Display for Function {
 
             index += 1;
 
-            match opcode_arity(opcode) {
-                Arity::Zero => {}
-                Arity::One8 => {
+            match opcode_arity(opcode).as_slice() {
+                [] => {}
+                [ArityBytes::One] => {
                     let arg = self.bytecode[index];
                     write!(f, " 0x{arg:0>2x}")?;
 
@@ -71,13 +73,13 @@ impl Display for Function {
                     index += 1;
                 }
 
-                Arity::One16 => {
+                [ArityBytes::Two] => {
                     let arg = u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
                     write!(f, " 0x{arg:0>2x}")?;
                     index += 2;
                 }
 
-                Arity::Two8And8 => {
+                [ArityBytes::One, ArityBytes::One] => {
                     let arg_1 = self.bytecode[index];
                     let arg_2 = self.bytecode[index + 1];
 
@@ -92,7 +94,7 @@ impl Display for Function {
                     index += 2;
                 }
 
-                Arity::Two16And8 => {
+                [ArityBytes::Two, ArityBytes::One] => {
                     let arg_1 =
                         u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
                     let arg_2 = self.bytecode[index + 2];
@@ -106,6 +108,8 @@ impl Display for Function {
 
                     index += 3;
                 }
+
+                _ => panic!("Invalid arity"),
             };
 
             writeln!(f)?;

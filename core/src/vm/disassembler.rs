@@ -58,7 +58,7 @@ fn write_args(
     arity: &Arity,
     index: usize,
     bytecode: &[u8],
-) -> std::fmt::Result {
+) -> Result<usize, std::fmt::Error> {
     let mut offset = index;
 
     for (index, arity_bytes) in arity.iter().enumerate() {
@@ -75,7 +75,7 @@ fn write_args(
         offset += arity_bytes.bytes() as usize;
     }
 
-    Ok(())
+    Ok(offset)
 }
 
 impl Display for Function {
@@ -91,7 +91,7 @@ impl Display for Function {
             index += 1;
 
             let arity = opcode_arity(opcode);
-            write_args(f, &arity, index, &self.bytecode)?;
+            let next_index = write_args(f, &arity, index, &self.bytecode)?;
 
             match opcode {
                 OpCode::Const => {
@@ -121,8 +121,7 @@ impl Display for Function {
                 _ => {}
             }
 
-            let offset: u8 = arity.iter().map(ArityBytes::bytes).sum();
-            index += offset as usize;
+            index = next_index;
 
             writeln!(f)?;
 

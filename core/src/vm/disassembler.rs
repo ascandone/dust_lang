@@ -53,20 +53,6 @@ fn opcode_arity(opcode: OpCode) -> Arity {
     }
 }
 
-fn write_arg(
-    f: &mut Formatter<'_>,
-    arity_bytes: ArityBytes,
-    index: usize,
-    bytecode: &[u8],
-) -> std::fmt::Result {
-    let arg = match arity_bytes {
-        ArityBytes::One => bytecode[index] as u16,
-        ArityBytes::Two => u16::from_be_bytes([bytecode[index], bytecode[index + 1]]),
-    };
-
-    write!(f, " 0x{arg:0>2x}")
-}
-
 fn write_args(
     f: &mut Formatter<'_>,
     arity: &Arity,
@@ -80,7 +66,12 @@ fn write_args(
             write!(f, ",")?;
         }
 
-        write_arg(f, *arity_bytes, offset, bytecode)?;
+        let arg = match arity_bytes {
+            ArityBytes::One => bytecode[offset] as u16,
+            ArityBytes::Two => u16::from_be_bytes([bytecode[offset], bytecode[offset + 1]]),
+        };
+
+        write!(f, " 0x{arg:0>2x}")?;
         offset += arity_bytes.bytes() as usize;
     }
 
@@ -100,53 +91,35 @@ impl Display for Function {
             index += 1;
 
             let arity = opcode_arity(opcode);
-            match arity.as_slice() {
-                [] => {}
-                [ArityBytes::One] => {
-                    write_args(f, &arity, index, &self.bytecode)?;
+            write_args(f, &arity, index, &self.bytecode)?;
 
-                    if opcode == OpCode::Const {
-                        let arg = self.bytecode[index];
-                        let value = &self.constant_pool[arg as usize];
-                        if let Value::Function(f) = value {
-                            queue.push(Rc::clone(f))
-                        }
+            match opcode {
+                OpCode::Const => {
+                    let arg = self.bytecode[index];
+                    let value = &self.constant_pool[arg as usize];
+                    if let Value::Function(f) = value {
+                        queue.push(Rc::clone(f))
+                    }
 
-                        write!(f, " ({value})")?;
-                    };
+                    write!(f, " ({value})")?;
                 }
 
-                [ArityBytes::Two] => {
-                    write_args(f, &arity, index, &self.bytecode)?;
-                }
-
-                [ArityBytes::One, ArityBytes::One] => {
-                    write_args(f, &arity, index, &self.bytecode)?;
-
-                    if opcode == OpCode::MakeClosure {
-                        let _arg_1 = self.bytecode[index];
-                        let arg_2 = self.bytecode[index + 1];
-                        let value = &self.constant_pool[arg_2 as usize];
-                        if let Value::Function(f) = value {
-                            queue.push(Rc::clone(f))
-                        }
-                    };
-                }
-
-                [ArityBytes::Two, ArityBytes::One] => {
-                    write_args(f, &arity, index, &self.bytecode)?;
-
-                    if let OpCode::MatchConstElseJump | OpCode::MatchConsMapElseJump = opcode {
-                        let _arg_1 =
-                            u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
-                        let arg_2 = self.bytecode[index + 2];
-                        let value = &self.constant_pool[arg_2 as usize];
-                        write!(f, " ({value})")?;
+                OpCode::MakeClosure => {
+                    let arg_2 = self.bytecode[index + 1];
+                    let value = &self.constant_pool[arg_2 as usize];
+                    if let Value::Function(f) = value {
+                        queue.push(Rc::clone(f))
                     }
                 }
 
-                _ => panic!("Invalid arity"),
-            };
+                OpCode::MatchConstElseJump | OpCode::MatchConsMapElseJump => {
+                    let arg_2 = self.bytecode[index + 2];
+                    let value = &self.constant_pool[arg_2 as usize];
+                    write!(f, " ({value})")?;
+                }
+
+                _ => {}
+            }
 
             let offset: u8 = arity.iter().map(ArityBytes::bytes).sum();
             index += offset as usize;

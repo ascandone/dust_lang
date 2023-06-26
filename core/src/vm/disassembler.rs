@@ -11,6 +11,15 @@ enum ArityBytes {
     Two,
 }
 
+impl ArityBytes {
+    fn bytes(&self) -> u8 {
+        match self {
+            ArityBytes::One => 1,
+            ArityBytes::Two => 2,
+        }
+    }
+}
+
 fn opcode_arity(opcode: OpCode) -> Arity {
     use ArityBytes::*;
     use OpCode::*;
@@ -55,7 +64,8 @@ impl Display for Function {
 
             index += 1;
 
-            match opcode_arity(opcode).as_slice() {
+            let arity = opcode_arity(opcode);
+            match arity.as_slice() {
                 [] => {}
                 [ArityBytes::One] => {
                     let arg = self.bytecode[index];
@@ -69,14 +79,11 @@ impl Display for Function {
 
                         write!(f, " ({value})")?;
                     };
-
-                    index += 1;
                 }
 
                 [ArityBytes::Two] => {
                     let arg = u16::from_be_bytes([self.bytecode[index], self.bytecode[index + 1]]);
                     write!(f, " 0x{arg:0>2x}")?;
-                    index += 2;
                 }
 
                 [ArityBytes::One, ArityBytes::One] => {
@@ -91,7 +98,6 @@ impl Display for Function {
                     };
 
                     write!(f, " 0x{arg_1:0>2x}, 0x{arg_2:0>2x}")?;
-                    index += 2;
                 }
 
                 [ArityBytes::Two, ArityBytes::One] => {
@@ -105,12 +111,13 @@ impl Display for Function {
                         let value = &self.constant_pool[arg_2 as usize];
                         write!(f, " ({value})")?;
                     }
-
-                    index += 3;
                 }
 
                 _ => panic!("Invalid arity"),
             };
+
+            let offset: u8 = arity.iter().map(ArityBytes::bytes).sum();
+            index += offset as usize;
 
             writeln!(f)?;
 

@@ -3,7 +3,6 @@ use super::{
     stack::Stack,
     value::{Closure, Function, Value},
 };
-use crate::vm::list::List;
 use std::fmt::{Display, Formatter};
 use std::mem::transmute;
 use std::ops::Deref;
@@ -300,101 +299,101 @@ impl Vm {
                 OpCode::MatchConstElseJump => {
                     let j_target = frame.next_opcode_u16();
                     let const_index = frame.next_opcode();
+                    let ident = frame.next_opcode() as usize;
 
                     let constant_pool = &frame.closure.function.constant_pool;
                     let constant = &constant_pool[const_index as usize];
 
-                    let value = stack.peek();
+                    let value = stack.get(frame.base_pointer + ident);
 
-                    if value == constant {
-                        // discard value
-                        stack.pop();
-                    } else {
+                    if value != constant {
                         frame.ip = j_target as usize;
                     }
                 }
 
-                OpCode::MatchEmptyListElseJump => {
-                    let j_target = frame.next_opcode_u16();
+                /*                OpCode::MatchEmptyListElseJump => {
+                                    let j_target = frame.next_opcode_u16();
 
-                    let value = stack.peek();
+                                    let value = stack.peek();
 
-                    match value {
-                        Value::List(List::Empty) => {
-                            stack.pop();
-                        }
+                                    match value {
+                                        Value::List(List::Empty) => {
+                                            stack.pop();
+                                        }
 
-                        _ => {
-                            frame.ip = j_target as usize;
-                        }
-                    }
-                }
+                                        _ => {
+                                            frame.ip = j_target as usize;
+                                        }
+                                    }
+                                }
 
-                OpCode::MatchEmptyMapElseJump => {
-                    let j_target = frame.next_opcode_u16();
+                                OpCode::MatchEmptyMapElseJump => {
+                                    let j_target = frame.next_opcode_u16();
 
-                    let value = stack.peek();
+                                    let value = stack.peek();
 
-                    match value {
-                        Value::Map(m) if m.is_empty() => {
-                            stack.pop();
-                        }
+                                    match value {
+                                        Value::Map(m) if m.is_empty() => {
+                                            stack.pop();
+                                        }
 
-                        _ => {
-                            frame.ip = j_target as usize;
-                        }
-                    }
-                }
+                                        _ => {
+                                            frame.ip = j_target as usize;
+                                        }
+                                    }
+                                }
 
-                OpCode::MatchConsElseJump => {
-                    let j_target = frame.next_opcode_u16();
-                    let value = stack.pop();
+                                OpCode::MatchConsElseJump => {
+                                    let j_target = frame.next_opcode_u16();
+                                    let value = stack.pop();
 
-                    match value {
-                        Value::List(List::Cons(hd, tl)) => {
-                            stack.push(Value::List(tl.deref().clone()));
-                            stack.push(hd.deref().clone());
-                        }
+                                    match value {
+                                        Value::List(List::Cons(hd, tl)) => {
+                                            stack.push(Value::List(tl.deref().clone()));
+                                            stack.push(hd.deref().clone());
+                                        }
 
-                        _ => {
-                            stack.push(value);
-                            frame.ip = j_target as usize;
-                        }
-                    }
-                }
+                                        _ => {
+                                            stack.push(value);
+                                            frame.ip = j_target as usize;
+                                        }
+                                    }
+                                }
 
-                OpCode::MatchConsMapElseJump => {
-                    let j_target = frame.next_opcode_u16();
-                    let const_index = frame.next_opcode();
-                    let constant_pool = &frame.closure.function.constant_pool;
-                    let key = &constant_pool[const_index as usize].as_string().unwrap();
+                                OpCode::MatchConsMapElseJump => {
+                                    let j_target = frame.next_opcode_u16();
+                                    let const_index = frame.next_opcode();
+                                    let constant_pool = &frame.closure.function.constant_pool;
+                                    let key = &constant_pool[const_index as usize].as_string().unwrap();
 
-                    match stack.pop() {
-                        Value::Map(m) => match m.get(key.deref()) {
-                            None => {
-                                stack.push(Value::Map(m));
-                                frame.ip = j_target as usize;
-                            }
+                                    match stack.pop() {
+                                        Value::Map(m) => match m.get(key.deref()) {
+                                            None => {
+                                                stack.push(Value::Map(m));
+                                                frame.ip = j_target as usize;
+                                            }
 
-                            Some(lookup) => {
-                                let mut map_copy = m.clone();
-                                map_copy.remove(key.deref());
+                                            Some(lookup) => {
+                                                let mut map_copy = m.clone();
+                                                map_copy.remove(key.deref());
 
-                                stack.push(Value::Map(map_copy));
-                                stack.push(lookup.clone());
-                            }
-                        },
+                                                stack.push(Value::Map(map_copy));
+                                                stack.push(lookup.clone());
+                                            }
+                                        },
 
-                        value => {
-                            stack.push(value);
-                            frame.ip = j_target as usize;
-                        }
-                    }
-                }
-
+                                        value => {
+                                            stack.push(value);
+                                            frame.ip = j_target as usize;
+                                        }
+                                    }
+                                }
+                */
                 OpCode::MatchTuple2ElseJump => {
                     let j_target = frame.next_opcode_u16();
-                    let value = stack.pop();
+                    let ident = frame.next_opcode() as usize;
+
+                    let value = stack.get(frame.base_pointer + ident).clone();
 
                     match value {
                         Value::Tuple2(x, y) => {
@@ -403,30 +402,32 @@ impl Vm {
                         }
 
                         _ => {
-                            stack.push(value);
                             frame.ip = j_target as usize;
                         }
                     }
                 }
 
+                /*
                 OpCode::MatchTuple3ElseJump => {
-                    let j_target = frame.next_opcode_u16();
-                    let value = stack.pop();
 
-                    match value {
-                        Value::Tuple3(x, y, z) => {
-                            stack.push(z.deref().clone());
-                            stack.push(y.deref().clone());
-                            stack.push(x.deref().clone());
-                        }
 
-                        _ => {
-                            stack.push(value);
-                            frame.ip = j_target as usize;
-                        }
+                   let j_target = frame.next_opcode_u16();
+                let value = stack.pop();
+
+                match value {
+                    Value::Tuple3(x, y, z) => {
+                        stack.push(z.deref().clone());
+                        stack.push(y.deref().clone());
+                        stack.push(x.deref().clone());
+                    }
+
+                    _ => {
+                        stack.push(value);
+                        frame.ip = j_target as usize;
                     }
                 }
-
+                }
+                */
                 // Algebraic/native ops
                 OpCode::Add => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(Value::Num(a + b)),

@@ -15,12 +15,15 @@ struct LocalScope {
     pub total_locals: u8,
     pub free: Vec<Scope>,
     pub name: Option<String>,
+    pub aliases: HashMap<String, u8>,
 }
 
 impl LocalScope {
     pub fn get(&self, name: &str) -> Option<&u8> {
-        let v_opt = self.idents.get(name);
-        v_opt.map(|v| v.last().unwrap())
+        match self.idents.get(name) {
+            Some(v) => Some(v.last().unwrap()),
+            None => self.aliases.get(name),
+        }
     }
 
     pub fn next_local(&self) -> u8 {
@@ -37,6 +40,7 @@ impl LocalScope {
     fn new(name: Option<String>) -> Self {
         Self {
             idents: HashMap::new(),
+            aliases: HashMap::new(),
             total_locals: 0,
             free: vec![],
             name,
@@ -131,6 +135,11 @@ impl SymbolTable {
         ident
     }
 
+    pub fn define_local_alias(&mut self, name: &str, id: u8) {
+        let loc = self.current_local_mut();
+        loc.aliases.insert(name.to_string(), id);
+    }
+
     pub fn remove_local(&mut self, name: &str) {
         let loc = self.current_local_mut().idents.get_mut(name);
         if let Some(v) = loc {
@@ -139,6 +148,8 @@ impl SymbolTable {
                 self.current_local_mut().idents.remove(name);
             }
         }
+
+        self.current_local_mut().aliases.remove(name);
     }
 
     fn current_local(&self) -> &LocalScope {
@@ -363,11 +374,11 @@ mod tests {
         let symbol_table = &mut SymbolTable::new();
 
         symbol_table.define_local("x");
-        symbol_table.define_local("x");
+        let last_id = symbol_table.define_local("x");
 
         assert_eq!(
             symbol_table.resolve(&main_ns(), &Ident(None, "x".to_string())),
-            Some(Scope::Local(1))
+            Some(Scope::Local(last_id))
         )
     }
 
@@ -591,5 +602,65 @@ mod tests {
             symbol_table.resolve(&main_ns(), &Ident(Some(mod_a.clone()), "x".to_string())),
             None,
         );
+    }
+
+    #[test]
+    fn test_aliasing() {
+        let mut symbol_table = SymbolTable::new();
+
+        let id = symbol_table.define_local("name");
+
+        symbol_table.define_local_alias("aliased-name", id);
+
+        assert_eq!(
+            symbol_table.resolve(&main_ns(), &Ident(None, "name".to_string())),
+            symbol_table.resolve(&main_ns(), &Ident(None, "aliased-name".to_string())),
+        )
+    }
+
+    #[test]
+    fn test_remove_alias() {
+        let mut symbol_table = SymbolTable::new();
+
+        let id = symbol_table.define_local("name");
+        symbol_table.define_local_alias("aliased-name", id);
+
+        symbol_table.remove_local("aliased-name");
+
+        assert_eq!(
+            symbol_table.resolve(&main_ns(), &Ident(None, "aliased-name".to_string())),
+            None
+        )
+    }
+
+    #[test]
+    fn test_alias_closure() {
+        let mut symbol_table = SymbolTable::new();
+
+        let id = symbol_table.define_local("name");
+        symbol_table.define_local_alias("aliased-name", id);
+
+        symbol_table.enter_scope(None);
+
+        assert_eq!(
+            symbol_table.resolve(&main_ns(), &Ident(None, "aliased-name".to_string())),
+            Some(Scope::Free(0))
+        )
+    }
+
+    #[test]
+    fn test_alias_shadowing() {
+        let mut symbol_table = SymbolTable::new();
+
+        let id_0 = symbol_table.define_local("name");
+        let id_1 = symbol_table.define_local("name-2");
+
+        symbol_table.define_local_alias("aliased-name", id_0);
+        symbol_table.define_local_alias("aliased-name", id_1);
+
+        assert_eq!(
+            symbol_table.resolve(&main_ns(), &Ident(None, "aliased-name".to_string())),
+            Some(Scope::Local(id_1))
+        )
     }
 }

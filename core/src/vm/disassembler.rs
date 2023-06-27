@@ -38,14 +38,19 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         | JumpIfTrueElsePop
         | SetGlobal
         | GetGlobal
-        | MatchEmptyListElseJump
-        | MatchEmptyMapElseJump
-        | MatchConsElseJump
-        | MatchTuple2ElseJump
-        | MatchTuple3ElseJump => vec![Two],
+        // | MatchEmptyListElseJump
+        // | MatchEmptyMapElseJump
+        // | MatchConsElseJump
+        // | MatchTuple3ElseJump
+        => vec![Two],
 
         MakeClosure => vec![One, One],
-        MatchConstElseJump | MatchConsMapElseJump => vec![Two, One],
+
+        MatchTuple2ElseJump
+        // | MatchConsMapElseJump
+        => vec![Two, One],
+
+        MatchConstElseJump => vec![Two, One, One],
 
         Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => {
             vec![]
@@ -112,8 +117,16 @@ impl Display for Function {
                     }
                 }
 
-                OpCode::MatchConstElseJump | OpCode::MatchConsMapElseJump => {
+                /*
+                 OpCode::MatchConsMapElseJump
+                => {
+
                     let arg_2 = self.bytecode[index + 2];
+                    let value = &self.constant_pool[arg_2 as usize];
+                    write!(f, " ({value})")?;
+                },*/
+                OpCode::MatchConstElseJump => {
+                    let arg_2 = self.bytecode[index + 2 + 1];
                     let value = &self.constant_pool[arg_2 as usize];
                     write!(f, " ({value})")?;
                 }
@@ -270,27 +283,29 @@ Disassembly of '#[function nested at {nested_f_addr:?}]':
             bytecode: vec![
                 /* 00 */ OpCode::MatchConstElseJump as u8,
                 /* 01 */ 0,
-                /* 02 */ 0,
-                /* 03 */ 0,
-                /* 03 */ OpCode::Return as u8,
+                /* 02 */ 1, // addr
+                /* 03 */ 3, // local
+                /* 04 */ 0, // const
+                /* 05 */ OpCode::Return as u8,
             ],
             ..Default::default()
         };
 
         assert_eq!(
             main.to_string(),
-            "0000 MatchConstElseJump 0x00, 0x00 (42)
-0004 Return
+            "0000 MatchConstElseJump 0x01, 0x03, 0x00 (42)
+0005 Return
 "
         )
     }
 
+    #[ignore]
     #[test]
     fn match_cons_map() {
         let main = Function {
             constant_pool: vec!["x".into()],
             bytecode: vec![
-                /* 00 */ OpCode::MatchConsMapElseJump as u8,
+                // /* 00 */ OpCode::MatchConsMapElseJump as u8,
                 /* 01 */ 0,
                 /* 02 */ 10,
                 /* 03 */ 0,

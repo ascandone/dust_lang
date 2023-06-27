@@ -7,6 +7,13 @@ use crate::vm::{
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+fn get_unique_var() -> String {
+    static COUNTER: AtomicUsize = AtomicUsize::new(1);
+    let c = COUNTER.fetch_add(1, Ordering::Relaxed);
+    format!("[[unique-{c}]]")
+}
 
 fn prefix_to_opcode(op: &str) -> Option<OpCode> {
     match op {
@@ -236,18 +243,30 @@ impl Compiler {
 
                 let always_succeeds = matches!(clauses.last(), Some((Pattern::Identifier(_), _)));
 
+                let root_var = get_unique_var();
+                let root_ident = self.symbol_table.define_local(&root_var);
+                f.bytecode.push(OpCode::SetLocal as u8);
+                f.bytecode.push(root_ident);
+
                 for (pattern, expr) in clauses {
                     let mut bound_locals = vec![];
 
-                    let next_clause_indexes =
-                        self.compile_pattern(f, pattern.clone(), |ident, f, compiler| {
-                            let id = compiler.symbol_table.define_local(&ident);
+                    let next_clause_indexes = self.compile_pattern(
+                        f,
+                        pattern.clone(),
+                        root_ident,
+                        |ident, f, compiler| {
+                            // let id = compiler.symbol_table.define_local(&ident);
                             bound_locals.push(ident);
-                            f.bytecode.push(OpCode::SetLocal as u8);
-                            f.bytecode.push(id);
-                        });
+                            // f.bytecode.push(OpCode::SetLocal as u8);
+                            // f.bytecode.push(id);
+                        },
+                    );
 
                     self.compile_expr_chunk(f, expr, tail_position)?;
+
+                    self.symbol_table.remove_local(&root_var);
+
                     for local in bound_locals {
                         self.symbol_table.remove_local(&local);
                     }
@@ -279,20 +298,25 @@ impl Compiler {
         &mut self,
         f: &mut Function,
         pattern: Pattern,
+        root_ident: u8,
         mut handle_ident: F,
     ) -> Vec<usize>
     where
         F: FnMut(String, &mut Function, &mut Self),
     {
-        let mut patterns = vec![pattern];
+        let mut patterns: Vec<(u8, Pattern)> = vec![(root_ident, pattern)];
+
         let mut next_clause_indexes = vec![];
 
         loop {
             match patterns.pop() {
                 None => break,
-                Some(pattern) => match pattern {
-                    Pattern::Identifier(ident) => {
-                        handle_ident(ident, f, self);
+                Some((ident_id, pattern)) => match pattern {
+                    Pattern::Identifier(pattern_ident) => {
+                        self.symbol_table
+                            .define_local_alias(&pattern_ident, ident_id);
+
+                        handle_ident(pattern_ident, f, self);
                     }
 
                     Pattern::Lit(l) => {
@@ -301,43 +325,61 @@ impl Compiler {
 
                         let const_index = alloc_const(f, l.into());
                         f.bytecode.push(const_index);
+                        f.bytecode.push(ident_id)
                     }
 
                     Pattern::EmptyList => {
-                        let j_index = set_jump_placeholder(f, OpCode::MatchEmptyListElseJump);
-                        next_clause_indexes.push(j_index);
+                        todo!()
+                        // let j_index = set_jump_placeholder(f, OpCode::MatchEmptyListElseJump);
+                        // next_clause_indexes.push(j_index);
                     }
 
-                    Pattern::Cons(hd, tl) => {
-                        let j_index = set_jump_placeholder(f, OpCode::MatchConsElseJump);
+                    Pattern::Cons(_hd, _tl) => {
+                        todo!()
+                        /*let j_index = set_jump_placeholder(f, OpCode::MatchConsElseJump);
                         next_clause_indexes.push(j_index);
 
                         patterns.push(tl.deref().clone());
-                        patterns.push(hd.deref().clone());
+                        patterns.push(hd.deref().clone());*/
                     }
 
                     Pattern::EmptyMap => {
-                        let j_index = set_jump_placeholder(f, OpCode::MatchEmptyMapElseJump);
-                        next_clause_indexes.push(j_index);
+                        todo!()
+                        /*let j_index = set_jump_placeholder(f, OpCode::MatchEmptyMapElseJump);
+                        next_clause_indexes.push(j_index);*/
                     }
 
-                    Pattern::ConsMap((k, v), rest) => {
-                        let j_index = set_jump_placeholder(f, OpCode::MatchConsMapElseJump);
+                    Pattern::ConsMap((_k, _v), _rest) => {
+                        todo!()
+                        /*   let j_index = set_jump_placeholder(f, OpCode::MatchConsMapElseJump);
                         next_clause_indexes.push(j_index);
 
                         let const_index = alloc_const(f, k.into());
                         f.bytecode.push(const_index);
 
                         patterns.push(rest.deref().clone());
-                        patterns.push(v.deref().clone());
+                        patterns.push(v.deref().clone());*/
                     }
 
                     Pattern::Tuple(tuple_patterns) => {
                         let j_index = set_jump_placeholder(f, OpCode::MatchTuple2ElseJump);
                         next_clause_indexes.push(j_index);
+                        f.bytecode.push(ident_id);
 
-                        for pattern in tuple_patterns.into_iter().rev() {
-                            patterns.push(pattern.clone());
+                        let mut reversed_patterns = vec![];
+                        for pattern in tuple_patterns.into_iter() {
+                            let var_name = get_unique_var();
+
+                            let ident_id = self.symbol_table.define_local(&var_name);
+
+                            f.bytecode.push(OpCode::SetLocal as u8);
+                            f.bytecode.push(ident_id);
+
+                            reversed_patterns.push((ident_id, pattern.clone()));
+                        }
+
+                        for t in reversed_patterns.into_iter().rev() {
+                            patterns.push(t)
                         }
                     }
                 },
@@ -385,44 +427,26 @@ impl Compiler {
                 value,
                 public,
             } => {
-                let always_succeeds = matches!(&pattern, Pattern::Identifier(_));
-
-                self.binding_name = match pattern {
-                    Pattern::Identifier(ref name) => Some(name.clone()),
-                    _ => None,
+                let name = match pattern {
+                    Pattern::Identifier(name) => name,
+                    _ => todo!("let statement with pattern"),
                 };
 
+                self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;
 
-                let mut bound_globals_count = 0;
-                let jump_indexes_to_panic =
-                    self.compile_pattern(f, pattern, |name, f, compiler| {
-                        f.bytecode.push(OpCode::SetGlobal as u8);
+                f.bytecode.push(OpCode::SetGlobal as u8);
 
-                        let index = compiler.symbol_table.define_global(
-                            public,
-                            &compiler.module_context.ns,
-                            &name,
-                        );
+                let index = self
+                    .symbol_table
+                    .define_global(public, &self.module_context.ns, &name);
 
-                        let (msb, lsb) = to_big_endian_u16(index);
-                        f.bytecode.push(msb);
-                        f.bytecode.push(lsb);
-
-                        bound_globals_count += 1;
-                    });
+                let (msb, lsb) = to_big_endian_u16(index);
+                f.bytecode.push(msb);
+                f.bytecode.push(lsb);
 
                 f.bytecode.push(OpCode::ConstNil as u8);
-
-                if !always_succeeds {
-                    let j_index_to_return = set_jump_placeholder(f, OpCode::Jump);
-                    for index in &jump_indexes_to_panic {
-                        set_big_endian_u16(f, *index);
-                    }
-                    f.bytecode.push(OpCode::PanicNoMatch as u8);
-                    set_big_endian_u16(f, j_index_to_return);
-                }
 
                 Ok(())
             }

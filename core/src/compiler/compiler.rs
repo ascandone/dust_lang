@@ -251,17 +251,10 @@ impl Compiler {
                 for (pattern, expr) in clauses {
                     let mut bound_locals = vec![];
 
-                    let next_clause_indexes = self.compile_pattern(
-                        f,
-                        pattern.clone(),
-                        root_ident,
-                        |ident, f, compiler| {
-                            // let id = compiler.symbol_table.define_local(&ident);
+                    let next_clause_indexes =
+                        self.compile_pattern(f, pattern.clone(), root_ident, |ident| {
                             bound_locals.push(ident);
-                            // f.bytecode.push(OpCode::SetLocal as u8);
-                            // f.bytecode.push(id);
-                        },
-                    );
+                        });
 
                     self.compile_expr_chunk(f, expr, tail_position)?;
 
@@ -302,7 +295,7 @@ impl Compiler {
         mut handle_ident: F,
     ) -> Vec<usize>
     where
-        F: FnMut(String, &mut Function, &mut Self),
+        F: FnMut(String),
     {
         let mut patterns: Vec<(u8, Pattern)> = vec![(root_ident, pattern)];
 
@@ -316,7 +309,7 @@ impl Compiler {
                         self.symbol_table
                             .define_local_alias(&pattern_ident, ident_id);
 
-                        handle_ident(pattern_ident, f, self);
+                        handle_ident(pattern_ident);
                     }
 
                     Pattern::Lit(l) => {

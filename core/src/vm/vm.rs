@@ -411,27 +411,24 @@ impl Vm {
                     }
                 }
 
-                /*
                 OpCode::MatchTuple3ElseJump => {
+                    let j_target = frame.next_opcode_u16();
+                    let ident = frame.next_opcode() as usize;
+                    let value = stack.get(frame.base_pointer + ident).clone();
 
+                    match value {
+                        Value::Tuple3(x, y, z) => {
+                            stack.push(z.deref().clone());
+                            stack.push(y.deref().clone());
+                            stack.push(x.deref().clone());
+                        }
 
-                   let j_target = frame.next_opcode_u16();
-                let value = stack.pop();
-
-                match value {
-                    Value::Tuple3(x, y, z) => {
-                        stack.push(z.deref().clone());
-                        stack.push(y.deref().clone());
-                        stack.push(x.deref().clone());
-                    }
-
-                    _ => {
-                        stack.push(value);
-                        frame.ip = j_target as usize;
+                        _ => {
+                            frame.ip = j_target as usize;
+                        }
                     }
                 }
-                }
-                */
+
                 // Algebraic/native ops
                 OpCode::Add => op_2_partial(&mut stack, opcode, |a, b| match (a, b) {
                     (Value::Num(a), Value::Num(b)) => Some(Value::Num(a + b)),

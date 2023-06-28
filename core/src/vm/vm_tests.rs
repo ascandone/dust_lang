@@ -1101,15 +1101,15 @@ fn match_tuple2_when_match_test() {
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 01 */ OpCode::SetLocal as u8,
-            /* 02 */ 0,
-            /* 03 */ OpCode::MatchTuple2ElseJump as u8,
-            /* 04 */ 0,
-            /* 05 */ 9,
-            /* 06 */ 0,
-            /* 07 */ OpCode::Return as u8,
-            /* 08 */ OpCode::ConstTrue as u8,
-            /* 09 */ OpCode::Return as u8,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 9,
+            /* 07 */ 0,
+            /* 08 */ OpCode::Return as u8,
+            /* 09 */ OpCode::ConstTrue as u8,
+            /* 10 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1138,7 +1138,7 @@ fn match_tuple2_when_not_match_test() {
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
 }
-#[ignore]
+
 #[test]
 fn match_tuple3_when_match_test() {
     let t = Value::Tuple3(
@@ -1149,33 +1149,43 @@ fn match_tuple3_when_match_test() {
 
     let main = Function {
         constant_pool: vec![t],
+        locals: 4,
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            // /* 02 */ OpCode::MatchTuple3ElseJump as u8,
-            /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::SetLocal as u8,
+            /* 02 */ 0,
+            /* 03 */ OpCode::MatchTuple3ElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 8,
+            /* 06 */ 0,
             /* 07 */ OpCode::Return as u8,
+            /* 08 */ OpCode::ConstTrue as u8,
+            /* 09 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 1.0.into());
 }
-#[ignore]
+
 #[test]
 fn match_tuple3_when_not_match_test() {
     let main = Function {
+        locals: 4,
+        constant_pool: vec![42.0.into()],
         bytecode: vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            // /* 01 */ OpCode::MatchTuple3ElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 5,
-            /* 04 */ OpCode::Return as u8,
-            /* 05 */ OpCode::ConstTrue as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchTuple3ElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 9,
+            /* 07 */ 0,
+            /* 08 */ OpCode::Return as u8,
+            /* 09 */ OpCode::ConstTrue as u8,
+            /* 10 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };

@@ -550,7 +550,7 @@ let fizz_buzz = fn n {
   }
 };
 
-fizz_buzz(15)
+fizz_buzz(30)
 
     ",
         "FizzBuzz",

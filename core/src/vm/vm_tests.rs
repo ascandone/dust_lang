@@ -922,18 +922,19 @@ fn match_empty_map_when_match_test() {
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
 }
 
-#[ignore]
 #[test]
 fn match_cons_map_when_not_match_test() {
     let main = Function {
-        locals: 1,
+        locals: 3,
         constant_pool: vec!["key".into()],
         bytecode: vec![
             /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::ConstNil as u8,
-            // /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 01 */ OpCode::SetLocal as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::MatchConsMapElseJump as u8,
             /* 03 */ 0,
             /* 04 */ 8,
+            /* 05 */ 0,
             /* 05 */ 0,
             /* 06 */ OpCode::Return as u8,
             /* 07 */ OpCode::ConstNil as u8,
@@ -945,7 +946,6 @@ fn match_cons_map_when_not_match_test() {
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
 }
 
-#[ignore]
 #[test]
 fn match_cons_map_tl_when_match_test() {
     let m = im_rc::hashmap![
@@ -955,16 +955,22 @@ fn match_cons_map_tl_when_match_test() {
     ];
 
     let main = Function {
+        locals: 3,
         constant_pool: vec![Value::Map(m), "x".into()],
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            // /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 7,
-            /* 05 */ 1,
-            /* 06 */ OpCode::Pop as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsMapElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 11,
+            /* 07 */ 1,
+            /* 08 */ 0,
+            /* 09 */ OpCode::Pop as u8,
+            /* 10 */ OpCode::Return as u8,
+            /* 11 */ OpCode::ConstFalse as u8,
+            /* 12 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -978,7 +984,6 @@ fn match_cons_map_tl_when_match_test() {
     );
 }
 
-#[ignore]
 #[test]
 fn match_cons_map_hd_when_match_test() {
     let m = im_rc::hashmap![
@@ -989,14 +994,20 @@ fn match_cons_map_hd_when_match_test() {
 
     let main = Function {
         constant_pool: vec![Value::Map(m), "x".into()],
+        locals: 3,
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            // /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ 1,
-            /* 06 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsMapElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 10,
+            /* 07 */ 1,
+            /* 08 */ 0,
+            /* 09 */ OpCode::Return as u8,
+            /* 10 */ OpCode::ConstFalse as u8,
+            /* 11 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };

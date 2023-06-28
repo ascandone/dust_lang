@@ -32,13 +32,9 @@ fn opcode_arity(opcode: OpCode) -> Arity {
 
         Const | SetLocal | GetLocal | GetFree | Call => vec![One],
 
-        Jump
-        | JumpIfFalse
-        | JumpIfFalseElsePop
-        | JumpIfTrueElsePop
-        | SetGlobal
-        | GetGlobal
-        => vec![Two],
+        Jump | JumpIfFalse | JumpIfFalseElsePop | JumpIfTrueElsePop | SetGlobal | GetGlobal => {
+            vec![Two]
+        }
 
         MakeClosure => vec![One, One],
 
@@ -46,11 +42,9 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         | MatchTuple3ElseJump
         | MatchEmptyListElseJump
         | MatchEmptyMapElseJump
-        | MatchConsElseJump
-        // | MatchConsMapElseJump
-        => vec![Two, One],
+        | MatchConsElseJump => vec![Two, One],
 
-        MatchConstElseJump => vec![Two, One, One],
+        MatchConstElseJump | MatchConsMapElseJump => vec![Two, One, One],
 
         Add | Sub | Negate | Mult | Div | Modulo | Gt | GtEq | Lt | LtEq | Eq | NotEq | Not => {
             vec![]
@@ -117,14 +111,12 @@ impl Display for Function {
                     }
                 }
 
-                /*
-                 OpCode::MatchConsMapElseJump
-                => {
-
-                    let arg_2 = self.bytecode[index + 2];
+                OpCode::MatchConsMapElseJump => {
+                    let arg_2 = self.bytecode[index + 3];
                     let value = &self.constant_pool[arg_2 as usize];
                     write!(f, " ({value})")?;
-                },*/
+                }
+
                 OpCode::MatchConstElseJump => {
                     let arg_2 = self.bytecode[index + 2 + 1];
                     let value = &self.constant_pool[arg_2 as usize];
@@ -299,25 +291,25 @@ Disassembly of '#[function nested at {nested_f_addr:?}]':
         )
     }
 
-    #[ignore]
     #[test]
     fn match_cons_map() {
         let main = Function {
             constant_pool: vec!["x".into()],
             bytecode: vec![
-                // /* 00 */ OpCode::MatchConsMapElseJump as u8,
+                /* 00 */ OpCode::MatchConsMapElseJump as u8,
                 /* 01 */ 0,
-                /* 02 */ 10,
-                /* 03 */ 0,
-                /* 03 */ OpCode::Return as u8,
+                /* 02 */ 10, // addr
+                /* 03 */ 3, // local
+                /* 04 */ 0, // key const index
+                /* 05 */ OpCode::Return as u8,
             ],
             ..Default::default()
         };
 
         assert_eq!(
             main.to_string(),
-            "0000 MatchConsMapElseJump 0x0a, 0x00 (\"x\")
-0004 Return
+            "0000 MatchConsMapElseJump 0x0a, 0x03, 0x00 (\"x\")
+0005 Return
 "
         )
     }

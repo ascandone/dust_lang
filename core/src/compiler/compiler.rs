@@ -355,16 +355,30 @@ impl Compiler {
                         next_clause_indexes.push(j_index);
                     }
 
-                    Pattern::ConsMap((_k, _v), _rest) => {
-                        todo!()
-                        /*   let j_index = set_jump_placeholder(f, OpCode::MatchConsMapElseJump);
+                    Pattern::ConsMap((k, v), rest) => {
+                        let j_index = set_jump_placeholder(f, OpCode::MatchConsMapElseJump);
                         next_clause_indexes.push(j_index);
 
                         let const_index = alloc_const(f, k.into());
                         f.bytecode.push(const_index);
 
-                        patterns.push(rest.deref().clone());
-                        patterns.push(v.deref().clone());*/
+                        f.bytecode.push(ident_id);
+
+                        let mut reversed_patterns = vec![];
+
+                        for pattern in vec![v, rest] {
+                            let var_name = get_unique_var();
+                            let ident_id = self.symbol_table.define_local(&var_name);
+
+                            f.bytecode.push(OpCode::SetLocal as u8);
+                            f.bytecode.push(ident_id);
+
+                            reversed_patterns.push((0, pattern.deref().clone()));
+                        }
+
+                        for t in reversed_patterns.into_iter().rev() {
+                            patterns.push(t)
+                        }
                     }
 
                     Pattern::Tuple(tuple_patterns) => {

@@ -447,7 +447,6 @@ match 42 { [] => 0, n => n }
     );
 }
 
-#[ignore]
 #[test]
 fn cons_match() {
     assert_result(
@@ -487,6 +486,7 @@ import Map;
         ]),
     );
 }
+
 #[ignore]
 #[test]
 fn cons_map_match() {

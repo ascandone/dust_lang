@@ -350,9 +350,9 @@ impl Compiler {
                     }
 
                     Pattern::EmptyMap => {
-                        todo!()
-                        /*let j_index = set_jump_placeholder(f, OpCode::MatchEmptyMapElseJump);
-                        next_clause_indexes.push(j_index);*/
+                        let j_index = set_jump_placeholder(f, OpCode::MatchEmptyMapElseJump);
+                        f.bytecode.push(ident_id);
+                        next_clause_indexes.push(j_index);
                     }
 
                     Pattern::ConsMap((_k, _v), _rest) => {

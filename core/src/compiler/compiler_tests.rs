@@ -1314,7 +1314,6 @@ fn empty_list_match_test() {
     );
 }
 
-#[ignore]
 #[test]
 fn empty_map_match_test() {
     let ast = Expr::Match(
@@ -1324,19 +1323,24 @@ fn empty_map_match_test() {
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 1);
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            // /*  1 */ OpCode::MatchEmptyMapElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 8,
-            /*  4 */ OpCode::ConstFalse as u8,
-            /*  5 */ OpCode::Jump as u8,
+            /*  3 */ OpCode::MatchEmptyMapElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 11,
             /*  6 */ 0,
-            /*  7 */ 9,
-            /*  8 */ OpCode::PanicNoMatch as u8,
-            /*  9 */ OpCode::Return as u8, // <-
+            /*  7 */ OpCode::ConstFalse as u8,
+            /*  8 */ OpCode::Jump as u8,
+            /*  9 */ 0,
+            /* 10 */ 12,
+            /* 11 */ OpCode::PanicNoMatch as u8,
+            /* 12 */ OpCode::Return as u8, // <-
         ]
     );
 }

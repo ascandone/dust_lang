@@ -874,40 +874,47 @@ fn match_empty_list_when_match_test() {
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
 }
 
-#[ignore]
 #[test]
 fn match_empty_map_when_not_match_test() {
     let main = Function {
         constant_pool: vec![42.0.into()],
+        locals: 1,
         bytecode: vec![
             /* 00 */ OpCode::ConstTrue as u8,
-            // /* 01 */ OpCode::MatchEmptyMapElseJump as u8,
+            /* 01 */ OpCode::SetLocal as u8,
             /* 02 */ 0,
-            /* 03 */ 5,
-            /* 04 */ OpCode::Return as u8,
-            /* 05 */ OpCode::ConstNil as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 03 */ OpCode::MatchEmptyMapElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 8,
+            /* 06 */ 0,
+            /* 07 */ OpCode::Return as u8,
+            /* 08 */ OpCode::ConstNil as u8,
+            /* 09 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
 }
-#[ignore]
+
 #[test]
 fn match_empty_map_when_match_test() {
     let main = Function {
         constant_pool: vec![Value::Map(im_rc::HashMap::new())],
+        locals: 1,
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::Const as u8,
-            /* 02 */ 0,
-            // /* 03 */ OpCode::MatchEmptyMapElseJump as u8,
-            /* 04 */ 0,
-            /* 05 */ 7,
-            /* 06 */ OpCode::Return as u8,
-            /* 07 */ OpCode::ConstFalse as u8,
-            /* 08 */ OpCode::Return as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchEmptyMapElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 10,
+            /* 07 */ 0,
+            /* 08 */ OpCode::ConstTrue as u8,
+            /* 09 */ OpCode::Return as u8,
+            /* 10 */ OpCode::ConstFalse as u8,
+            /* 11 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -919,6 +926,7 @@ fn match_empty_map_when_match_test() {
 #[test]
 fn match_cons_map_when_not_match_test() {
     let main = Function {
+        locals: 1,
         constant_pool: vec!["key".into()],
         bytecode: vec![
             /* 00 */ OpCode::ConstTrue as u8,

@@ -3,6 +3,7 @@ use super::{
     stack::Stack,
     value::{Closure, Function, Value},
 };
+use crate::vm::list::List;
 use std::fmt::{Display, Formatter};
 use std::mem::transmute;
 use std::ops::Deref;
@@ -311,21 +312,22 @@ impl Vm {
                     }
                 }
 
-                /*                OpCode::MatchEmptyListElseJump => {
-                                    let j_target = frame.next_opcode_u16();
+                OpCode::MatchEmptyListElseJump => {
+                    let j_target = frame.next_opcode_u16();
 
-                                    let value = stack.peek();
+                    let ident = frame.next_opcode() as usize;
+                    let value = stack.get(frame.base_pointer + ident);
 
-                                    match value {
-                                        Value::List(List::Empty) => {
-                                            stack.pop();
-                                        }
+                    match value {
+                        Value::List(List::Empty) => {}
 
-                                        _ => {
-                                            frame.ip = j_target as usize;
-                                        }
-                                    }
-                                }
+                        _ => {
+                            frame.ip = j_target as usize;
+                        }
+                    }
+                }
+
+                /*
 
                                 OpCode::MatchEmptyMapElseJump => {
                                     let j_target = frame.next_opcode_u16();

@@ -322,9 +322,9 @@ impl Compiler {
                     }
 
                     Pattern::EmptyList => {
-                        todo!()
-                        // let j_index = set_jump_placeholder(f, OpCode::MatchEmptyListElseJump);
-                        // next_clause_indexes.push(j_index);
+                        let j_index = set_jump_placeholder(f, OpCode::MatchEmptyListElseJump);
+                        f.bytecode.push(ident_id);
+                        next_clause_indexes.push(j_index);
                     }
 
                     Pattern::Cons(_hd, _tl) => {

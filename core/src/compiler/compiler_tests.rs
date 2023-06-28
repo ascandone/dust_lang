@@ -242,15 +242,18 @@ fn global_scope_pattern_test() {
         f.bytecode,
         vec![
             /* 00 */ OpCode::ConstNil as u8,
-            // /* 01 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 01 */ OpCode::SetLocal as u8,
             /* 02 */ 0,
-            /* 03 */ 8, // goto PanicNoMatch
-            /* 04 */ OpCode::ConstNil as u8,
-            /* 05 */ OpCode::Jump as u8,
+            /* 03 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 11, // goto PanicNoMatch
             /* 06 */ 0,
-            /* 07 */ 9, // goto return
-            /* 08 */ OpCode::PanicNoMatch as u8,
-            /* 09 */ OpCode::Return as u8
+            /* 07 */ OpCode::ConstNil as u8,
+            /* 08 */ OpCode::Jump as u8,
+            /* 09 */ 0,
+            /* 10 */ 12, // goto return
+            /* 11 */ OpCode::PanicNoMatch as u8,
+            /* 12 */ OpCode::Return as u8
         ]
     );
 }
@@ -1276,7 +1279,7 @@ fn ident_match_test() {
         ]
     );
 }
-#[ignore]
+
 #[test]
 fn empty_list_match_test() {
     let ast = Expr::Match(
@@ -1286,19 +1289,24 @@ fn empty_list_match_test() {
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 1, "locals");
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            // /*  1 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 8,
-            /*  4 */ OpCode::ConstFalse as u8,
-            /*  5 */ OpCode::Jump as u8,
+            /*  3 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 11,
             /*  6 */ 0,
-            /*  7 */ 9,
-            /*  8 */ OpCode::PanicNoMatch as u8,
-            /*  9 */ OpCode::Return as u8, // <-
+            /*  7 */ OpCode::ConstFalse as u8,
+            /*  8 */ OpCode::Jump as u8,
+            /*  9 */ 0,
+            /* 10 */ 12,
+            /* 11 */ OpCode::PanicNoMatch as u8,
+            /* 12 */ OpCode::Return as u8, // <-
         ]
     );
 }

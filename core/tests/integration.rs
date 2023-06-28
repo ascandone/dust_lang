@@ -280,6 +280,7 @@ fn let_bug() {
         3.0,
     );
 }
+
 #[ignore]
 #[test]
 fn list_empty() {
@@ -437,6 +438,17 @@ match 42 { x => x + 1 }
         43,
     );
 }
+
+#[test]
+fn empty_list_match_failure() {
+    assert_result(
+        "
+match 42 { [] => 0, n => n }
+",
+        42.0,
+    );
+}
+
 #[ignore]
 #[test]
 fn cons_match() {

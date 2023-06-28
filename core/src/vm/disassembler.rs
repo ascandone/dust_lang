@@ -39,7 +39,6 @@ fn opcode_arity(opcode: OpCode) -> Arity {
         | SetGlobal
         | GetGlobal
         // | MatchEmptyMapElseJump
-        // | MatchConsElseJump
         // | MatchTuple3ElseJump
         => vec![Two],
 
@@ -47,6 +46,7 @@ fn opcode_arity(opcode: OpCode) -> Arity {
 
         MatchTuple2ElseJump
         | MatchEmptyListElseJump
+        | MatchConsElseJump
         // | MatchConsMapElseJump
         => vec![Two, One],
 

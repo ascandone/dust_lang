@@ -276,21 +276,24 @@ fn global_scope_pattern_cons_test() {
         f.bytecode,
         vec![
             /* 00 */ OpCode::ConstNil as u8,
-            // /* 01 */ OpCode::MatchConsElseJump as u8,
+            /* 01 */ OpCode::GetLocal as u8,
             /* 02 */ 0,
-            /* 03 */ 14, // goto PanicNoMatch
-            /* 04 */ OpCode::SetGlobal as u8,
-            /* 05 */ 0,
+            /* 03 */ OpCode::MatchConsElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 14, // goto PanicNoMatch
             /* 06 */ 0,
             /* 07 */ OpCode::SetGlobal as u8,
             /* 08 */ 0,
-            /* 09 */ 1,
-            /* 10 */ OpCode::ConstNil as u8,
-            /* 11 */ OpCode::Jump as u8,
-            /* 12 */ 0,
-            /* 13 */ 15, // goto return
-            /* 14 */ OpCode::PanicNoMatch as u8,
-            /* 15 */ OpCode::Return as u8
+            /* 09 */ 0,
+            /* 10 */ OpCode::SetGlobal as u8,
+            /* 11 */ 0,
+            /* 12 */ 1,
+            /* 13 */ OpCode::ConstNil as u8,
+            /* 14 */ OpCode::Jump as u8,
+            /* 15 */ 0,
+            /* 16 */ 15, // goto return
+            /* 17 */ OpCode::PanicNoMatch as u8,
+            /* 18 */ OpCode::Return as u8
         ]
     );
 }
@@ -1417,7 +1420,6 @@ fn const_match_test_many_clauses() {
     );
 }
 
-#[ignore]
 #[test]
 fn cons_match_test() {
     let ast = Expr::Match(
@@ -1427,29 +1429,35 @@ fn cons_match_test() {
                 Box::new(Pattern::Identifier("hd".to_string())),
                 Box::new(Pattern::Identifier("tl".to_string())),
             ),
-            false.into(),
+            Expr::Ident(Ident(None, "tl".to_string())),
         )],
     );
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 3, "locals");
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            // /*  1 */ OpCode::MatchConsElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 12,
-            /*  4 */ OpCode::SetLocal as u8,
-            /*  5 */ 0,
-            /*  6 */ OpCode::SetLocal as u8,
-            /*  7 */ 1,
-            /*  8 */ OpCode::ConstFalse as u8,
-            /*  9 */ OpCode::Jump as u8,
-            /* 10 */ 0,
-            /* 11 */ 13,
-            /* 12 */ OpCode::PanicNoMatch as u8,
-            /* 13 */ OpCode::Return as u8, // <-
+            /*  3 */ OpCode::MatchConsElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 16,
+            /*  6 */ 0,
+            /*  7 */ OpCode::SetLocal as u8,
+            /*  8 */ 1,
+            /*  9 */ OpCode::SetLocal as u8,
+            /* 10 */ 2,
+            /* 11 */ OpCode::GetLocal as u8,
+            /* 12 */ 2,
+            /* 13 */ OpCode::Jump as u8,
+            /* 14 */ 0,
+            /* 15 */ 17,
+            /* 16 */ OpCode::PanicNoMatch as u8,
+            /* 17 */ OpCode::Return as u8, // <-
         ]
     );
 }

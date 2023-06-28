@@ -996,41 +996,59 @@ fn match_cons_map_hd_when_match_test() {
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 0.0.into());
 }
 
-#[ignore]
 #[test]
 fn match_cons_list_when_not_match_test() {
     let main = Function {
+        locals: 3,
         constant_pool: vec![42.0.into()],
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::ConstNil as u8,
-            // /* 02 */ OpCode::MatchConsElseJump as u8,
-            /* 03 */ 0,
-            /* 04 */ 7,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstNil as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::SetLocal as u8,
+            /* 02 */ 0,
+            /* 03 */ OpCode::MatchConsElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 13,
+            /* 06 */ 0,
+            /* 07 */ OpCode::SetLocal as u8,
+            /* 08 */ 1,
+            /* 09 */ OpCode::SetLocal as u8,
+            /* 10 */ 2,
+            /* 11 */ OpCode::ConstTrue as u8,
+            /* 12 */ OpCode::Return as u8,
+            /* 13 */ OpCode::ConstFalse as u8,
+            /* 14 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
-    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), false.into());
 }
-#[ignore]
+
 #[test]
 fn match_cons_list_tl_when_match_test() {
     let lst = Value::List(List::Cons(Rc::new(42.0.into()), Rc::new(List::Empty)));
 
     let main = Function {
+        locals: 3,
         constant_pool: vec![lst],
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            // /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 5,
-            /* 05 */ OpCode::Pop as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 15,
+            /* 07 */ 0,
+            /* 08 */ OpCode::SetLocal as u8,
+            /* 09 */ 1,
+            /* 10 */ OpCode::SetLocal as u8,
+            /* 11 */ 2,
+            /* 12 */ OpCode::GetLocal as u8,
+            /* 13 */ 2,
+            /* 14 */ OpCode::Return as u8,
+            /* 15 */ OpCode::ConstFalse as u8,
+            /* 16 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1040,22 +1058,32 @@ fn match_cons_list_tl_when_match_test() {
         Value::List(List::Empty)
     );
 }
-#[ignore]
+
 #[test]
 fn match_cons_list_hd_when_match_test() {
     let lst = Value::List(List::Cons(Rc::new(42.0.into()), Rc::new(List::Empty)));
 
     let main = Function {
+        locals: 3,
         constant_pool: vec![lst],
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            // /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstTrue as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 15,
+            /* 07 */ 0,
+            /* 08 */ OpCode::SetLocal as u8,
+            /* 09 */ 1,
+            /* 10 */ OpCode::SetLocal as u8,
+            /* 11 */ 2,
+            /* 12 */ OpCode::GetLocal as u8,
+            /* 13 */ 1,
+            /* 14 */ OpCode::Return as u8,
+            /* 15 */ OpCode::ConstFalse as u8,
+            /* 16 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };

@@ -327,13 +327,26 @@ impl Compiler {
                         next_clause_indexes.push(j_index);
                     }
 
-                    Pattern::Cons(_hd, _tl) => {
-                        todo!()
-                        /*let j_index = set_jump_placeholder(f, OpCode::MatchConsElseJump);
+                    Pattern::Cons(hd, tl) => {
+                        let j_index = set_jump_placeholder(f, OpCode::MatchConsElseJump);
                         next_clause_indexes.push(j_index);
+                        f.bytecode.push(ident_id);
 
-                        patterns.push(tl.deref().clone());
-                        patterns.push(hd.deref().clone());*/
+                        let mut reversed_patterns = vec![];
+
+                        for pattern in vec![hd, tl] {
+                            let var_name = get_unique_var();
+                            let ident_id = self.symbol_table.define_local(&var_name);
+
+                            f.bytecode.push(OpCode::SetLocal as u8);
+                            f.bytecode.push(ident_id);
+
+                            reversed_patterns.push((ident_id, pattern.deref().clone()));
+                        }
+
+                        for t in reversed_patterns.into_iter().rev() {
+                            patterns.push(t)
+                        }
                     }
 
                     Pattern::EmptyMap => {

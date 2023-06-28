@@ -281,7 +281,6 @@ fn let_bug() {
     );
 }
 
-#[ignore]
 #[test]
 fn list_empty() {
     assert_result("import List; List.empty()", Value::List(List::Empty));
@@ -295,7 +294,6 @@ fn concat_native_calls() {
     );
 }
 
-#[ignore]
 #[test]
 fn concat_native_calls_list() {
     assert_result(
@@ -307,7 +305,7 @@ fn concat_native_calls_list() {
         ])),
     );
 }
-#[ignore]
+
 #[test]
 fn list_lit() {
     assert_result(
@@ -322,7 +320,7 @@ import List;
         ])),
     );
 }
-#[ignore]
+
 #[test]
 fn list_range() {
     assert_result(
@@ -334,7 +332,7 @@ fn list_range() {
         ])),
     );
 }
-#[ignore]
+
 #[test]
 fn list_map() {
     assert_result(
@@ -349,7 +347,7 @@ List.map(lst, fn x { x * 10 })
         ])),
     );
 }
-#[ignore]
+
 #[test]
 fn list_filter() {
     assert_result(
@@ -360,7 +358,7 @@ List.filter(lst, fn x { x != 0 })
         Value::List(List::from_vec(vec![Value::Num(1.0), Value::Num(3.0)])),
     );
 }
-#[ignore]
+
 #[test]
 fn list_foldr() {
     assert_result(
@@ -373,7 +371,7 @@ List.foldr(lst, \"Z\", String.concat)
         "abcZ",
     );
 }
-#[ignore]
+
 #[test]
 fn list_foldl() {
     assert_result(

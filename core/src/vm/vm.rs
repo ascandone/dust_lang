@@ -327,6 +327,24 @@ impl Vm {
                     }
                 }
 
+                OpCode::MatchConsElseJump => {
+                    let j_target = frame.next_opcode_u16();
+
+                    let ident = frame.next_opcode() as usize;
+                    let value = stack.get(frame.base_pointer + ident).clone();
+
+                    match value {
+                        Value::List(List::Cons(hd, tl)) => {
+                            stack.push(Value::List(tl.deref().clone()));
+                            stack.push(hd.deref().clone());
+                        }
+
+                        _ => {
+                            frame.ip = j_target as usize;
+                        }
+                    }
+                }
+
                 /*
 
                                 OpCode::MatchEmptyMapElseJump => {
@@ -345,22 +363,6 @@ impl Vm {
                                     }
                                 }
 
-                                OpCode::MatchConsElseJump => {
-                                    let j_target = frame.next_opcode_u16();
-                                    let value = stack.pop();
-
-                                    match value {
-                                        Value::List(List::Cons(hd, tl)) => {
-                                            stack.push(Value::List(tl.deref().clone()));
-                                            stack.push(hd.deref().clone());
-                                        }
-
-                                        _ => {
-                                            stack.push(value);
-                                            frame.ip = j_target as usize;
-                                        }
-                                    }
-                                }
 
                                 OpCode::MatchConsMapElseJump => {
                                     let j_target = frame.next_opcode_u16();

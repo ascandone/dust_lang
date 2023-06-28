@@ -359,10 +359,10 @@ impl Compiler {
                         let j_index = set_jump_placeholder(f, OpCode::MatchConsMapElseJump);
                         next_clause_indexes.push(j_index);
 
+                        f.bytecode.push(ident_id);
+
                         let const_index = alloc_const(f, k.into());
                         f.bytecode.push(const_index);
-
-                        f.bytecode.push(ident_id);
 
                         let mut reversed_patterns = vec![];
 

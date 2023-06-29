@@ -1469,7 +1469,7 @@ fn cons_match_test() {
 #[test]
 fn cons_map_match_test() {
     let ast = Expr::Match(
-        Box::new(true.into()),
+        Box::new(42.0.into()),
         vec![(
             Pattern::ConsMap(
                 (
@@ -1484,31 +1484,32 @@ fn cons_map_match_test() {
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
-    assert_eq!(f.constant_pool, vec!["key".into()]);
+    assert_eq!(f.constant_pool, vec![42.0.into(), "key".into()]);
 
     assert_eq!(f.locals, 3);
 
     assert_eq!(
         f.bytecode,
         vec![
-            /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::SetLocal as u8,
-            /*  2 */ 0,
-            /*  3 */ OpCode::MatchConsMapElseJump as u8,
-            /*  4 */ 0,
-            /*  5 */ 16,
-            /*  6 */ 0,
+            /*  0 */ OpCode::Const as u8,
+            /*  1 */ 0,
+            /*  2 */ OpCode::SetLocal as u8,
+            /*  3 */ 0,
+            /*  4 */ OpCode::MatchConsMapElseJump as u8,
+            /*  5 */ 0,
+            /*  6 */ 17,
             /*  7 */ 0,
-            /*  8 */ OpCode::SetLocal as u8,
-            /*  9 */ 1,
-            /* 10 */ OpCode::SetLocal as u8,
-            /* 11 */ 2,
-            /* 12 */ OpCode::ConstFalse as u8,
-            /* 13 */ OpCode::Jump as u8,
-            /* 14 */ 0,
-            /* 15 */ 17,
-            /* 16 */ OpCode::PanicNoMatch as u8,
-            /* 17 */ OpCode::Return as u8, // <-
+            /*  8 */ 1,
+            /*  9 */ OpCode::SetLocal as u8,
+            /* 10 */ 1,
+            /* 11 */ OpCode::SetLocal as u8,
+            /* 12 */ 2,
+            /* 13 */ OpCode::ConstFalse as u8,
+            /* 14 */ OpCode::Jump as u8,
+            /* 15 */ 0,
+            /* 16 */ 18,
+            /* 17 */ OpCode::PanicNoMatch as u8,
+            /* 18 */ OpCode::Return as u8, // <-
         ]
     );
 }

@@ -373,7 +373,7 @@ impl Compiler {
                             f.bytecode.push(OpCode::SetLocal as u8);
                             f.bytecode.push(ident_id);
 
-                            reversed_patterns.push((0, pattern.deref().clone()));
+                            reversed_patterns.push((ident_id, pattern.deref().clone()));
                         }
 
                         for t in reversed_patterns.into_iter().rev() {

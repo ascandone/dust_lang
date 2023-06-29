@@ -362,12 +362,13 @@ impl Vm {
 
                 OpCode::MatchConsMapElseJump => {
                     let j_target = frame.next_opcode_u16();
-                    let const_index = frame.next_opcode();
-                    let constant_pool = &frame.closure.function.constant_pool;
-                    let key = &constant_pool[const_index as usize].as_string().unwrap();
 
                     let ident = frame.next_opcode() as usize;
                     let value = stack.get(frame.base_pointer + ident).clone();
+
+                    let const_index = frame.next_opcode();
+                    let constant_pool = &frame.closure.function.constant_pool;
+                    let key = &constant_pool[const_index as usize].as_string().unwrap();
 
                     match value {
                         Value::Map(m) => match m.get(key.deref()) {

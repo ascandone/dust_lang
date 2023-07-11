@@ -140,7 +140,7 @@ fn multiple_exprs_do_test() {
 #[test]
 fn def_test() {
     let ast = vec![Statement::Let {
-        pattern: "x".into(),
+        name: "x".into(),
         value: true.into(),
         public: false,
     }];
@@ -164,12 +164,12 @@ fn def_test() {
 fn def_twice_test() {
     let ast = vec![
         Statement::Let {
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
             public: false,
         },
         Statement::Let {
-            pattern: "y".into(),
+            name: "y".into(),
             value: false.into(),
             public: false,
         },
@@ -201,7 +201,7 @@ fn global_scope_test() {
     let ast = vec![
         Statement::Let {
             public: false,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         },
         Statement::Expr(ident("x")),
@@ -224,118 +224,6 @@ fn global_scope_test() {
             OpCode::Return as u8
         ],
         "{f}"
-    );
-}
-
-#[ignore]
-#[test]
-fn global_scope_pattern_test() {
-    let ast = vec![Statement::Let {
-        public: false,
-        pattern: Pattern::EmptyList,
-        value: NIL,
-    }];
-
-    let f = new_compiler().compile_program(ast, "main").unwrap();
-
-    assert_eq!(
-        f.bytecode,
-        vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::SetLocal as u8,
-            /* 02 */ 0,
-            /* 03 */ OpCode::MatchEmptyListElseJump as u8,
-            /* 04 */ 0,
-            /* 05 */ 11, // goto PanicNoMatch
-            /* 06 */ 0,
-            /* 07 */ OpCode::ConstNil as u8,
-            /* 08 */ OpCode::Jump as u8,
-            /* 09 */ 0,
-            /* 10 */ 12, // goto return
-            /* 11 */ OpCode::PanicNoMatch as u8,
-            /* 12 */ OpCode::Return as u8
-        ]
-    );
-}
-
-#[ignore]
-#[test]
-fn global_scope_pattern_cons_test() {
-    let ast = vec![Statement::Let {
-        public: false,
-        pattern: Pattern::Cons(
-            Box::new(Pattern::Identifier("hd".to_string())),
-            Box::new(Pattern::Identifier("tl".to_string())),
-        ),
-        value: NIL,
-    }];
-
-    let f = new_compiler().compile_program(ast, "main").unwrap();
-
-    assert_eq!(
-        f.bytecode,
-        vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::GetLocal as u8,
-            /* 02 */ 0,
-            /* 03 */ OpCode::MatchConsElseJump as u8,
-            /* 04 */ 0,
-            /* 05 */ 14, // goto PanicNoMatch
-            /* 06 */ 0,
-            /* 07 */ OpCode::SetGlobal as u8,
-            /* 08 */ 0,
-            /* 09 */ 0,
-            /* 10 */ OpCode::SetGlobal as u8,
-            /* 11 */ 0,
-            /* 12 */ 1,
-            /* 13 */ OpCode::ConstNil as u8,
-            /* 14 */ OpCode::Jump as u8,
-            /* 15 */ 0,
-            /* 16 */ 15, // goto return
-            /* 17 */ OpCode::PanicNoMatch as u8,
-            /* 18 */ OpCode::Return as u8
-        ]
-    );
-}
-
-#[ignore]
-#[test]
-fn global_scope_pattern_cons_map_test() {
-    let ast = vec![Statement::Let {
-        public: false,
-        pattern: Pattern::ConsMap(
-            (
-                "key".to_string(),
-                Box::new(Pattern::Identifier("x".to_string())),
-            ),
-            Box::new(Pattern::Identifier("rest".to_string())),
-        ),
-        value: NIL,
-    }];
-
-    let f = new_compiler().compile_program(ast, "main").unwrap();
-
-    assert_eq!(
-        f.bytecode,
-        vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            // /* 01 */ OpCode::MatchConsMapElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 15, // goto PanicNoMatch
-            /* 04 */ 0,
-            /* 05 */ OpCode::SetGlobal as u8,
-            /* 06 */ 0,
-            /* 07 */ 0,
-            /* 08 */ OpCode::SetGlobal as u8,
-            /* 09 */ 0,
-            /* 10 */ 1,
-            /* 11 */ OpCode::ConstNil as u8,
-            /* 12 */ OpCode::Jump as u8,
-            /* 13 */ 0,
-            /* 14 */ 16, // goto return
-            /* 15 */ OpCode::PanicNoMatch as u8,
-            /* 16 */ OpCode::Return as u8
-        ]
     );
 }
 
@@ -472,7 +360,7 @@ fn infer_lambda_name_from_let_statement() {
     // let f = fn {nil}
     let ast = Statement::Let {
         public: false,
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec![],
             body: Box::new(NIL),
@@ -831,7 +719,7 @@ fn get_current_closure_test() {
     // let f = fn { f }
 
     let ast = Statement::Let {
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec![],
             body: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
@@ -853,7 +741,7 @@ fn error_on_rec_invalid_params() {
     // let f = fn x { f() }
     let ast = Statement::Let {
         public: false,
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec!["x".to_string()],
             body: Box::new(Expr::Call {
@@ -873,7 +761,7 @@ fn tailcall_test() {
 
     let ast = Statement::Let {
         public: false,
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec!["x".to_string(), "y".to_string()],
             body: Box::new(Expr::Call {
@@ -1076,7 +964,7 @@ fn modules_import_value() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1128,7 +1016,7 @@ fn module_not_imported_err() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1174,7 +1062,7 @@ fn modules_imports_are_scoped() {
         b_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1209,7 +1097,7 @@ fn modules_renamed_imports() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );

@@ -502,32 +502,6 @@ match m {
     );
 }
 
-#[ignore]
-#[test]
-fn let_statement_pattern() {
-    assert_result(
-        "let #(x, y) = #(1, 2);
-x
-",
-        Value::Num(1.0),
-    );
-
-    assert_result(
-        "let #{ } = #{ };
-",
-        Value::Nil,
-    );
-
-    assert_result(
-        "let m = #{ \"x\" => 0, \"y\" => 1 };
-
-let #{ \"x\" => x, \"y\" => 1 } = m;
-x
-",
-        Value::Num(0.0),
-    );
-}
-
 #[test]
 fn let_expr_pattern() {
     assert_result(

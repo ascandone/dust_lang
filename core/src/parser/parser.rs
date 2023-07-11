@@ -239,14 +239,14 @@ impl<'a> Parser<'a> {
     /// Pre: let token has been encountered
     fn parse_let_decl(&mut self, public: bool) -> Result<Statement, ParsingError> {
         self.expect_token(Token::Let)?;
-        let pattern = self.parse_pattern()?;
+        let name = self.expect_ident()?;
         self.expect_token(Token::Assign)?;
 
         let value = self.parse_expr(LOWEST_PREC, false)?;
 
         Ok(Statement::Let {
             public,
-            pattern,
+            name,
             value,
         })
     }

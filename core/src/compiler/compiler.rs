@@ -443,15 +443,10 @@ impl Compiler {
                 }
             }
             Statement::Let {
-                pattern,
+                name,
                 value,
                 public,
             } => {
-                let name = match pattern {
-                    Pattern::Identifier(name) => name,
-                    _ => todo!("let statement with pattern"),
-                };
-
                 self.binding_name = Some(name.clone());
                 self.compile_expr_chunk(f, value, false)?;
                 self.binding_name = None;

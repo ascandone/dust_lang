@@ -140,7 +140,7 @@ fn multiple_exprs_do_test() {
 #[test]
 fn def_test() {
     let ast = vec![Statement::Let {
-        pattern: "x".into(),
+        name: "x".into(),
         value: true.into(),
         public: false,
     }];
@@ -164,12 +164,12 @@ fn def_test() {
 fn def_twice_test() {
     let ast = vec![
         Statement::Let {
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
             public: false,
         },
         Statement::Let {
-            pattern: "y".into(),
+            name: "y".into(),
             value: false.into(),
             public: false,
         },
@@ -201,7 +201,7 @@ fn global_scope_test() {
     let ast = vec![
         Statement::Let {
             public: false,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         },
         Statement::Expr(ident("x")),
@@ -222,110 +222,8 @@ fn global_scope_test() {
             0,
             0,
             OpCode::Return as u8
-        ]
-    );
-}
-
-#[test]
-fn global_scope_pattern_test() {
-    let ast = vec![Statement::Let {
-        public: false,
-        pattern: Pattern::EmptyList,
-        value: NIL,
-    }];
-
-    let f = new_compiler().compile_program(ast, "main").unwrap();
-
-    assert_eq!(
-        f.bytecode,
-        vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::MatchEmptyListElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 8, // goto PanicNoMatch
-            /* 04 */ OpCode::ConstNil as u8,
-            /* 05 */ OpCode::Jump as u8,
-            /* 06 */ 0,
-            /* 07 */ 9, // goto return
-            /* 08 */ OpCode::PanicNoMatch as u8,
-            /* 09 */ OpCode::Return as u8
-        ]
-    );
-}
-
-#[test]
-fn global_scope_pattern_cons_test() {
-    let ast = vec![Statement::Let {
-        public: false,
-        pattern: Pattern::Cons(
-            Box::new(Pattern::Identifier("hd".to_string())),
-            Box::new(Pattern::Identifier("tl".to_string())),
-        ),
-        value: NIL,
-    }];
-
-    let f = new_compiler().compile_program(ast, "main").unwrap();
-
-    assert_eq!(
-        f.bytecode,
-        vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::MatchConsElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 14, // goto PanicNoMatch
-            /* 04 */ OpCode::SetGlobal as u8,
-            /* 05 */ 0,
-            /* 06 */ 0,
-            /* 07 */ OpCode::SetGlobal as u8,
-            /* 08 */ 0,
-            /* 09 */ 1,
-            /* 10 */ OpCode::ConstNil as u8,
-            /* 11 */ OpCode::Jump as u8,
-            /* 12 */ 0,
-            /* 13 */ 15, // goto return
-            /* 14 */ OpCode::PanicNoMatch as u8,
-            /* 15 */ OpCode::Return as u8
-        ]
-    );
-}
-
-#[test]
-fn global_scope_pattern_cons_map_test() {
-    let ast = vec![Statement::Let {
-        public: false,
-        pattern: Pattern::ConsMap(
-            (
-                "key".to_string(),
-                Box::new(Pattern::Identifier("x".to_string())),
-            ),
-            Box::new(Pattern::Identifier("rest".to_string())),
-        ),
-        value: NIL,
-    }];
-
-    let f = new_compiler().compile_program(ast, "main").unwrap();
-
-    assert_eq!(
-        f.bytecode,
-        vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::MatchConsMapElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 15, // goto PanicNoMatch
-            /* 04 */ 0,
-            /* 05 */ OpCode::SetGlobal as u8,
-            /* 06 */ 0,
-            /* 07 */ 0,
-            /* 08 */ OpCode::SetGlobal as u8,
-            /* 09 */ 0,
-            /* 10 */ 1,
-            /* 11 */ OpCode::ConstNil as u8,
-            /* 12 */ OpCode::Jump as u8,
-            /* 13 */ 0,
-            /* 14 */ 16, // goto return
-            /* 15 */ OpCode::PanicNoMatch as u8,
-            /* 16 */ OpCode::Return as u8
-        ]
+        ],
+        "{f}"
     );
 }
 
@@ -462,7 +360,7 @@ fn infer_lambda_name_from_let_statement() {
     // let f = fn {nil}
     let ast = Statement::Let {
         public: false,
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec![],
             body: Box::new(NIL),
@@ -609,9 +507,11 @@ fn let_test() {
 
 #[test]
 fn multiple_let_test() {
-    // (let1 (x #true)
-    //   (let (y #false)
-    //      nil))
+    // {
+    //   let x = true;
+    //   let y = false;
+    //   nil
+    // }
 
     let ast = Let {
         name: "x".to_string(),
@@ -774,7 +674,8 @@ fn make_closure_test() {
 
 #[test]
 fn make_let_closure_test() {
-    // (let1 (x #true) (lambda* () x))
+    // { let x = true; fn { x } }
+    // match true { x => fn { x } }
 
     let ast = Let {
         name: "x".to_string(),
@@ -818,7 +719,7 @@ fn get_current_closure_test() {
     // let f = fn { f }
 
     let ast = Statement::Let {
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec![],
             body: Box::new(Expr::Ident(Ident(None, "f".to_string()))),
@@ -840,7 +741,7 @@ fn error_on_rec_invalid_params() {
     // let f = fn x { f() }
     let ast = Statement::Let {
         public: false,
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec!["x".to_string()],
             body: Box::new(Expr::Call {
@@ -860,7 +761,7 @@ fn tailcall_test() {
 
     let ast = Statement::Let {
         public: false,
-        pattern: "f".into(),
+        name: "f".into(),
         value: Expr::Fn {
             params: vec!["x".to_string(), "y".to_string()],
             body: Box::new(Expr::Call {
@@ -906,7 +807,8 @@ fn tailcall_test() {
 
 #[test]
 fn let1_does_not_leak_test() {
-    // (do (let1 (x #true) #true) x)
+    // { let x = true; true }
+    // x
     let ast = Expr::Do(
         Box::new(
             Let {
@@ -1062,7 +964,7 @@ fn modules_import_value() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1114,7 +1016,7 @@ fn module_not_imported_err() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1160,7 +1062,7 @@ fn modules_imports_are_scoped() {
         b_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1195,7 +1097,7 @@ fn modules_renamed_imports() {
         a_ns.clone(),
         vec![Statement::Let {
             public: true,
-            pattern: "x".into(),
+            name: "x".into(),
             value: true.into(),
         }],
     );
@@ -1237,6 +1139,8 @@ fn empty_match_test() {
         f.bytecode,
         vec![
             OpCode::ConstTrue as u8,
+            OpCode::SetLocal as u8,
+            0,
             OpCode::PanicNoMatch as u8,
             OpCode::Return as u8,
         ]
@@ -1276,19 +1180,24 @@ fn empty_list_match_test() {
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 1, "locals");
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 8,
-            /*  4 */ OpCode::ConstFalse as u8,
-            /*  5 */ OpCode::Jump as u8,
+            /*  3 */ OpCode::MatchEmptyListElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 11,
             /*  6 */ 0,
-            /*  7 */ 9,
-            /*  8 */ OpCode::PanicNoMatch as u8,
-            /*  9 */ OpCode::Return as u8, // <-
+            /*  7 */ OpCode::ConstFalse as u8,
+            /*  8 */ OpCode::Jump as u8,
+            /*  9 */ 0,
+            /* 10 */ 12,
+            /* 11 */ OpCode::PanicNoMatch as u8,
+            /* 12 */ OpCode::Return as u8, // <-
         ]
     );
 }
@@ -1302,19 +1211,24 @@ fn empty_map_match_test() {
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 1);
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::MatchEmptyMapElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 8,
-            /*  4 */ OpCode::ConstFalse as u8,
-            /*  5 */ OpCode::Jump as u8,
+            /*  3 */ OpCode::MatchEmptyMapElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 11,
             /*  6 */ 0,
-            /*  7 */ 9,
-            /*  8 */ OpCode::PanicNoMatch as u8,
-            /*  9 */ OpCode::Return as u8, // <-
+            /*  7 */ OpCode::ConstFalse as u8,
+            /*  8 */ OpCode::Jump as u8,
+            /*  9 */ 0,
+            /* 10 */ 12,
+            /* 11 */ OpCode::PanicNoMatch as u8,
+            /* 12 */ OpCode::Return as u8, // <-
         ]
     );
 }
@@ -1330,20 +1244,25 @@ fn const_match_test() {
 
     assert_eq!(f.constant_pool, vec![42.0.into()]);
 
+    assert_eq!(f.locals, 1, "locals");
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::MatchConstElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 9,
+            /*  3 */ OpCode::MatchConstElseJump as u8,
             /*  4 */ 0,
-            /*  5 */ OpCode::ConstFalse as u8,
-            /*  6 */ OpCode::Jump as u8,
+            /*  5 */ 12,
+            /*  6 */ 0,
             /*  7 */ 0,
-            /*  8 */ 10,
-            /*  9 */ OpCode::PanicNoMatch as u8,
-            /* 10 */ OpCode::Return as u8, // <-
+            /*  8 */ OpCode::ConstFalse as u8,
+            /*  9 */ OpCode::Jump as u8,
+            /* 10 */ 0,
+            /* 11 */ 13,
+            /* 12 */ OpCode::PanicNoMatch as u8,
+            /* 13 */ OpCode::Return as u8, // <-
         ]
     );
 }
@@ -1366,25 +1285,30 @@ fn const_match_test_many_clauses() {
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstNil as u8,
-            /*  1 */ OpCode::MatchConstElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 9,
+            /*  3 */ OpCode::MatchConstElseJump as u8,
             /*  4 */ 0,
-            /*  5 */ OpCode::ConstFalse as u8,
-            /*  6 */ OpCode::Jump as u8,
+            /*  5 */ 12,
+            /*  6 */ 0,
             /*  7 */ 0,
-            /*  8 */ 18,
-            /*  9 */ OpCode::MatchConstElseJump as u8,
+            /*  8 */ OpCode::ConstFalse as u8,
+            /*  9 */ OpCode::Jump as u8,
             /* 10 */ 0,
-            /* 11 */ 17,
-            /* 12 */ 1,
-            /* 13 */ OpCode::ConstTrue as u8,
-            /* 14 */ OpCode::Jump as u8,
-            /* 15 */ 0,
-            /* 16 */ 18,
-            /* 17 */ OpCode::PanicNoMatch as u8,
-            /* 18 */ OpCode::Return as u8, // <-
-        ]
+            /* 11 */ 22,
+            /* 12 */ OpCode::MatchConstElseJump as u8,
+            /* 13 */ 0,
+            /* 14 */ 21,
+            /* 15 */ 1,
+            /* 16 */ 0,
+            /* 17 */ OpCode::ConstTrue as u8,
+            /* 18 */ OpCode::Jump as u8,
+            /* 19 */ 0,
+            /* 20 */ 22,
+            /* 21 */ OpCode::PanicNoMatch as u8,
+            /* 22 */ OpCode::Return as u8, // <-
+        ],
+        "{f}",
     );
 }
 
@@ -1397,29 +1321,35 @@ fn cons_match_test() {
                 Box::new(Pattern::Identifier("hd".to_string())),
                 Box::new(Pattern::Identifier("tl".to_string())),
             ),
-            false.into(),
+            Expr::Ident(Ident(None, "tl".to_string())),
         )],
     );
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 3, "locals");
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::MatchConsElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 12,
-            /*  4 */ OpCode::SetLocal as u8,
-            /*  5 */ 0,
-            /*  6 */ OpCode::SetLocal as u8,
-            /*  7 */ 1,
-            /*  8 */ OpCode::ConstFalse as u8,
-            /*  9 */ OpCode::Jump as u8,
-            /* 10 */ 0,
-            /* 11 */ 13,
-            /* 12 */ OpCode::PanicNoMatch as u8,
-            /* 13 */ OpCode::Return as u8, // <-
+            /*  3 */ OpCode::MatchConsElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 16,
+            /*  6 */ 0,
+            /*  7 */ OpCode::SetLocal as u8,
+            /*  8 */ 1,
+            /*  9 */ OpCode::SetLocal as u8,
+            /* 10 */ 2,
+            /* 11 */ OpCode::GetLocal as u8,
+            /* 12 */ 2,
+            /* 13 */ OpCode::Jump as u8,
+            /* 14 */ 0,
+            /* 15 */ 17,
+            /* 16 */ OpCode::PanicNoMatch as u8,
+            /* 17 */ OpCode::Return as u8, // <-
         ]
     );
 }
@@ -1427,7 +1357,7 @@ fn cons_match_test() {
 #[test]
 fn cons_map_match_test() {
     let ast = Expr::Match(
-        Box::new(true.into()),
+        Box::new(42.0.into()),
         vec![(
             Pattern::ConsMap(
                 (
@@ -1442,26 +1372,32 @@ fn cons_map_match_test() {
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
-    assert_eq!(f.constant_pool, vec!["key".into()]);
+    assert_eq!(f.constant_pool, vec![42.0.into(), "key".into()]);
+
+    assert_eq!(f.locals, 3);
 
     assert_eq!(
         f.bytecode,
         vec![
-            /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::MatchConsMapElseJump as u8,
-            /*  2 */ 0,
-            /*  3 */ 13,
-            /*  4 */ 0,
-            /*  5 */ OpCode::SetLocal as u8,
-            /*  6 */ 0,
-            /*  7 */ OpCode::SetLocal as u8,
+            /*  0 */ OpCode::Const as u8,
+            /*  1 */ 0,
+            /*  2 */ OpCode::SetLocal as u8,
+            /*  3 */ 0,
+            /*  4 */ OpCode::MatchConsMapElseJump as u8,
+            /*  5 */ 0,
+            /*  6 */ 17,
+            /*  7 */ 0,
             /*  8 */ 1,
-            /*  9 */ OpCode::ConstFalse as u8,
-            /* 10 */ OpCode::Jump as u8,
-            /* 11 */ 0,
-            /* 12 */ 14,
-            /* 13 */ OpCode::PanicNoMatch as u8,
-            /* 14 */ OpCode::Return as u8, // <-
+            /*  9 */ OpCode::SetLocal as u8,
+            /* 10 */ 1,
+            /* 11 */ OpCode::SetLocal as u8,
+            /* 12 */ 2,
+            /* 13 */ OpCode::ConstFalse as u8,
+            /* 14 */ OpCode::Jump as u8,
+            /* 15 */ 0,
+            /* 16 */ 18,
+            /* 17 */ OpCode::PanicNoMatch as u8,
+            /* 18 */ OpCode::Return as u8, // <-
         ]
     );
 }
@@ -1475,29 +1411,35 @@ fn tuple2_match_test() {
                 Pattern::Identifier("x".to_string()),
                 Pattern::Identifier("x".to_string()),
             ]),
-            false.into(),
+            Expr::Ident(Ident(None, "x".to_string())),
         )],
     );
 
     let f = new_compiler().compile_expr(ast).unwrap();
 
+    assert_eq!(f.locals, 3, "locals");
+
     assert_eq!(
         f.bytecode,
         vec![
             /*  0 */ OpCode::ConstTrue as u8,
-            /*  1 */ OpCode::MatchTuple2ElseJump as u8,
+            /*  1 */ OpCode::SetLocal as u8,
             /*  2 */ 0,
-            /*  3 */ 12,
-            /*  4 */ OpCode::SetLocal as u8,
-            /*  5 */ 0,
-            /*  6 */ OpCode::SetLocal as u8,
-            /*  7 */ 1,
-            /*  8 */ OpCode::ConstFalse as u8,
-            /*  9 */ OpCode::Jump as u8,
-            /* 10 */ 0,
-            /* 11 */ 13,
-            /* 12 */ OpCode::PanicNoMatch as u8,
-            /* 13 */ OpCode::Return as u8, // <-
+            /*  3 */ OpCode::MatchTuple2ElseJump as u8,
+            /*  4 */ 0,
+            /*  5 */ 16,
+            /*  6 */ 0,
+            /*  7 */ OpCode::SetLocal as u8,
+            /*  8 */ 1,
+            /*  9 */ OpCode::SetLocal as u8,
+            /* 10 */ 2,
+            /* 11 */ OpCode::GetLocal as u8,
+            /* 12 */ 2,
+            /* 13 */ OpCode::Jump as u8,
+            /* 14 */ 0,
+            /* 15 */ 17,
+            /* 16 */ OpCode::PanicNoMatch as u8,
+            /* 17 */ OpCode::Return as u8, // <-
         ]
     );
 }

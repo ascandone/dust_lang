@@ -778,36 +778,46 @@ fn panic_no_match_test() {
 #[test]
 fn match_const_when_match_test() {
     let main = Function {
-        constant_pool: vec![42.0.into()],
+        constant_pool: vec![22.0.into(), 42.0.into()],
+        locals: 1,
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 00 */ 0,
             /* 01 */ OpCode::Const as u8,
-            /* 02 */ 0,
-            /* 03 */ OpCode::MatchConstElseJump as u8,
+            /* 02 */ 1,
+            /* 03 */ OpCode::SetLocal as u8,
             /* 04 */ 0,
-            /* 05 */ 8,
+            /* 05 */ OpCode::MatchConstElseJump as u8,
             /* 06 */ 0,
-            /* 07 */ OpCode::Return as u8,
-            /* 08 */ OpCode::PanicNoMatch as u8,
+            /* 07 */ 10, // addr
+            /* 08 */ 1, // const
+            /* 09 */ 0, // local
+            /* 10 */ OpCode::Return as u8,
+            /* 11 */ OpCode::PanicNoMatch as u8,
         ],
         ..Default::default()
     };
 
-    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), 22.0.into());
 }
 
 #[test]
 fn match_const_when_not_match_test() {
     let main = Function {
-        constant_pool: vec![42.0.into()],
+        constant_pool: vec![22.0.into(), 42.0.into()],
+        locals: 1,
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::MatchConstElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 6,
-            /* 04 */ 0,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::PanicNoMatch as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchConstElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 10, // addr
+            /* 07 */ 1, // const
+            /* 08 */ 0, // local
+            /* 09 */ OpCode::Return as u8,
+            /* 10 */ OpCode::PanicNoMatch as u8,
         ],
         ..Default::default()
     };
@@ -819,35 +829,44 @@ fn match_const_when_not_match_test() {
 fn match_empty_list_when_not_match_test() {
     let main = Function {
         constant_pool: vec![42.0.into()],
+        locals: 1,
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::SetLocal as u8,
             /* 02 */ 0,
-            /* 03 */ 5,
-            /* 04 */ OpCode::Return as u8,
-            /* 05 */ OpCode::ConstNil as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 03 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 9,
+            /* 06 */ 0,
+            /* 07 */ OpCode::ConstTrue as u8,
+            /* 08 */ OpCode::Return as u8,
+            /* 09 */ OpCode::ConstFalse as u8, // <-
+            /* 10 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
-    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), false.into());
 }
 
 #[test]
 fn match_empty_list_when_match_test() {
     let main = Function {
         constant_pool: vec![Value::List(List::Empty)],
+        locals: 1,
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::Const as u8,
-            /* 02 */ 0,
-            /* 03 */ OpCode::MatchEmptyListElseJump as u8,
-            /* 04 */ 0,
-            /* 05 */ 7,
-            /* 06 */ OpCode::Return as u8,
-            /* 07 */ OpCode::ConstFalse as u8,
-            /* 08 */ OpCode::Return as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchEmptyListElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 10,
+            /* 07 */ 0,
+            /* 08 */ OpCode::ConstTrue as u8,
+            /* 09 */ OpCode::Return as u8,
+            /* 10 */ OpCode::ConstFalse as u8, // <-
+            /* 11 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -859,14 +878,18 @@ fn match_empty_list_when_match_test() {
 fn match_empty_map_when_not_match_test() {
     let main = Function {
         constant_pool: vec![42.0.into()],
+        locals: 1,
         bytecode: vec![
             /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::MatchEmptyMapElseJump as u8,
+            /* 01 */ OpCode::SetLocal as u8,
             /* 02 */ 0,
-            /* 03 */ 5,
-            /* 04 */ OpCode::Return as u8,
-            /* 05 */ OpCode::ConstNil as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 03 */ OpCode::MatchEmptyMapElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 8,
+            /* 06 */ 0,
+            /* 07 */ OpCode::Return as u8,
+            /* 08 */ OpCode::ConstNil as u8,
+            /* 09 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -878,16 +901,20 @@ fn match_empty_map_when_not_match_test() {
 fn match_empty_map_when_match_test() {
     let main = Function {
         constant_pool: vec![Value::Map(im_rc::HashMap::new())],
+        locals: 1,
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::Const as u8,
-            /* 02 */ 0,
-            /* 03 */ OpCode::MatchEmptyMapElseJump as u8,
-            /* 04 */ 0,
-            /* 05 */ 7,
-            /* 06 */ OpCode::Return as u8,
-            /* 07 */ OpCode::ConstFalse as u8,
-            /* 08 */ OpCode::Return as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchEmptyMapElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 10,
+            /* 07 */ 0,
+            /* 08 */ OpCode::ConstTrue as u8,
+            /* 09 */ OpCode::Return as u8,
+            /* 10 */ OpCode::ConstFalse as u8,
+            /* 11 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -898,13 +925,16 @@ fn match_empty_map_when_match_test() {
 #[test]
 fn match_cons_map_when_not_match_test() {
     let main = Function {
+        locals: 3,
         constant_pool: vec!["key".into()],
         bytecode: vec![
             /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::SetLocal as u8,
+            /* 01 */ 0,
             /* 02 */ OpCode::MatchConsMapElseJump as u8,
             /* 03 */ 0,
             /* 04 */ 8,
+            /* 05 */ 0,
             /* 05 */ 0,
             /* 06 */ OpCode::Return as u8,
             /* 07 */ OpCode::ConstNil as u8,
@@ -925,16 +955,22 @@ fn match_cons_map_tl_when_match_test() {
     ];
 
     let main = Function {
+        locals: 3,
         constant_pool: vec![Value::Map(m), "x".into()],
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 7,
-            /* 05 */ 1,
-            /* 06 */ OpCode::Pop as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsMapElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 11,
+            /* 07 */ 0,
+            /* 08 */ 1,
+            /* 09 */ OpCode::Pop as u8,
+            /* 10 */ OpCode::Return as u8,
+            /* 11 */ OpCode::ConstFalse as u8,
+            /* 12 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -958,14 +994,20 @@ fn match_cons_map_hd_when_match_test() {
 
     let main = Function {
         constant_pool: vec![Value::Map(m), "x".into()],
+        locals: 3,
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 02 */ OpCode::MatchConsMapElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ 1,
-            /* 06 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsMapElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 10,
+            /* 07 */ 0,
+            /* 08 */ 1,
+            /* 09 */ OpCode::Return as u8,
+            /* 10 */ OpCode::ConstFalse as u8,
+            /* 11 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -976,21 +1018,29 @@ fn match_cons_map_hd_when_match_test() {
 #[test]
 fn match_cons_list_when_not_match_test() {
     let main = Function {
+        locals: 3,
         constant_pool: vec![42.0.into()],
         bytecode: vec![
-            /* 00 */ OpCode::ConstTrue as u8,
-            /* 01 */ OpCode::ConstNil as u8,
-            /* 02 */ OpCode::MatchConsElseJump as u8,
-            /* 03 */ 0,
-            /* 04 */ 7,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstNil as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 00 */ OpCode::ConstNil as u8,
+            /* 01 */ OpCode::SetLocal as u8,
+            /* 02 */ 0,
+            /* 03 */ OpCode::MatchConsElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 13,
+            /* 06 */ 0,
+            /* 07 */ OpCode::SetLocal as u8,
+            /* 08 */ 1,
+            /* 09 */ OpCode::SetLocal as u8,
+            /* 10 */ 2,
+            /* 11 */ OpCode::ConstTrue as u8,
+            /* 12 */ OpCode::Return as u8,
+            /* 13 */ OpCode::ConstFalse as u8,
+            /* 14 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
-    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
+    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), false.into());
 }
 
 #[test]
@@ -998,15 +1048,26 @@ fn match_cons_list_tl_when_match_test() {
     let lst = Value::List(List::Cons(Rc::new(42.0.into()), Rc::new(List::Empty)));
 
     let main = Function {
+        locals: 3,
         constant_pool: vec![lst],
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 5,
-            /* 05 */ OpCode::Pop as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 15,
+            /* 07 */ 0,
+            /* 08 */ OpCode::SetLocal as u8,
+            /* 09 */ 1,
+            /* 10 */ OpCode::SetLocal as u8,
+            /* 11 */ 2,
+            /* 12 */ OpCode::GetLocal as u8,
+            /* 13 */ 2,
+            /* 14 */ OpCode::Return as u8,
+            /* 15 */ OpCode::ConstFalse as u8,
+            /* 16 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1022,16 +1083,26 @@ fn match_cons_list_hd_when_match_test() {
     let lst = Value::List(List::Cons(Rc::new(42.0.into()), Rc::new(List::Empty)));
 
     let main = Function {
+        locals: 3,
         constant_pool: vec![lst],
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 02 */ OpCode::MatchConsElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstTrue as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchConsElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 15,
+            /* 07 */ 0,
+            /* 08 */ OpCode::SetLocal as u8,
+            /* 09 */ 1,
+            /* 10 */ OpCode::SetLocal as u8,
+            /* 11 */ 2,
+            /* 12 */ OpCode::GetLocal as u8,
+            /* 13 */ 1,
+            /* 14 */ OpCode::Return as u8,
+            /* 15 */ OpCode::ConstFalse as u8,
+            /* 16 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1045,15 +1116,19 @@ fn match_tuple2_when_match_test() {
 
     let main = Function {
         constant_pool: vec![t],
+        locals: 1,
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 02 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 02 */ OpCode::SetLocal as u8,
             /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstTrue as u8,
-            /* 07 */ OpCode::Return as u8,
+            /* 04 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 9,
+            /* 07 */ 0,
+            /* 08 */ OpCode::Return as u8,
+            /* 09 */ OpCode::ConstTrue as u8,
+            /* 10 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1064,14 +1139,18 @@ fn match_tuple2_when_match_test() {
 #[test]
 fn match_tuple2_when_not_match_test() {
     let main = Function {
+        locals: 1,
         bytecode: vec![
             /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 01 */ OpCode::SetLocal as u8,
             /* 02 */ 0,
-            /* 03 */ 5,
-            /* 04 */ OpCode::Return as u8,
-            /* 05 */ OpCode::ConstTrue as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 03 */ OpCode::MatchTuple2ElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 8,
+            /* 06 */ 0,
+            /* 07 */ OpCode::Return as u8,
+            /* 08 */ OpCode::ConstTrue as u8,
+            /* 09 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1089,15 +1168,19 @@ fn match_tuple3_when_match_test() {
 
     let main = Function {
         constant_pool: vec![t],
+        locals: 4,
         bytecode: vec![
             /* 00 */ OpCode::Const as u8,
             /* 01 */ 0,
-            /* 02 */ OpCode::MatchTuple3ElseJump as u8,
-            /* 03 */ 0,
-            /* 04 */ 6,
-            /* 05 */ OpCode::Return as u8,
-            /* 06 */ OpCode::ConstTrue as u8,
+            /* 01 */ OpCode::SetLocal as u8,
+            /* 02 */ 0,
+            /* 03 */ OpCode::MatchTuple3ElseJump as u8,
+            /* 04 */ 0,
+            /* 05 */ 8,
+            /* 06 */ 0,
             /* 07 */ OpCode::Return as u8,
+            /* 08 */ OpCode::ConstTrue as u8,
+            /* 09 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
@@ -1108,52 +1191,23 @@ fn match_tuple3_when_match_test() {
 #[test]
 fn match_tuple3_when_not_match_test() {
     let main = Function {
+        locals: 4,
+        constant_pool: vec![42.0.into()],
         bytecode: vec![
-            /* 00 */ OpCode::ConstNil as u8,
-            /* 01 */ OpCode::MatchTuple3ElseJump as u8,
-            /* 02 */ 0,
-            /* 03 */ 5,
-            /* 04 */ OpCode::Return as u8,
-            /* 05 */ OpCode::ConstTrue as u8,
-            /* 06 */ OpCode::Return as u8,
+            /* 00 */ OpCode::Const as u8,
+            /* 01 */ 0,
+            /* 02 */ OpCode::SetLocal as u8,
+            /* 03 */ 0,
+            /* 04 */ OpCode::MatchTuple3ElseJump as u8,
+            /* 05 */ 0,
+            /* 06 */ 9,
+            /* 07 */ 0,
+            /* 08 */ OpCode::Return as u8,
+            /* 09 */ OpCode::ConstTrue as u8,
+            /* 10 */ OpCode::Return as u8,
         ],
         ..Default::default()
     };
 
     assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), true.into());
-}
-
-#[test]
-fn match_cons_list_global_when_match_test() {
-    let main = Function {
-        constant_pool: vec![
-            Value::Map(im_rc::hashmap! [
-                "key".to_string() => 42.0.into()
-            ]),
-            Value::String(Rc::new("key".to_string())),
-        ],
-        bytecode: vec![
-            /* 00 */ OpCode::Const as u8,
-            /* 01 */ 0,
-            /* 02 */ OpCode::MatchConsMapElseJump as u8,
-            /* 03 */ 0,
-            /* 04 */ 16, // goto PanicNoMatch
-            /* 05 */ 1,
-            /* 06 */ OpCode::SetGlobal as u8,
-            /* 07 */ 0,
-            /* 08 */ 0,
-            /* 09 */ OpCode::SetGlobal as u8,
-            /* 10 */ 0,
-            /* 11 */ 1,
-            /* 12 */ OpCode::ConstNil as u8,
-            /* 13 */ OpCode::Jump as u8,
-            /* 14 */ 0,
-            /* 15 */ 17, // goto return
-            /* 16 */ OpCode::PanicNoMatch as u8, // <-
-            /* 17 */ OpCode::Return as u8, // <-
-        ],
-        ..Default::default()
-    };
-
-    assert_eq!(Vm::default().run_main(Rc::new(main)).unwrap(), Value::Nil);
 }

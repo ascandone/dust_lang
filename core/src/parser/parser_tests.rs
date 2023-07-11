@@ -62,27 +62,7 @@ fn parse_let_decl() {
         Program {
             statements: vec![Statement::Let {
                 public: false,
-                pattern: "x".into(),
-                value: NIL
-            }]
-        },
-    )
-}
-
-#[test]
-fn parse_let_pattern() {
-    assert_eq!(
-        parse("let #{\"k\" => x} = nil").unwrap(),
-        Program {
-            statements: vec![Statement::Let {
-                public: false,
-                pattern: Pattern::ConsMap(
-                    (
-                        "k".to_string(),
-                        Box::new(Pattern::Identifier("x".to_string()))
-                    ),
-                    Box::new(Pattern::EmptyMap)
-                ),
+                name: "x".into(),
                 value: NIL
             }]
         },
@@ -414,7 +394,7 @@ fn parse_let_statement_and_semicolon() {
             statements: vec![
                 Statement::Let {
                     public: false,
-                    pattern: "x".into(),
+                    name: "x".into(),
                     value: 0.0.into(),
                 },
                 Statement::Expr(1.0.into()),
@@ -432,7 +412,7 @@ fn parse_let_statement_and_semicolon_with_infix() {
             statements: vec![
                 Statement::Let {
                     public: false,
-                    pattern: "x".into(),
+                    name: "x".into(),
                     value: 0.0.into(),
                 },
                 Statement::Expr(Expr::Infix(
@@ -530,7 +510,7 @@ fn parse_pub_let() {
         Program {
             statements: vec![Statement::Let {
                 public: true,
-                pattern: "x".into(),
+                name: "x".into(),
                 value: NIL
             }]
         }

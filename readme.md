@@ -5,13 +5,14 @@
 Dust is a small functional (everything is an expression), untyped language  with a minimal core AST.
 
 ```
-let fact = fn n {
-  if n == 0 || n == 1 {
-    1
-  } else {
-    n * fact(n + 1)
+let fizz_buzz = fn n {
+  match #(n % 3, n % 5) {
+    #(0, 0) => "FizzBuzz",
+    #(0, _) => "Fizz",
+    #(_, 0) => "Buzz",
+    _ => String.show(n),
   }
-};
+}
 ```
 
 ### Language tour

@@ -487,7 +487,6 @@ import Map;
     );
 }
 
-#[ignore]
 #[test]
 fn cons_map_match() {
     assert_result(

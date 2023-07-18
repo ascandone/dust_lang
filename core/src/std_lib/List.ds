@@ -37,4 +37,15 @@ pub let filter = fn lst, pred {
       acc
     }
   })
+};
+
+pub let concat = fn lst1, lst2 {
+  List.foldr(lst1, lst2, List.cons)
+};
+
+pub let flat_map = fn lst, f {
+  match lst {
+    [] => [],
+    [hd, ..tl] => concat(f(hd), flat_map(tl, f)),
+  }
 }

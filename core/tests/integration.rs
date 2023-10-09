@@ -488,6 +488,17 @@ import Map;
 }
 
 #[test]
+fn map_lit_get() {
+    assert_result(
+        r#"
+    import Map;
+    Map.get(#{ "x" => 42 }, "x")
+"#,
+        Value::Num(42.0),
+    );
+}
+
+#[test]
 fn cons_map_match() {
     assert_result(
         "

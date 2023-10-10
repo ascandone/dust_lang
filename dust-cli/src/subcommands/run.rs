@@ -1,6 +1,6 @@
 use crate::project_interpreter::project_interpreter;
 use argh::FromArgs;
-use core::interpreter::ErrorFmt;
+use dust_core::interpreter::ErrorFmt;
 use std::fs;
 
 #[derive(FromArgs, PartialEq)]
@@ -13,7 +13,7 @@ pub struct Run {
 }
 
 impl Run {
-    pub fn run(&self) {
+    pub async fn run(&self) {
         let content = fs::read_to_string(self.path.clone()).unwrap_or_else(|_| {
             eprintln!(
                 "Cannot open file `{}` (no such file or directory)",

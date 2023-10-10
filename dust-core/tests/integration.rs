@@ -1,8 +1,8 @@
-use core::ast::Namespace;
-use core::interpreter::eval;
-use core::interpreter::Interpreter;
-use core::vm::list::List;
-use core::vm::value::Value;
+use dust_core::ast::Namespace;
+use dust_core::interpreter::eval;
+use dust_core::interpreter::Interpreter;
+use dust_core::vm::list::List;
+use dust_core::vm::value::Value;
 
 #[test]
 fn empty_expr() {

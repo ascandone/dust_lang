@@ -11,7 +11,7 @@ pub struct Init {}
 const SRC_FOLDER: &str = "src";
 
 impl Init {
-    pub fn run(&self) {
+    pub async fn run(&self) {
         let current = DustJson::read();
         if current.is_some() {
             println!("dust.json already exists");

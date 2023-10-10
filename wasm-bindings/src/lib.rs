@@ -1,6 +1,6 @@
-use core::formatter;
-use core::interpreter;
-use core::parser;
+use dust_core::formatter;
+use dust_core::interpreter;
+use dust_core::parser;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 

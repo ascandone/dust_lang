@@ -1,8 +1,8 @@
 use crate::project_interpreter::project_interpreter;
 use argh::FromArgs;
 use colored::{ColoredString, Colorize};
-use core::interpreter::ErrorFmt;
-use core::vm::value::Value;
+use dust_core::interpreter::ErrorFmt;
+use dust_core::vm::value::Value;
 use std::io;
 use std::io::Write;
 
@@ -39,7 +39,7 @@ fn colored_value(value: &Value) -> ColoredString {
 }
 
 impl Repl {
-    pub fn run(&self) {
+    pub async fn run(&self) {
         let mut interpreter = project_interpreter().unwrap_or_else(|error| {
             let err_fmt = ErrorFmt { error };
             eprintln!("{}", err_fmt.to_string().red());

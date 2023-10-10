@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "dust-core"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 im-rc = "15.1.0"
+tower-lsp.workspace = true

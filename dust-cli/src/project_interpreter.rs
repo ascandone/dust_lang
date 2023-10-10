@@ -1,7 +1,7 @@
 use crate::dust_json::DustJson;
-use core::ast::Namespace;
-use core::interpreter;
-use core::interpreter::Interpreter;
+use dust_core::ast::Namespace;
+use dust_core::interpreter;
+use dust_core::interpreter::Interpreter;
 use glob::glob;
 use std::{env, fs};
 

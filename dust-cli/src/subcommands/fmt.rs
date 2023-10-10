@@ -1,7 +1,7 @@
 use argh::FromArgs;
 use colored::Colorize;
-use core::formatter::format;
-use core::parser::parse;
+use dust_core::formatter::format;
+use dust_core::parser::parse;
 use std::fs;
 
 #[derive(FromArgs, PartialEq)]
@@ -18,7 +18,7 @@ pub struct Fmt {
 }
 
 impl Fmt {
-    pub fn run(&self) {
+    pub async fn run(&self) {
         let content = fs::read_to_string(self.path.clone()).unwrap_or_else(|_| {
             eprintln!(
                 "Cannot open file `{}` (no such file or directory)",

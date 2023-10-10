@@ -3,22 +3,22 @@ use crate::parser::lexer::LexerError::InvalidToken;
 use std::fmt::{Display, Formatter};
 
 pub struct Lexer<'a> {
-    input: &'a str,
-    // position: usize,
+    input: Vec<char>,
     read_position: usize,
+    source: &'a str,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
-            input,
-            // position: 0,
+            input: input.chars().collect(),
+            source: input,
             read_position: 0,
         }
     }
 
     fn peek_char(&self) -> Option<char> {
-        self.input.chars().nth(self.read_position)
+        self.input.get(self.read_position).copied()
     }
 
     fn next_char(&mut self) -> Option<char> {
@@ -43,7 +43,9 @@ impl<'a> Lexer<'a> {
     where
         F: Fn(char) -> bool,
     {
-        let Some(ch) = self.peek_char() else { return None };
+        let Some(ch) = self.peek_char() else {
+            return None;
+        };
         if !pred(ch) {
             return None;
         }
@@ -60,7 +62,7 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Some(&self.input[read_position..self.read_position])
+        Some(&self.source[read_position..self.read_position])
     }
 
     fn read_string_lit(&mut self) -> String {
@@ -75,7 +77,7 @@ impl<'a> Lexer<'a> {
         }
 
         let str = &self.input[read_position..self.read_position - 1];
-        str.to_string()
+        String::from_iter(str)
     }
 
     pub fn next_token(&mut self) -> Result<Token, LexerError> {
@@ -101,7 +103,9 @@ impl<'a> Lexer<'a> {
             return Ok(tk);
         };
 
-        let Some(ch) = self.peek_char() else { return Ok(Token::Eof) };
+        let Some(ch) = self.peek_char() else {
+            return Ok(Token::Eof);
+        };
         self.next_char();
 
         Ok(match ch {
@@ -488,6 +492,16 @@ mod tests {
         assert_tokens(src, {
             use Token::*;
             &[If, Else]
+        });
+    }
+
+    #[test]
+    fn utf8() {
+        let src = r#""abc 🚀""#;
+
+        assert_tokens(src, {
+            use Token::*;
+            &[String("abc 🚀".to_string())]
         });
     }
 

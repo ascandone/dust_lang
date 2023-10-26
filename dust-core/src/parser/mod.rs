@@ -2,11 +2,16 @@ use crate::ast;
 use crate::cst::{try_from_program, Program};
 use crate::parser::parser::Parser;
 pub use crate::parser::parser::ParsingError;
+pub use crate::parser::spanned_lexer::{LexerError, Position, Spanned};
 
 mod lexer;
 mod parser;
 #[cfg(test)]
 mod parser_tests;
+mod spanned_lexer;
+mod spanned_parser;
+#[cfg(test)]
+mod spanned_parser_tests;
 mod token;
 
 pub fn parse(input: &str) -> Result<Program, ParsingError> {
